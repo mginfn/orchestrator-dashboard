@@ -133,19 +133,20 @@ if not database_exists(engine.url):  # Checks for the first time
 else:
     # for compatibility with old non-orm version
     # check if existing db is not versioned
-    if not engine.dialect.has_table(engine.connect(), "alembic_version"):
-        # create versioning table and assign initial release
-        baseversion = app.config['SQLALCHEMY_VERSION_HEAD']
-        meta = MetaData()
-        alembic_version = Table(
-            'alembic_version',
-            meta,
-            Column('version_num', String(32), primary_key=True),
-        )
-        meta.create_all(engine)
-        ins = alembic_version.insert().values(version_num=baseversion)
-        conn = engine.connect()
-        result = conn.execute(ins)
+    if engine.dialect.has_table(engine.connect(), "deployments"):
+        if not engine.dialect.has_table(engine.connect(), "alembic_version"):
+            # create versioning table and assign initial release
+            baseversion = app.config['SQLALCHEMY_VERSION_HEAD']
+            meta = MetaData()
+            alembic_version = Table(
+                'alembic_version',
+                meta,
+                Column('version_num', String(32), primary_key=True),
+            )
+            meta.create_all(engine)
+            ins = alembic_version.insert().values(version_num=baseversion)
+            conn = engine.connect()
+            result = conn.execute(ins)
 
 # update database, run flask_migrate.upgrade()
 with app.app_context():
