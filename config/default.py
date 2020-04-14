@@ -51,6 +51,3 @@ NAVBAR_BRAND_ICON = "/home/static/images/orchestrator-logo.png"
 ### Template Paths
 HOME_TEMPLATE = 'home.html'
 FOOTER_TEMPLATE = 'footer.html'
-
-
-

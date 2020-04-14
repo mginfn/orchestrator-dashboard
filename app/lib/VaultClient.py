@@ -84,6 +84,7 @@ class VaultClient:
         POST '/v1/'+self.secrets_root+'/data/' + secret_path
         """
         self.set_token(token)
+
         secret_dict=dict()
         secret_dict[key]=value
         try:

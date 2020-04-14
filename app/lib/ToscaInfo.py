@@ -77,7 +77,9 @@ class ToscaInfo(object):
             "inputs": {},
             "node_templates": {},
             "policies": {},
-            "tabs": {}
+            "tabs": {},
+            "metadata_file": "",
+            "parameters_file": ""
         }
 
         if 'topology_template' not in template:
@@ -102,7 +104,8 @@ class ToscaInfo(object):
                             if mname[0] != '.':
                                 tosca_metadata_file = os.path.join(mpath, mname)
                                 with io.open(tosca_metadata_file) as metadata_file:
-                                    metadata_template = yaml.full_load(metadata_file)
+                                    tosca_info['metadata_file'] = metadata_file.read()
+                                    metadata_template = yaml.full_load(io.StringIO(tosca_info['metadata_file']))
 
                                     if 'metadata' in metadata_template \
                                             and metadata_template['metadata'] is not None:
@@ -134,7 +137,8 @@ class ToscaInfo(object):
                                 tosca_pars_file = os.path.join(fpath, fname)
                                 with io.open(tosca_pars_file) as pars_file:
                                     tosca_info['enable_config_form'] = True
-                                    pars_data = yaml.full_load(pars_file)
+                                    tosca_info['parameters_file'] = pars_file.read()
+                                    pars_data = yaml.full_load(io.StringIO(tosca_info['parameters_file']))
                                     pars_inputs = pars_data["inputs"]
                                     tosca_info['inputs'] = {**tosca_inputs, **pars_inputs}
                                     if "tabs" in pars_data:

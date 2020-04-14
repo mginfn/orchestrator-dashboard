@@ -116,6 +116,9 @@ def updatedeploymentsstatus(deployments, userid):
                                     links=json.dumps(dep_json['links']),
                                     sub=userid,
                                     template=template,
+                                    template_parameters='',
+                                    template_metadata='',
+                                    selected_template='',
                                     inputs='',
                                     stinputs='',
                                     params='',
@@ -177,6 +180,9 @@ def cvdeployment(d):
                                 d.links.replace("\n", "\\n")) if (d.links is not None and d.links is not '') else '',
                             sub=d.sub,
                             template=d.template,
+                            template_parameters=d.template_parameters if d.template_parameters is not None else '',
+                            template_metadata=d.template_metadata if d.template_metadata is not None else '',
+                            selected_template=d.selected_template,
                             inputs=json.loads(
                                 d.inputs.replace("\n", "\\n")) if (d.inputs is not None and d.inputs is not '') else '',
                             stinputs=json.loads(
