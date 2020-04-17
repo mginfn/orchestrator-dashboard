@@ -128,43 +128,43 @@ def deptemplatedb(depid):
         return render_template('deptemplate.html', template=template)
 
 
-@deployments_bp.route('/<physicalId>/log')
+@deployments_bp.route('/<depid>/log')
 @auth.authorized_with_valid_token
-def deplog(physicalId=None):
+def deplog(depid=None):
     access_token = iam_blueprint.session.token['access_token']
-    headers = {'Authorization': 'id = im; type = InfrastructureManager; token = %s;' % access_token}
+    headers = {'Authorization': 'bearer %s' % access_token}
 
-    app.logger.debug("Configuration: " + json.dumps(settings.orchestratorConf))
+    # app.logger.debug("Configuration: " + json.dumps(settings.orchestratorConf))
+    dep = dbhelpers.get_deployment(depid)
+    if dep is not None and dep.physicalId is not None:
+        url = settings.orchestratorUrl + "/deployments/" + depid + "/log"
+        response = requests.get(url, headers=headers)
 
-    url = settings.orchestratorConf['im_url'] + "/infrastructures/" + physicalId + "/contmsg"
-    response = requests.get(url, headers=headers)
-
-    log = "Not found" if not response.ok else response.text
-    return render_template('deplog.html', log=log)
+        log = "Not found" if not response.ok else response.text
+        return render_template('deplog.html', log=log)
+    return redirect(url_for('deployments_bp.showdeployments'))
 
 
-@deployments_bp.route('/infra/<physicalId>/details')
+@deployments_bp.route('/<depid>/infradetails')
 @auth.authorized_with_valid_token
-def depinfradetails(physicalId=None, path=None):
+def depinfradetails(depid=None, path=None):
     access_token = iam_blueprint.session.token['access_token']
-    headers = {'Authorization': 'id = im; type = InfrastructureManager; token = %s;' % access_token}
+    headers = {'Authorization': 'bearer %s' % access_token}
 
-    app.logger.debug("Configuration: " + json.dumps(settings.orchestratorConf))
+    # app.logger.debug("Configuration: " + json.dumps(settings.orchestratorConf))
+    dep = dbhelpers.get_deployment(depid)
+    if dep is not None and dep.physicalId is not None:
+        url = settings.orchestratorUrl + "/deployments/" + depid + "/extrainfo"
 
-    url = settings.orchestratorConf['im_url'] + "/infrastructures/" + physicalId
-    response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers)
+        vminfos = json.loads(response.text)
+        details = []
+        for vm_details in vminfos:
+             vminfo = utils.format_json_radl(vm_details["vmProperties"])
+             details.append(vminfo)
 
-    vms_url = response.text.split()
-    app.logger.info(vms_url)
-
-    details = []
-    headers.update({ "Accept": "application/json"})
-    for u in vms_url:
-         vm_details = requests.get(u, headers=headers)
-         vminfo = utils.format_json_radl(vm_details.json()["radl"])
-         details.append(vminfo)
-
-    return render_template('depinfradetails.html', vmsdetails=details)
+        return render_template('depinfradetails.html', vmsdetails=details)
+    return redirect(url_for('deployments_bp.showdeployments'))
 
 
 @deployments_bp.route('/<depid>/delete')
