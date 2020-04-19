@@ -1,3 +1,8 @@
+{% if update == True and (value.updatable is not defined or value.updatable == False) %}
+ {% set mode = "disabled" %}
+{% else %}
+ {% set mode = "" %}
+{% endif %}
 <div class="form-group">
   {% if (value.type is not defined or (value.type != "hidden" and value.type != "swift_upload" and value.type != "swift_token" and value.type != "swift_autouuid" ))
           and (update == False or value.updatable is not defined or value.updatable == True)%}
@@ -13,7 +18,7 @@
 
     <!-- text type -->
     {% if value.type == "text" %}
-      <input type="text" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} />
+      <input type="text" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
     <!-- end select type -->
 
     <!-- hidden text type -->
@@ -23,18 +28,18 @@
 
     <!-- email type -->
     {% elif value.type == "email" %}
-      <input type="email" class="form-control" id="{{key}}" name="{{key}}" placeholder="Enter your email" {% if value.required %}required{%endif%} >
+      <input type="email" class="form-control" id="{{key}}" name="{{key}}" placeholder="Enter your email" {% if value.required %}required{%endif%} {{mode}} >
     <!-- end email type -->
 
     <!-- password type -->
     {% elif value.type == "password" %}
-      <input type="password" class="form-control" id="{{key}}" name="{{key}}" placeholder="Enter your password" {% if value.required %}required{%endif%} >
+      <input type="password" class="form-control" id="{{key}}" name="{{key}}" placeholder="Enter your password" {% if value.required %}required{%endif%} {{mode}}>
     <!-- end password type -->
 
     <!-- select type -->
     <!-- https://github.com/select2/select2/issues/4220 -->
     {% elif value.type == "select" %}
-      <select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}">
+      <select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}" {{mode}}>
       {% for constraint in value.constraints %}
         <option value="{{constraint['value']}}">{{constraint['label']}}</option>
       {% endfor %}
@@ -45,9 +50,9 @@
     {% elif value.type == "radio" %}
       {% for constraint in value.constraints %}
         {% if loop.first %}
-          <br><input type="radio" id="{{key}}" name="{{key}}" value={{constraint['value']}} checked> {{constraint['label']}}<br>
+          <br><input type="radio" id="{{key}}" name="{{key}}" value={{constraint['value']}} checked {{mode}}> {{constraint['label']}}<br>
         {% else %}
-          <input type="radio" id="{{key}}" name="{{key}}" value={{constraint['value']}}> {{constraint['label']}}<br>
+          <input type="radio" id="{{key}}" name="{{key}}" value={{constraint['value']}} {{mode}}> {{constraint['label']}}<br>
         {% endif %}
       {% endfor %}
     <!-- end radio type -->
@@ -56,7 +61,7 @@
     {% elif value.type == "toggle" %}
       {% for constraint in value.constraints %}
       <div>
-        <input type="checkbox" data-toggle="toggle" id="{{key}}" name="{{key}}" data-size="sm" data-offstyle="dark" value={{constraint['value']}}>
+        <input type="checkbox" data-toggle="toggle" id="{{key}}" name="{{key}}" data-size="sm" data-offstyle="dark" value={{constraint['value']}} {{mode}}>
 
         <div id="encryption_alert" class="modal fade" role="dialog">
           <div class="modal-dialog" role="document">
@@ -94,13 +99,13 @@
 
     <!-- ssh special input field -->
     {% elif value.type == "ssh_pub_key_type" %}
-      <input type="text" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if ssh_pub_key is not none %}placeholder="{{value.placeholder}}"{% endif %} {% if ssh_pub_key is none %}required{% endif %} />
+      <input type="text" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if ssh_pub_key is not none %}placeholder="{{value.placeholder}}"{% endif %} {% if ssh_pub_key is none %}required{% endif %} {{mode}} />
     <!-- end ssh special input type -->
 
     <!-- swift_upload special input field -->
     {% elif value.type == "swift_upload" %}
         <div class="custom-file">
-          <input type="file" class="custom-file-input" id="{{key}}" name="{{key}}">
+          <input type="file" class="custom-file-input" id="{{key}}" name="{{key}}" {{mode}}>
           <label class="custom-file-label" for="{{key}}">Choose file</label>
         </div>
     <!-- end swift_upload special input type -->
@@ -119,14 +124,14 @@
       <!-- select type if constraints are defined -->
 	  {% set constraints = value.constraints | selectattr('valid_values') | map(attribute='valid_values') | list  %}
 	  {% if constraints %}
-	  <select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}">
+	  <select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}" {{mode}}>
           {% for val in constraints[0] %}
              <option value="{{val}}">{{val}}</option>
           {% endfor %}
       </select>
       {% else %}
       <!-- text type, hide fields with password -->
-      <input {% if 'password' in key %}type="password"{% else %}type="text"{% endif %} class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if value.required %}required{%endif%} />
+      <input {% if 'password' in key %}type="password"{% else %}type="text"{% endif %} class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if value.required %}required{%endif%} {{mode}} />
       {% endif %}
     {% endif %}  <!-- end tag type existence if -->
 

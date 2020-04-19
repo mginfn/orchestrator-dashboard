@@ -210,7 +210,6 @@ def depupdate(depid=None):
             ssh_pub_key = dbhelpers.get_ssh_pub_key(session['userid'])
 
 
-            # return render_template('depupdate.html',
             return render_template('updatedep.html',
                                    template=tosca_info,
                                    template_description=tosca_info['description'],
@@ -261,8 +260,8 @@ def updatedep():
             remove_sla_from_template(template)
 
         inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.") and not k == '_depid'}
-        oldinputs = json.loads(dep.inputs.strip('\"')) if dep.inputs else {}
-        inputs = {**oldinputs, **inputs}
+        #oldinputs = json.loads(dep.inputs.strip('\"')) if dep.inputs else {}
+        #inputs = {**oldinputs, **inputs}
 
         additionaldescription = form_data['additional_description']
 
@@ -274,6 +273,9 @@ def updatedep():
         template_text = yaml.dump(template, default_flow_style=False, sort_keys=False)
         payload = {"template": template_text, "parameters": inputs}
         payload.update(params)
+
+        app.logger.debug("[Deployment Update] inputs: {}".format(json.dumps(inputs)))
+        app.logger.debug("[Deployment Update] Template: {}".format(template_text))
 
         url = settings.orchestratorUrl + "/deployments/" + depid
         headers = {'Content-Type': 'application/json', 'Authorization': 'bearer %s' % access_token}
@@ -467,7 +469,7 @@ def createdep():
         payload.update(params)
 
         elastic = tosca_helpers.eleasticdeployment(template)
-        updatable = tosca_helpers.updatabledeployment(template)
+        updatable = source_template['updatable']
 
         url = settings.orchestratorUrl + "/deployments/"
         headers = {'Content-Type': 'application/json', 'Authorization': 'bearer %s' % access_token}

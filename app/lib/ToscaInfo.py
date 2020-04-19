@@ -143,6 +143,9 @@ class ToscaInfo(object):
                                     tosca_info['inputs'] = {**tosca_inputs, **pars_inputs}
                                     if "tabs" in pars_data:
                                         tosca_info['tabs'] = pars_data["tabs"]
+
+            updatable = updatabledeployment(tosca_info['inputs'])
+            tosca_info['updatable'] = updatable
         return tosca_info
 
 
@@ -187,9 +190,13 @@ def eleasticdeployment(template):
     return hasnodeoftype(template, 'tosca.nodes.indigo.ElasticCluster')
 
 
-def updatabledeployment(template):
-    return hasnodeoftype(template, 'tosca.nodes.indigo.LRMS.WorkerNode')
+def updatabledeployment(inputs):
+    updatable = False
+    for key,value in inputs.items():
+        if 'updatable' in value:
+            updatable = value['updatable']
 
+    return updatable
 
 def hasnodeoftype(template, nodetype):
     found = False
