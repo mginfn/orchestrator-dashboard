@@ -109,7 +109,7 @@ def home():
         templates = {k: v for (k, v) in toscaInfo.items() if
                      check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
 
-        return render_template('portfolio.html', templates=templates)
+        return render_template(app.config.get('PORTFOLIO_TEMPLATE'), templates=templates)
 
 
 @home_bp.route('/logout')

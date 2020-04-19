@@ -67,7 +67,11 @@
     }
    </style>
 </head>
+
 <body>
+
+<div class="App">
+
     <nav class="navbar navbar-dark bg-dark navbar-expand-md sticky-top">
         <div class="container-fluid">
 		<a class="navbar-brand" href="{{ url_for("home_bp.home") }}"><img src="{{ navbar_brand_icon }}" width="40" alt="" style="display:inline; margin-right: 10px;">{{ navbar_brand_text }}</a>
@@ -124,14 +128,18 @@
             </div>
         </div>
     </nav>
+    <main>
     {% block content %}{% endblock %}
+    </main>
     {% include footer_template %}
+</div>
+
 </body>
+
 </html>
 
 <style>
 body {
   margin-bottom: 70px
 }
-
 </style>
