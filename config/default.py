@@ -47,6 +47,7 @@ VAULT_OIDC_AUDIENCE = "ff2c57dc-fa09-43c9-984e-9ad8afc3fb56"
 WELCOME_MESSAGE = "Welcome! This is the PaaS Orchestrator Dashboard"
 NAVBAR_BRAND_TEXT = "PaaS Orchestrator Dashboard"
 NAVBAR_BRAND_ICON = "/home/static/images/orchestrator-logo.png"
+FAVICON_PATH = "/home/static/images/favicon_io"
 
 ### Template Paths
 HOME_TEMPLATE = 'home.html'
