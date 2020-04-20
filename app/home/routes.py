@@ -170,6 +170,18 @@ def callback():
             except Exception as error:
                 utils.logexception("sending email:".format(error))
 
+        if status == 'UPDATE_COMPLETE':
+            try:
+                create_and_send_email("Deployment update complete", mail_sender, [user_email], status)
+            except Exception as error:
+                utils.logexception("sending email:".format(error))
+
+        if status == 'UPDATE_FAILED':
+            try:
+                create_and_send_email("Deployment update failed", mail_sender, [user_email], status)
+            except Exception as error:
+                utils.logexception("sending email:".format(error))
+
     resp = make_response('')
     resp.status_code = 200
     resp.mimetype = 'application/json'
