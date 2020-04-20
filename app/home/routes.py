@@ -160,13 +160,13 @@ def callback():
     if mail_sender and user_email != '' and rf == 1:
         if status == 'CREATE_COMPLETE':
             try:
-                create_and_send_email("Deploymwent complete", mail_sender, [user_email], status)
+                create_and_send_email("Deployment complete", mail_sender, [user_email], status)
             except Exception as error:
                 utils.logexception("sending email:".format(error))
 
         if status == 'CREATE_FAILED':
             try:
-                create_and_send_email("Deploymwent failed", mail_sender, [user_email], status)
+                create_and_send_email("Deployment failed", mail_sender, [user_email], status)
             except Exception as error:
                 utils.logexception("sending email:".format(error))
 
@@ -181,7 +181,7 @@ def create_and_send_email(subject, sender, recipients, status):
     send_email(subject,
                sender=sender,
                recipients=recipients,
-               html_body=render_template('email.html', status=status))
+               html_body=render_template(app.config.get('MAIL_TEMPLATE'), status=status))
 
 
 def send_email(subject, sender, recipients, html_body):

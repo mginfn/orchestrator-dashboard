@@ -52,4 +52,5 @@ FAVICON_PATH = "/home/static/images/favicon_io"
 ### Template Paths
 HOME_TEMPLATE = 'home.html'
 PORTFOLIO_TEMPLATE = 'portfolio.html'
+MAIL_TEMPLATE = 'email.html'
 FOOTER_TEMPLATE = 'footer.html'

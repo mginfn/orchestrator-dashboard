@@ -6,4 +6,5 @@ NAVBAR_BRAND_ICON = "https://raw.githubusercontent.com/Laniakea-elixir-it/resour
 ### Template Paths
 HOME_TEMPLATE = 'laniakea/home.html'
 PORTFOLIO_TEMPLATE = 'laniakea/portfolio.html'
+MAIL_TEMPLATE = 'laniakea/email.html'
 FOOTER_TEMPLATE = 'laniakea/footer.html'
