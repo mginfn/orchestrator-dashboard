@@ -194,7 +194,9 @@ def updatabledeployment(inputs):
     updatable = False
     for key,value in inputs.items():
         if 'updatable' in value:
-            updatable = value['updatable']
+            if value['updatable'] == True:
+                updatable = True
+                break
 
     return updatable
 
