@@ -17,7 +17,7 @@
                                 This is an automatically generated notification mail<BR>
                                 YOU DO NOT NEED TO ANSWER THIS MESSAGE.<BR>
                                 <p>
-                                Your instance is up and running.
+                                Your deployment {{uuid}} is complete.
                                 <p>
                                 Kind Regards. <BR>
 
@@ -26,7 +26,25 @@
                                 This is an automatically generated notification mail<BR>
                                 YOU DO NOT NEED TO ANSWER THIS MESSAGE<BR>
                                 <p>
-				Your reployment is failed.
+				Your deployment {{uuid}} is failed.
+                                <p>
+                                Kind Regards. <BR>
+
+				{% elif status == "UPDATE_COMPLETE" %}
+ 			        Dear User,<BR>
+                                This is an automatically generated notification mail<BR>
+                                YOU DO NOT NEED TO ANSWER THIS MESSAGE<BR>
+                                <p>
+ 				Your deployment {{uuid}} has been updated successfully.
+                                <p>
+                                Kind Regards. <BR>
+
+                                {% elif status == "UPDATE_FAILED" %}
+ 			        Dear User,<BR>
+                                This is an automatically generated notification mail<BR>
+                                YOU DO NOT NEED TO ANSWER THIS MESSAGE<BR>
+                                <p>
+                                Your deployment {{uuid}} update is failed.
                                 <p>
                                 Kind Regards. <BR>
 
