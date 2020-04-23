@@ -93,16 +93,24 @@
                   {% if enable_update_deployment == "yes" and deployment.updatable == 1 %}
                     <a class="dropdown-item" href="{{ url_for('deployments_bp.depupdate', depid=deployment.uuid) }}"><span class="fas fa-plus mr-2 grey-text"></span>Update</a>
                   {% endif %}
-                  <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.deplog', depid=deployment.uuid) }}">
-                      <span class="fas fa-file-alt mr-2 grey-text"></span>Log</a>
+                  {% if deployment.deployment_type == "CLOUD" %}
+                      <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.deplog', depid=deployment.uuid) }}">
+                          <span class="fas fa-file-alt mr-2 grey-text"></span>Log</a>
+                  {% endif %}
                   {% if deployment.locked == 0 %}
                     <a class="dropdown-item" href="{{ url_for('deployments_bp.lockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock mr-2"></span>Lock</a>
                   {% else %}
                     <a class="dropdown-item" href="{{ url_for('deployments_bp.unlockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock-open mr-2"></span>Unlock</a>
                   {% endif %}
-                  <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.depinfradetails', depid=deployment.uuid) }}">
-                      <span class="fas fa-bars mr-2 grey-text"></span>VM details</a>
-                </div>
+                  {% if deployment.deployment_type == "CLOUD" %}
+                      <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.depinfradetails', depid=deployment.uuid) }}">
+                          <span class="fas fa-bars mr-2 grey-text"></span>VM details</a>
+                  {% endif %}
+                  {% if deployment.deployment_type == "QCG" %}
+                      <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.depqcgdetails', depid=deployment.uuid) }}">
+                          <span class="fas fa-bars mr-2 grey-text"></span>Job details</a>
+                  {% endif %}
+                    </div>
               </div>
             </td>
         </tr>

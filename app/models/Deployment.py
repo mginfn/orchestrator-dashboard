@@ -24,6 +24,7 @@ class Deployment(db.Model):
     inputs = db.Column(db.Text, nullable=True)
     stinputs = db.Column(db.Text, nullable=True)
     params = db.Column(db.Text, nullable=True)
+    deployment_type = db.Column(db.String(16), nullable=True)
     locked = db.Column(db.Integer, nullable=True, default=0)
     feedback_required = db.Column(db.Integer, nullable=True, default=1)
     keep_last_attempt = db.Column(db.Integer, nullable=True, default=0)

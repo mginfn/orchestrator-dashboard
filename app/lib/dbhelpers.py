@@ -122,6 +122,7 @@ def updatedeploymentsstatus(deployments, userid):
                                     inputs='',
                                     stinputs='',
                                     params='',
+                                    deployment_type='',
                                     provider_name=providername,
                                     endpoint=endpoint,
                                     remote=1,
@@ -188,6 +189,7 @@ def cvdeployment(d):
                             stinputs=json.loads(
                                 d.stinputs.replace("\n", "\\n")) if (d.stinputs is not None and d.stinputs is not '') else '',
                             params=d.params,
+                            deployment_type=d.deployment_type,
                             provider_name='' if d.provider_name is None else d.provider_name,
                             endpoint=d.endpoint,
                             remote=d.remote,

@@ -153,7 +153,7 @@ def depinfradetails(depid=None, path=None):
 
     # app.logger.debug("Configuration: " + json.dumps(settings.orchestratorConf))
     dep = dbhelpers.get_deployment(depid)
-    if dep is not None and dep.physicalId is not None:
+    if dep is not None and dep.physicalId is not None and dep.deployment_type == "CLOUD":
         url = settings.orchestratorUrl + "/deployments/" + depid + "/extrainfo"
 
         response = requests.get(url, headers=headers)
@@ -164,6 +164,23 @@ def depinfradetails(depid=None, path=None):
              details.append(vminfo)
 
         return render_template('depinfradetails.html', vmsdetails=details)
+    return redirect(url_for('deployments_bp.showdeployments'))
+
+
+@deployments_bp.route('/<depid>/qcgdetails')
+@auth.authorized_with_valid_token
+def depqcgdetails(depid=None, path=None):
+    access_token = iam_blueprint.session.token['access_token']
+    headers = {'Authorization': 'bearer %s' % access_token}
+
+    # app.logger.debug("Configuration: " + json.dumps(settings.orchestratorConf))
+    dep = dbhelpers.get_deployment(depid)
+    if dep is not None and dep.physicalId is not None and dep.deployment_type == "QCG":
+        url = settings.orchestratorUrl + "/deployments/" + depid + "/extrainfo"
+
+        response = requests.get(url, headers=headers)
+        job = json.loads(response.text)
+        return render_template('depqcgdetails.html', job=job[0])
     return redirect(url_for('deployments_bp.showdeployments'))
 
 
@@ -505,6 +522,7 @@ def createdep():
                                         inputs=json.dumps(inputs),
                                         stinputs=json.dumps(stinputs),
                                         params=json.dumps(params),
+                                        deployment_type=source_template['deployment_type'],
                                         provider_name=providername,
                                         endpoint='',
                                         feedback_required=feedback_required,
