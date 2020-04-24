@@ -158,6 +158,7 @@ def depinfradetails(depid=None, path=None):
 
         response = requests.get(url, headers=headers)
         vminfos = json.loads(response.text)
+        app.logger.debug("VMs details: {}".format(response.text))
         details = []
         for vm_details in vminfos:
              vminfo = utils.format_json_radl(vm_details["vmProperties"])
@@ -179,8 +180,14 @@ def depqcgdetails(depid=None, path=None):
         url = settings.orchestratorUrl + "/deployments/" + depid + "/extrainfo"
 
         response = requests.get(url, headers=headers)
-        job = json.loads(response.text)
-        return render_template('depqcgdetails.html', job=job[0])
+        app.logger.debug("Job details: {}".format(response.text))
+        try:
+            job = json.loads(response.text)
+        except:
+            app.logger.warning("Error decoding Job details response: {}".format(response.text))
+            job = None
+
+        return render_template('depqcgdetails.html', job=(job[0] if job else None))
     return redirect(url_for('deployments_bp.showdeployments'))
 
 

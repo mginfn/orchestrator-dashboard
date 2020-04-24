@@ -5,7 +5,7 @@
 <div class="container mt-4">
 
 
-
+{% if job %}
   <div class="card border-secondary mb-2">
     <div class="card-header" id="heading">
         <span>
@@ -45,7 +45,9 @@
         <br/>
         <p><strong>exit code:</strong> {{job.exit_code}}</p>
     </div>
-
+  {% else %}
+  No details available
+  {% endif %}
   </div>
 
 
