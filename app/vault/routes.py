@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, flash, request, redirect, url_for, session
 from app import app, iam_blueprint, vaultservice
 from app.lib import auth, sshkey as sshkeyhelpers, settings, dbhelpers
+from app.providers import sla
 from app.models.Deployment import Deployment
 from app.models.User import User
 
@@ -178,3 +179,97 @@ def update_ssh_key(subject):
     dbhelpers.update_user(subject, dict(sshkey=sshkey))
 
     return redirect(url_for('vault_bp.ssh_keys'))
+
+@vault_bp.route('/manage_credentials')
+@auth.authorized_with_valid_token
+def manage_service_creds():
+  slas={}
+
+  try:
+    access_token = iam_blueprint.session.token['access_token']
+    slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'])
+    app.logger.debug("Service details: {}".format(slas))
+
+  except Exception as e:
+        flash("Error retrieving SLAs list: \n" + str(e), 'warning')
+
+  return render_template('service_creds.html', slas=slas)
+
+
+@vault_bp.route('/read_credentials')
+@auth.authorized_with_valid_token
+def read_service_creds():
+    vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
+    vault_role = app.config.get("VAULT_ROLE")
+
+    serviceid = request.args.get('service_id', None)
+    servicetype = request.args.get('service_type', None)
+
+    access_token = iam_blueprint.session.token['access_token']
+    jwt_token = auth.exchange_token_with_audience(iam_base_url,
+                                                  iam_client_id, iam_client_secret, access_token, vault_bound_audience)
+
+    vault_client = vaultservice.connect(jwt_token, vault_role)
+    path = "services_credential/" + serviceid
+    secret = vault_client.read_service_creds(path)
+
+    if secret:
+        secret = secret.get('data')
+
+    return render_template('modal_creds.html', mode="filled-form", service_creds=secret, service_type=servicetype)
+
+
+@vault_bp.route('/write_credentials', methods=['GET', 'POST'])
+@auth.authorized_with_valid_token
+def write_service_creds():
+    vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
+    vault_role = app.config.get("VAULT_ROLE")
+
+    serviceid = request.args.get('service_id', "")
+    servicetype = request.args.get('service_type', "")
+
+    app.logger.debug("service_id={}".format(serviceid))
+
+    if request.method == 'GET':
+        return render_template('modal_creds.html', mode="empty-form", service_creds=None, service_type=servicetype,
+                               service_id=serviceid)
+    else:
+
+        app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
+
+        creds = request.form.to_dict()
+
+        access_token = iam_blueprint.session.token['access_token']
+
+        jwt_token = auth.exchange_token_with_audience(iam_base_url,
+                                                  iam_client_id, iam_client_secret, access_token, vault_bound_audience)
+
+        vault_client = vaultservice.connect(jwt_token, vault_role)
+        path = "services_credential/" + serviceid
+        secret = vault_client.write_service_creds(path, creds)
+
+        flash("Credentials successfully written!", 'info')
+
+        return redirect(url_for('vault_bp.manage_service_creds'))
+
+
+@vault_bp.route('/delete_credentials')
+@auth.authorized_with_valid_token
+def delete_service_creds():
+    vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
+    vault_role = app.config.get("VAULT_ROLE")
+
+    serviceid = request.args.get('service_id', "")
+
+    access_token = iam_blueprint.session.token['access_token']
+
+    jwt_token = auth.exchange_token_with_audience(iam_base_url,
+                                                  iam_client_id, iam_client_secret, access_token, vault_bound_audience)
+
+    vault_client = vaultservice.connect(jwt_token, vault_role)
+    path = "services_credential/" + serviceid
+    vault_client.delete_service_creds(path)
+
+    flash("Credentials successfully deleted!", 'info')
+
+    return redirect(url_for('vault_bp.manage_service_creds'))
