@@ -153,7 +153,7 @@ def depinfradetails(depid=None, path=None):
 
     # app.logger.debug("Configuration: " + json.dumps(settings.orchestratorConf))
     dep = dbhelpers.get_deployment(depid)
-    if dep is not None and dep.physicalId is not None and dep.deployment_type == "CLOUD":
+    if dep is not None and dep.physicalId is not None:
         url = settings.orchestratorUrl + "/deployments/" + depid + "/extrainfo"
 
         response = requests.get(url, headers=headers)
@@ -166,7 +166,6 @@ def depinfradetails(depid=None, path=None):
 
         return render_template('depinfradetails.html', vmsdetails=details)
     return redirect(url_for('deployments_bp.showdeployments'))
-
 
 @deployments_bp.route('/<depid>/qcgdetails')
 @auth.authorized_with_valid_token

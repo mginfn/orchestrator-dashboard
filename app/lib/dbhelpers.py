@@ -49,6 +49,19 @@ def get_user_deployments(user_sub):
 def get_deployment(uuid):
     return Deployment.query.get(uuid)
 
+def getdeploymenttype(dep):
+    deptype = ''
+    if 'cloudProviderEndpoint' in dep:
+        endpoint = dep['cloudProviderEndpoint']
+        if 'deploymentType' in endpoint:
+            etype = endpoint['deploymentType']
+            if etype == 'OPENSTACK' or etype == "OPENNEBULA" or etype == "AWS" or etype == "OTC" or etype == "AZURE":
+                deptype = 'CLOUD'
+            else:
+                deptype = etype
+
+    return deptype
+
 
 def updatedeploymentsstatus(deployments, userid):
     result = {}
@@ -122,7 +135,7 @@ def updatedeploymentsstatus(deployments, userid):
                                     inputs='',
                                     stinputs='',
                                     params='',
-                                    deployment_type='',
+                                    deployment_type=getdeploymenttype(dep_json),
                                     provider_name=providername,
                                     endpoint=endpoint,
                                     remote=1,
