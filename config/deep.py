@@ -3,6 +3,7 @@ WELCOME_MESSAGE = "Welcome to the DEEP PaaS Dashboard!"
 NAVBAR_BRAND_TEXT = "DEEP Orchestrator Dashboard"
 NAVBAR_BRAND_ICON = "/home/static/images/deep/logo.png"
 FAVICON_PATH = "/home/static/images/deep/favicon_io"
+MAIL_BODY_IMAGE = "/home/static/images/deep/logo.png"
 
 ### Template Paths
 HOME_TEMPLATE = 'deep/home.html'
