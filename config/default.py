@@ -48,7 +48,7 @@ WELCOME_MESSAGE = "Welcome! This is the PaaS Orchestrator Dashboard"
 NAVBAR_BRAND_TEXT = "PaaS Orchestrator Dashboard"
 NAVBAR_BRAND_ICON = "/home/static/images/orchestrator-logo.png"
 FAVICON_PATH = "/home/static/images/favicon_io"
-MAIL_BODY_IMAGE = "/home/static/images/orchestrator-logo.png"
+MAIL_IMAGE_SRC = "https://raw.githubusercontent.com/maricaantonacci/orchestrator-dashboard/stateful/app/home/static/images/orchestrator-logo.png"
 
 ### Template Paths
 HOME_TEMPLATE = 'home.html'
