@@ -355,7 +355,7 @@ def remove_sla_from_template(template):
                     template['topology_template']['policies'].remove(policy)
                     break
         if len(template['topology_template']['policies']) == 0:
-            template['topology_template'].remove('policies')
+            del template['topology_template']['policies']
 
 
 def add_sla_to_template(template, sla_id):
