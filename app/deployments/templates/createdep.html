@@ -7,7 +7,7 @@
     {% include 'flashed_messages.html' %}
 
     <br>
-    {% if enable_vault_integration and ssh_pub_key is none  %}
+    {% if enable_vault_integration and template['metadata']['require_ssh_key'] and ssh_pub_key is none  %}
     <!-- Modal -->
         <div class="modal fade" id="sshPopupModal" tabindex="-1" role="dialog" aria-labelledby="sshPopupModalLabel" aria-hidden="true">
           <div class="modal-dialog" role="document">
