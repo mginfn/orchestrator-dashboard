@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+  <br>
+
+  <div class="card shadow mb-4">
+    <div class="card-header py-3">
+      <div class="row">
+        <div class="col-md-10">
+          <!-- Title -->
+          <h4 class="font-weight-bold text-primary">{{ deployment.uuid }}</h4>
+        </div>
+        <div class="col-md-2 text-right">
+          <!-- Button -->
+          <button type=button class="btn btn-small btn-outline-secondary" onclick="history.back()"><span class="fas fa-arrow-left mr-2"></span> Back</button>
+        </div>
+      </div> <!-- / .row -->
+    </div>
+
+    <div class="card-body">
+
+      <p><b>Description:</b> {{deployment.description}} </p>
+
+      <!-- start tabs creation section -->
+      <ul class="nav nav-tabs">
+        <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#DeploymentStatus">Overview</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#InputValues">Input values</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#OutputValues">Output values</a></li>
+      </ul>
+
+
+      <div class="tab-content">
+        <div class="tab-pane fade show active" id=DeploymentStatus>
+          <br>
+          <p><b>STATUS:</b> {{deployment.status}}</p>
+          {% if deployment.status_reason %}
+          <p><b>ERROR MSG:</b> {{deployment.status_reason}}</p>
+          {% endif %}
+          <p><b>CREATED AT:</b> {{deployment.creation_time}}</p>
+          <p><b>UPDATED AT:</b> {{deployment.update_time}}</p>
+          <p><b>DEPLOYED AT:</b> {{deployment.provider_name}}</p>
+	  {% if deployment.endpoint != '' %}
+          <p><b>ENDPOINT:</b> {{deployment.endpoint}}</p>
+	  {% endif %}
+
+          {% if deployment.status == 'CREATE_COMPLETE' %} <!-- Display these options only if the deployment is complete -->
+            {% if session['userid'] == deployment.sub %} <!-- Show encryption info only if the deployment belong to user (thus avoiding admin) -->
+              <!-- Vault integration  if -->
+              {% if 'storage_encryption' in inputs and inputs['storage_encryption'] == 'True' %}
+              <hr/>
+              <button type=button id="retrieveBtn" class="btn btn-small btn-outline-success" onclick="getVaultSecret( href='{{ url_for('vault_bp.read_secret', depid=deployment.uuid) }}' )">
+                <span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase
+              </button>
+              <!-- Modal Retrieve luks passphrase-->
+              <div class="modal fade" id="newModal">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="get_luks_passwd_label_{{deployment.uuid}}">LUKS passphrase</h5>
+                      <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                    <input id="luksPassphrase" class="form-control" type="password">
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                      <!--button type="button" class="btn btn-success" onclick="copyToClipboard()" data-dismiss="modal"><span class="fas fa-copy"></span> Copy to clipboard</button-->
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endif %} <!-- End encryption volume status if -->
+            {% endif %} <!-- end if user session -->
+          {% endif %} <!-- End instance status if -->
+        </div>
+        <div class="tab-pane fade" id="InputValues">
+          <br>
+	      {% for k,v in inputs.items() %}
+          <p><strong>{{k}}</strong>: {{v}}</p>
+          {% endfor %}
+        </div>
+        <div class="tab-pane fade" id="OutputValues">
+        {% include "output_values.html" %}		
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<script>
+  $('#luksPassphrase').password();
+</script>
+
+<script>
+function copyToClipboard() {
+  var copyText = document.getElementById("luksPassphrase");
+  copyText.select();
+  document.execCommand("copy");
+}
+</script>
+
+<script>
+$(document).ready(function () {
+    $("#retrieveBtn").click(function () {
+        // add spinner to button
+        $(this).html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...` );
+        return true;
+    });
+});
+</script>
+
+<script>
+
+async function getVaultSecret(url)
+{
+  let secret = "secret placeholder";
+
+  let  response = await fetch(url)
+  let result = await response;
+  secret = await response.text();
+
+  fillModal(secret);
+  stopSpinner();
+};
+
+function fillModal(secret)
+{
+    $(document).ready(function(){
+      $("#newModal").on('show.bs.modal', function () {
+        var modal = $(this)
+        modal.find('.modal-body input').val( secret );
+      });
+      $("#newModal").modal("show");
+    });
+}
+
+function stopSpinner()
+{
+  $("#retrieveBtn").html( `<span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase` );
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+    {% include 'flashed_messages.html' %}
+
+    <br>
+    {% if enable_vault_integration and template['metadata']['require_ssh_key'] and ssh_pub_key is none  %}
+    <!-- Modal -->
+        <div class="modal fade" id="sshPopupModal" tabindex="-1" role="dialog" aria-labelledby="sshPopupModalLabel" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="sshPopupModalLabel">No SSH public key provided</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+              <p>SSH keys allow you to establish a secure connection between your computer and your virtual machine. At least one public key has to be provided mandatorily.</p>
+              <hr>
+              <p>To create a new ssh key pair or upload your public key, please go <a href="{{ url_for("vault_bp.ssh_keys") }}">here</a></p>
+              <p>You can still provide a key in the dedicated field of the form.</p>
+              <p>For more information, please visit our <a href="https://laniakea.readthedocs.io/en/latest/user_documentation/ssh_keys/ssh_keys.html" target="_blank">documentation page</a>.</p>
+              </div>
+              <div class="modal-footer">
+                  <div class="d-flex flex-grow-1 justify-content-start custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="popupMaintenanceCheckbox" name="checkbox-maintenance"/>
+                      <label class="custom-control-label checkbox-maintenance" for="popupMaintenanceCheckbox">Don't show me again</label>
+                  </div>
+                  <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+    {% endif  %}
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h4 class="font-weight-bold text-primary">
+            {% if template['metadata']['display_name'] is defined %}{{template['metadata']['display_name']}}{% else %}{{selectedTemplate}}{% endif %}
+            </h4>
+        </div>
+
+        <div class="card-body">
+            <div class="alert alert-info">
+                <strong>Description:</strong> {{template['description']}}
+            </div>
+
+            <form id="depSubmit" action="{{ url_for('deployments_bp.createdep', template=selectedTemplate) }}" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="additional_description">Deployment description</label>
+                    <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="description" value="" maxlength="20" required>
+                </div>
+                {% include 'config_form.html' %}
+                <div id="myalert" class="alert alert-danger alert-dismissible fade show" style="display:none;" role="danger">
+                  <strong>Warning!</strong> You have not filled some mandatory fields. Please check the red boxes in each tab.
+                </div>
+                <button type="submit" class="btn btn-success submitBtn">Submit</button>
+                <button id="cancelBtn" type=button class="btn btn-small btn-primary" onclick="location.href='{{ url_for('home_bp.home') }}'">
+                <span class="fas fa-ban mr-2"></span>Cancel</button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<style>
+#manschedConf {
+  display: none;
+}
+</style>
+
+<script>
+$(document).ready(function() {
+    $('.js-example-basic-single').select2({
+      width: '100%' // https://github.com/select2/select2/issues/4220
+    });
+});
+</script>
+
+<script>
+
+$(document).ready(function () {
+    $("#loadToscaBtn").click(function () {
+        // add spinner to button
+        $(this).html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...` );
+    });
+});
+
+$(document).ready(function () {
+  $(".nav-link").click(function () {
+     checkForm()
+  });
+  $('input').on("input", function () {
+     checkForm()
+  });
+});
+
+function checkForm(){
+    var valid = true;
+    $('input').each(function(){
+       if (this.required && (this.value == '')){
+         this.style.borderColor = 'red';
+         valid = false;
+       }
+       else {
+         this.style.borderColor = '#ccc';
+       }
+    });
+    if (!valid){
+        document.getElementById('myalert').style.display = "block";
+    }
+    else {
+        document.getElementById('myalert').style.display = "none";
+    }
+    return valid;
+};
+
+$(document).ready(function () {
+    $("#depSubmit").submit(function () {
+        //disable button on click
+        $(".submitBtn").attr("disabled", true);
+        // add spinner to button
+        $(".submitBtn").html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...` );
+        //disable cancel too
+        $("#cancelBtn").attr("disabled", true);
+        $("#cancelBtn").attr("onclick", "#");
+        return true;
+
+    });
+});
+
+$(document).ready(function () {
+
+   function hideSelectSla() {
+    if ($("#mansched").is(":checked")){
+       $('#manschedConf').show();
+    }
+    else {
+	    $('#manschedConf').hide();
+    }
+   }
+
+  $("input[name='extra_opts.schedtype']").click(function() {
+      hideSelectSla();
+  });
+
+  hideSelectSla();
+});
+
+$(document).ready(function () {
+  $("input[name='extra_opts.providerTimeoutSet']").click(function() {
+    if ($("#providerTimeoutSet").is(":checked")){
+       $('#providerTimeout').prop("disabled",false);
+       $('#providerTimeout').prop("value", 5);
+    }
+    else {
+        $('#providerTimeout').prop("disabled",true);
+        $('#providerTimeout').prop("value", "");
+    }
+  });
+});
+
+</script>
+
+{% if enable_vault_integration and ssh_pub_key is none  %}
+<script type="text/javascript">
+    if (!localStorage.DoNotShowMessageAgain || localStorage.DoNotShowMessageAgain != "true") {
+    $(window).on('load',function(){
+        $('#sshPopupModal').modal('show');
+    });
+};
+
+$('#popupMaintenanceCheckbox').click(function(){
+    if ($('#popupMaintenanceCheckbox').attr('checked', true)) {
+        localStorage.DoNotShowMessageAgain = "true";
+    }
+});
+</script>
+
+
+{% endif  %}
+
+{% endblock %}
