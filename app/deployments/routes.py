@@ -117,12 +117,12 @@ def depoutput(depid=None):
 @deployments_bp.route('/<depid>/templatedb')
 def deptemplatedb(depid):
     if not iam_blueprint.session.authorized:
-        return redirect(url_for('login'))
+        return redirect(url_for('home_bp.login'))
 
     # retrieve deployment from DB
     dep = dbhelpers.get_deployment(depid)
     if dep is None:
-        return redirect(url_for('home'))
+        return redirect(url_for('home_bp.home'))
     else:
         template = dep.template
         return render_template('deptemplate.html', template=template)
