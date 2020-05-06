@@ -118,8 +118,8 @@
                         <div class="dropdown-menu">
                             {% if enable_vault_integration %}
                             <a class="dropdown-item" href="{{ url_for('vault_bp.ssh_keys') }}">SSH keys</a>
-                            {% endif %}
                             <a class="dropdown-item" href="{{ url_for("vault_bp.manage_service_creds") }}">Service Credentials</a>
+                            {% endif %}
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="{{ url_for("home_bp.logout") }}">Logout</a>
                         </div>
