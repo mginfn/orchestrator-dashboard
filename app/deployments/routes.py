@@ -117,12 +117,12 @@ def depoutput(depid=None):
 @deployments_bp.route('/<depid>/templatedb')
 def deptemplatedb(depid):
     if not iam_blueprint.session.authorized:
-        return redirect(url_for('login'))
+        return redirect(url_for('home_bp.login'))
 
     # retrieve deployment from DB
     dep = dbhelpers.get_deployment(depid)
     if dep is None:
-        return redirect(url_for('home'))
+        return redirect(url_for('home_bp.home'))
     else:
         template = dep.template
         return render_template('deptemplate.html', template=template)
@@ -229,7 +229,7 @@ def depupdate(depid=None):
 
             sla_id = tosca_helpers.getslapolicy(tosca_info)
             slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'],
-                                settings.orchestratorConf['cmdb_url'])
+                                settings.orchestratorConf['cmdb_url'], dep.deployment_type)
             ssh_pub_key = dbhelpers.get_ssh_pub_key(session['userid'])
 
 
@@ -312,7 +312,10 @@ def updatedep():
             dep.feedback_required = feedback_required
             dep.description = additionaldescription
             dep.template = template_text
-            dep.inputs = json.dumps(inputs),
+            #dep.inputs = json.dumps(inputs),
+            oldinputs = json.loads(dep.inputs.strip('\"')) if dep.inputs else {}
+            updatedinputs = {**oldinputs, **inputs}
+            dep.inputs = json.dumps(updatedinputs),
             dbhelpers.add_object(dep)
 
     return redirect(url_for('deployments_bp.showdeployments'))

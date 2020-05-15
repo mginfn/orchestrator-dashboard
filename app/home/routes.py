@@ -69,9 +69,8 @@ def home():
                 app.logger.debug("No match on group membership. User group membership: "
                                  + json.dumps(user_groups))
                 message = Markup(
-                    'You need to be a member of one (or more) of these IAM groups: {0}. <br>' +
-                    'Please, visit <a href="{1}">{1}</a> and apply for the requested membership.'.format(
-                        json.dumps(settings.iamGroups), settings.iamUrl))
+                    'You need to be a member of one (or more) of these IAM groups: {}. <br>'.format(json.dumps(settings.iamGroups)) +
+                    'Please, visit <a href="{}">{}</a> and apply for the requested membership.'.format(settings.iamUrl, settings.iamUrl))
                 raise Forbidden(description=message)
 
         session['userid'] = account_info_json['sub']
