@@ -425,6 +425,7 @@ def createdep():
                       v['source_range'] = json.loads(v.pop('source', None))
             except:
                 del inputs[key]
+                inputs[key] = { "ssh": { "protocol": "tcp", "source": 22 } }
 
 
     doprocess = True
