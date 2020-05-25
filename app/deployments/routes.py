@@ -413,12 +413,25 @@ def createdep():
 
     inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.")}
 
+    stinputs = source_template['inputs']
+
+    # Manage security groups
+    for key,value in stinputs.items():
+        if value["type"]=="map" and value["entry_schema"]["type"]=="tosca.datatypes.network.PortSpec":
+            try:
+                inputs[key] = json.loads(form_data[key])
+                for k,v in inputs[key].items():
+                    if ',' in v['source']:
+                      v['source_range'] = json.loads(v.pop('source', None))
+            except:
+                del inputs[key]
+
+
     doprocess = True
     swiftprocess = False
     containername = filename = None
 
     # process swift file upload if present
-    stinputs = source_template['inputs']
     swift_filename = next(filter(lambda x: (stinputs[x]['type'] if x in stinputs
                                             else None) == 'swift_upload', request.files), None)
     swift_token = next(filter(lambda x: (stinputs[x]['type'] if x in stinputs

@@ -116,6 +116,7 @@ function checkForm(){
     else {
         document.getElementById('myalert').style.display = "none";
     }
+
     return valid;
 };
 
@@ -128,10 +129,20 @@ $(document).ready(function () {
         //disable cancel too
         $("#cancelBtn").attr("disabled", true);
         $("#cancelBtn").attr("onclick", "#");
+
+        var data_json = $('#depSubmit').serializeJSON();
+        var sc = data_json.__sc;
+        console.log(JSON.stringify(sc));
+        var el = document.getElementById('secgroup');
+        el.value =  JSON.stringify(sc);
+
+        $( "#rule-container" ).remove();
+
         return true;
 
     });
 });
+
 
 $(document).ready(function () {
 

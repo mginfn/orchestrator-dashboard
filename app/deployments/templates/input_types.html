@@ -1,3 +1,4 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.serializeJSON/2.9.0/jquery.serializejson.min.js" integrity="sha256-A6ALIKGCsaO4m9Bg8qeVYZpvU575sGTBvtpzEFdL0z8=" crossorigin="anonymous"></script>
 {% if update == True and (value.updatable is not defined or value.updatable == False) %}
  {% set mode = "disabled" %}
 {% else %}
@@ -102,6 +103,13 @@
       <input type="text" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if ssh_pub_key is not none %}placeholder="{{value.placeholder}}"{% endif %} {% if ssh_pub_key is none %}required{% endif %} {{mode}} />
     <!-- end ssh special input type -->
 
+    <!-- Port field -->
+    {% elif value.type == "map" and value.entry_schema.type == "tosca.datatypes.network.PortSpec" %}
+      {% set security_groups_tag_name = key %}
+      {% include 'security_groups.html' %}
+      <!--input type="text" class="form-control" id="PORT" name="PORT" value="{{value.default}}" aria-describedby="help{{key}}" {{mode}} /-->
+    <!-- end Port field -->
+
     <!-- swift_upload special input field -->
     {% elif value.type == "swift_upload" %}
         <div class="custom-file">
@@ -146,3 +154,4 @@
 });
 
 </script>
+
