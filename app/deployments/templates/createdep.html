@@ -130,13 +130,28 @@ $(document).ready(function () {
         $("#cancelBtn").attr("disabled", true);
         $("#cancelBtn").attr("onclick", "#");
 
+        // Process complex types, like list and map
         var data_json = $('#depSubmit').serializeJSON();
-        var sc = data_json.__sc;
-        console.log(JSON.stringify(sc));
-        var el = document.getElementById('secgroup');
-        el.value =  JSON.stringify(sc);
+        var tmpElems = $("input[data-output-type='json']");
 
-        $( "#rule-container" ).remove();
+        for (j = 0; j < tmpElems.length; j++) {
+          let jname = tmpElems[j].name;
+
+          if ( data_json[jname + "_tmp"] == undefined)
+          {
+             document.getElementById('id-' + jname).disabled = true;
+
+          }
+          else
+          {
+            //console.log(data_json[jname + "_tmp"]);
+
+            var el = document.getElementById('id-' + jname);
+            el.value =  JSON.stringify(data_json[jname + "_tmp"]);
+            // remove the "auxiliary" container
+            document.getElementById(jname + '-container').remove();
+          }
+        }
 
         return true;
 

@@ -18,9 +18,17 @@
   {% if value.type is defined and (update == False or value.updatable is not defined or value.updatable == True)%}
 
     <!-- text type -->
-    {% if value.type == "text" %}
+    {% if value.type == "text" or value.type|lower == "string" %}
       <input type="text" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
     <!-- end select type -->
+
+    <!-- list text type -->
+    {% elif value.type == "list" and value.entry_schema.type|lower == "string" %}
+      <fieldset class="border p-2">
+        <!--legend class="w-auto">{{key}}</legend-->
+      {% include 'inputs/list.html' %}
+      </fieldset>
+    <!-- end list text type -->
 
     <!-- hidden text type -->
     {% elif value.type == "hidden" %}
@@ -105,9 +113,9 @@
 
     <!-- Port field -->
     {% elif value.type == "map" and value.entry_schema.type == "tosca.datatypes.network.PortSpec" %}
-      {% set security_groups_tag_name = key %}
-      {% include 'security_groups.html' %}
-      <!--input type="text" class="form-control" id="PORT" name="PORT" value="{{value.default}}" aria-describedby="help{{key}}" {{mode}} /-->
+      <fieldset class="border p-2">
+      {% include 'inputs/ports.html' %}
+      </fieldset>
     <!-- end Port field -->
 
     <!-- swift_upload special input field -->
@@ -154,4 +162,5 @@
 });
 
 </script>
+
 

@@ -418,15 +418,18 @@ def createdep():
     # Manage security groups
     for key,value in stinputs.items():
         if value["type"]=="map" and value["entry_schema"]["type"]=="tosca.datatypes.network.PortSpec":
-            try:
+            if key in inputs:
+                try:
+                    inputs[key] = json.loads(form_data[key])
+                    for k,v in inputs[key].items():
+                        if ',' in v['source']:
+                          v['source_range'] = json.loads(v.pop('source', None))
+                except:
+                    del inputs[key]
+                    inputs[key] = { "ssh": { "protocol": "tcp", "source": 22 } }
+        if value["type"]=="list":
+            if key in inputs:
                 inputs[key] = json.loads(form_data[key])
-                for k,v in inputs[key].items():
-                    if ',' in v['source']:
-                      v['source_range'] = json.loads(v.pop('source', None))
-            except:
-                del inputs[key]
-                inputs[key] = { "ssh": { "protocol": "tcp", "source": 22 } }
-
 
     doprocess = True
     swiftprocess = False
