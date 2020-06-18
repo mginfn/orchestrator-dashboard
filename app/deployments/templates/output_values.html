@@ -2,12 +2,28 @@
 {% for k,v in outputs.items() %}
 
 {% if "node_creds" in k or "cluster_creds" in k %}
-<p><strong>{{k}}.ssh_private_key</strong>:
-<div id="{{k}}-sshkey" class="d-none ssh-key">{{ v['token'] | replace("\\n", "\n") }}</div>
-<button class="btn btn-primary btn-sm" data-key="{{k}}" id="downloadBtn{{k}}" onclick="downloadSshKey(this)"><i class="fa fa-download"></i> Download</button>
-<button class="btn btn-success btn-sm" data-key="{{k}}" id="copyBtn{{k}}" onclick="copySshKey(this)"><i class="fa fa-copy"></i> Copy to clipboard</button>
+
+{% if v['token'] is  defined %}
+{% set v=[v] %}
+{% endif %}
+
+
+{% for creds in v %}
+<fieldset class="border p-1">
+{% if v|length == 1 %}
+<legend style="font-size: 1.0em;width:auto;padding:0 10px;"><strong>{{k}}</strong></legend>
+{% else %}
+<legend style="font-size: 1.0em;width:auto;padding:0 10px;"><strong>{{k}}[{{loop.index}}]</strong></legend>
+{% endif %}
+<p><strong>ssh_login</strong>: {{ creds['user'] }}</p>
+<p><strong>ssh_private_key</strong>:
+<div id="{{k}}_{{loop.index}}-sshkey" class="d-none ssh-key">{{ creds['token'] | replace("\\n", "\n") }}</div>
+<button class="btn btn-primary btn-sm" data-key="{{k}}_{{loop.index}}" id="downloadBtn{{k}}" onclick="downloadSshKey(this)"><i class="fa fa-download"></i> Download</button>
+<button class="btn btn-success btn-sm" data-key="{{k}}_{{loop.index}}" id="copyBtn{{k}}" onclick="copySshKey(this)"><i class="fa fa-copy"></i> Copy to clipboard</button>
 <p></p>
-<p><strong>{{k}}.ssh_login</strong>: {{ v['user'] }}</p>
+</fieldset>
+{% endfor %}
+<p></p>
 
 {% elif "endpoint" in k or "url" in k %}
 <p><strong>{{k}}</strong>: <a href="{{v}}" target="_blank">{{v}}</a></p>
@@ -40,11 +56,11 @@ function copySshKey(button){
 
   // Create a new textarea element and give it id='temp_element'
   var textarea = document.createElement('textarea');
-  textarea.id = 'temp_element';
+  textarea.id = button.getAttribute('data-key') + '_temp_element';
   textarea.style.height = 0;
   document.body.appendChild(textarea);
   textarea.value = text;
-  var selector = document.querySelector('#temp_element');
+  var selector = document.querySelector('#' + button.getAttribute('data-key') + '_temp_element');
   selector.select();
   document.execCommand('copy');
   // Remove the textarea
