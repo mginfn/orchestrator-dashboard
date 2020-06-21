@@ -427,6 +427,8 @@ def createdep():
                 except:
                     del inputs[key]
                     inputs[key] = { "ssh": { "protocol": "tcp", "source": 22 } }
+            else:
+                inputs[key] = { "ssh": { "protocol": "tcp", "source": 22 } }
         if value["type"]=="list":
             if key in inputs:
                 inputs[key] = json.loads(form_data[key])
