@@ -50,7 +50,7 @@
     {% elif value.type == "select" %}
       <select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}" {{mode}}>
       {% for constraint in value.constraints %}
-        <option value="{{constraint['value']}}">{{constraint['label']}}</option>
+        <option value="{{constraint['value']}}" {% if constraint['value']==value.default %}selected="selected"{% endif %}>{{constraint['label']}}</option>
       {% endfor %}
       </select>
     <!-- end select type -->
@@ -147,7 +147,7 @@
 	  {% if constraints %}
 	  <select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}" {{mode}}>
           {% for val in constraints[0] %}
-             <option value="{{val}}">{{val}}</option>
+             <option value="{{val}}" {% if val==value.default %}selected="selected"{% endif %}>{{val}}</option>
           {% endfor %}
       </select>
       {% else %}
