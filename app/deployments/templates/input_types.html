@@ -123,6 +123,11 @@
       </fieldset>
     <!-- end Port field -->
 
+    <!-- combined special input field -->
+    {% elif value.type == "combined" %}
+      {% include 'inputs/combined.html' %}
+    <!-- end combined special input field -->
+
     <!-- swift_upload special input field -->
     {% elif value.type == "swift_upload" %}
         <div class="custom-file">

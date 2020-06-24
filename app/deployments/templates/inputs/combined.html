@@ -1,0 +1,58 @@
+<select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}" data-action="removeOnSubmit" onchange="setfields(this)" required>
+    <option value="" disabled selected>--Select--</option>
+  {% for constraint in value.constraints %}
+    <option value="{{constraint['value']}}" data-values="{{constraint['set']}}">{{constraint['label']}}</option>
+  {% endfor %}
+</select>
+
+
+
+
+<script>
+
+function setfields(elem){
+
+   var values = $(elem).find('option:selected').data('values').replace(/'/g, '"');;
+   console.log(values);
+
+   var obj = JSON.parse(values);
+
+   Object.keys(obj).forEach(function(key) {
+     $("#" + key).val(obj[key]);
+
+   })
+
+}
+
+/*
+$(document).ready(function () {
+
+    $(".js-example-basic-single").each(function(i, el) {
+        var elem = $(el);
+        if( elem.data('parentId') ){
+          var parentid = "#" + elem.data('parentId');
+          $(parentid).data('childId', elem.attr("id"));
+          filter($(parentid));
+          $(parentid).on("change", function(event) {
+                filter(this);
+            } );
+        }
+    });
+});
+
+function filter(parent){
+
+  var childid = "#" + $(parent).data('childId');
+  var optionContainerId = "#option-container-" + $(parent).data('childId');
+
+  var parentvalue = $(parent).find('option:selected').text(); // stores parent value
+
+  $(optionContainerId).children().appendTo(childid); // moves <option> contained in #option-container back to their <select>
+  var toMove = $(childid).find("option:not([data-parent-value='"+ parentvalue + "'])"); // selects elements to move out
+  toMove.appendTo(optionContainerId); // moves elements in #option-container
+  //$(childid).removeAttr("disabled"); // enables select
+}
+*/
+
+</script>
+
