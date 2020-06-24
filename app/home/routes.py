@@ -188,6 +188,26 @@ def callback():
     return resp
 
 
+@home_bp.route('/contact', methods=['POST'])
+def contact():
+    app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
+
+    form_data = request.form.to_dict()
+
+    try:
+        message = Markup("Name: {}<br>Email: {}<br>Message: {}".format(form_data['name'], form_data['email'], form_data['message']))
+        send_email("New contact",
+                   sender=app.config.get('MAIL_SENDER'),
+                   recipients=[app.config.get('SUPPORT_EMAIL')],
+                   html_body=message)
+
+    except Exception as error:
+        utils.logexception("sending email:".format(error))
+        return Markup("<div class='alert alert-danger' role='alert'>Oops, error sending message.</div>")
+
+    return Markup("<div class='alert alert-success' role='alert'>Your message has been sent, Thank you!</div>")
+
+
 def create_and_send_email(subject, sender, recipients, uuid, status):
     send_email(subject,
                sender=sender,
