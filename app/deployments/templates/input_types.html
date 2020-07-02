@@ -20,7 +20,12 @@
     <!-- text type -->
     {% if value.type == "text" %}
       <input type="text" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
-    <!-- end select type -->
+    <!-- end text type -->
+
+    <!-- number type -->
+    {% elif value.type == "integer" %}
+      <input type="number" min="0" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
+    <!-- end number type -->
 
     <!-- list text type -->
     {% elif value.type == "list" and value.entry_schema.type|lower == "string" %}
@@ -116,6 +121,13 @@
       <input type="text" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if ssh_pub_key is not none %}placeholder="{{value.placeholder}}"{% endif %} {% if ssh_pub_key is none %}required{% endif %} {{mode}} />
     <!-- end ssh special input type -->
 
+    <!-- List of map of strings -->
+    {% elif value.type == "map" and value.entry_schema.type == "string" %}
+      <fieldset class="border p-2">
+      {% include 'inputs/map_string.html' %}
+      </fieldset>
+    <!-- end Port field -->
+
     <!-- Port field -->
     {% elif value.type == "map" and value.entry_schema.type == "tosca.datatypes.network.PortSpec" %}
       <fieldset class="border p-2">
@@ -127,6 +139,11 @@
     {% elif value.type == "combined" %}
       {% include 'inputs/combined.html' %}
     <!-- end combined special input field -->
+
+    <!-- dependent_definition special input field -->
+    {% elif value.type == "dependent_definition" %}
+      {% include 'inputs/dependent_definition.html' %}
+    <!-- end dependent_definition special input field -->
 
     <!-- swift_upload special input field -->
     {% elif value.type == "swift_upload" %}

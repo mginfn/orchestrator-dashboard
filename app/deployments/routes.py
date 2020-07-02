@@ -385,6 +385,7 @@ def createdep():
 
     app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
 
+
     with io.open(os.path.join(settings.toscaDir, selected_template)) as stream:
         template = yaml.full_load(stream)
         # rewind file
@@ -415,8 +416,9 @@ def createdep():
 
     stinputs = source_template['inputs']
 
-    # Manage security groups
+
     for key,value in stinputs.items():
+        # Manage security groups
         if value["type"]=="map" and value["entry_schema"]["type"]=="tosca.datatypes.network.PortSpec":
             if key in inputs:
                 try:
@@ -429,9 +431,22 @@ def createdep():
                     inputs[key] = { "ssh": { "protocol": "tcp", "source": 22 } }
             else:
                 inputs[key] = { "ssh": { "protocol": "tcp", "source": 22 } }
+        # Manage map of string
+        if value["type"]=="map" and value["entry_schema"]["type"]=="string":
+            if key in inputs:
+                try:
+                    inputs[key] = {}
+                    map = json.loads(form_data[key])
+                    for k,v in map.items():
+                        inputs[key][v['key']] = v['value']
+                except:
+                    del inputs[key]
+                    inputs[key] = { }
+        # Manage list
         if value["type"]=="list":
             if key in inputs:
                 inputs[key] = json.loads(form_data[key])
+
 
     doprocess = True
     swiftprocess = False
