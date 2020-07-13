@@ -1,3 +1,5 @@
+import copy
+
 from flask import Blueprint, session, render_template, flash, redirect, url_for, json, request
 from app import app, iam_blueprint, tosca, vaultservice
 from app.lib import auth, utils, settings, dbhelpers
@@ -12,6 +14,7 @@ import requests
 import yaml
 import io
 import os
+import re
 
 
 deployments_bp = Blueprint('deployments_bp', __name__,
@@ -414,8 +417,11 @@ def createdep():
 
     inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.")}
 
-    stinputs = source_template['inputs']
+    stinputs = copy.deepcopy(source_template['inputs'])
 
+    swift = None
+    swift_filename = []
+    swift_map = {}
 
     for key,value in stinputs.items():
         # Manage security groups
@@ -441,51 +447,77 @@ def createdep():
                         inputs[key][v['key']] = v['value']
                 except:
                     del inputs[key]
-                    inputs[key] = { }
         # Manage list
         if value["type"]=="list":
             if key in inputs:
-                inputs[key] = json.loads(form_data[key])
+                try:
+                    json_data = json.loads(form_data[key])
+                    if value["entry_schema"]["type"]=="map" and value["entry_schema"]["entry_schema"]["type"]=="string":
+                        array = []
+                        for el in json_data:
+                            array.append({el['key']: el['value']})
+                        inputs[key] = array
+                    else:
+                        inputs[key] = json_data
+                except:
+                    del inputs[key]
+
+        # Manage special type 'dependent_definition'
+        if value["type"] == "dependent_definition":
+            # retrieve the real type from dedicated field
+            value["type"] = inputs[key + "-type"]
+            del inputs[key + "-type"]
+
+        # Manage Swift-related fields
+        if value["type"] == "swift_autouuid":
+            if key in inputs:
+                swift_uuid = inputs[key] = str(uuid_generator.uuid1())
+
+        if value["type"] == "hidden":
+                try:
+                    if re.match(r"^swift_[avuktc]$", value["default"]):
+                        if key in inputs:
+                            swift_map[value["default"]] = key
+                except:
+                    pass
+
+
+        if value["type"] == "swift_token":
+            if key in inputs:
+                swift = Swift(token=inputs[key])
+                del inputs[key]
+
+        if value["type"] == "swift_upload":
+            if key in request.files:
+                swift_filename.append(key)
+
+    if swift and swift_map:
+        for k, v in swift_map.items():
+            val = swift.mapvalue(k)
+            if val is not None:
+                inputs[v] = val
 
 
     doprocess = True
     swiftprocess = False
     containername = filename = None
 
-    # process swift file upload if present
-    swift_filename = next(filter(lambda x: (stinputs[x]['type'] if x in stinputs
-                                            else None) == 'swift_upload', request.files), None)
-    swift_token = next(filter(lambda x: (stinputs[x]['type'] if x in stinputs
-                                         else None) == 'swift_token', inputs), None)
-    swift = None
+    if swift_filename:
 
-    if swift_filename and swift_token:
+      for f in swift_filename:
 
-        swift_autouuid = next(filter(lambda x: (stinputs[x]['type'] if x in stinputs
-                                                else None) == 'swift_autouuid', inputs), None)
-        swift_uuid = None
-        if swift_autouuid:
-            swift_uuid = inputs[swift_autouuid] = str(uuid_generator.uuid1())
-
-        swift = Swift(token=inputs[swift_token])
-        for k, v in inputs.items():
-            v = swift.mapvalue(v)
-            if v is not None:
-                inputs[k] = v
-
-        file = request.files[swift_filename]
+        file = request.files[f]
         if file:
             upload_folder = app.config['UPLOAD_FOLDER']
-            if swift_uuid is not None:
-                upload_folder = os.path.join(upload_folder, swift_uuid)
+            upload_folder = os.path.join(upload_folder, swift_uuid)
             filename = secure_filename(file.filename)
             fullfilename = os.path.join(upload_folder, filename)
             if not os.path.exists(upload_folder):
                 os.makedirs(upload_folder)
             file.save(fullfilename)
 
-            if swift_filename not in inputs:
-                inputs[swift_filename] = file.filename
+            if f not in inputs:
+                inputs[f] = file.filename
 
             containername = basecontainername = swift.basecontainername
             containers = swift.getownedcontainers()
@@ -493,8 +525,8 @@ def createdep():
             if basecontainer is None:
                 swift.createcontainer(basecontainername)
 
-            if swift_uuid is not None:
-                containername = basecontainername + "/" + swift_uuid
+
+            containername = basecontainername + "/" + swift_uuid
 
             with open(fullfilename, 'rb') as f:
                 calchash = swift.md5hash(f)
