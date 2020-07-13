@@ -97,12 +97,13 @@ $(document).ready(function () {
   $('input').on("input", function () {
      checkForm()
   });
+
 });
 
 function checkForm(){
     var valid = true;
     $('input').each(function(){
-       if (this.required && (this.value == '')){
+       if ( (this.disabled == false) && this.required && (this.value == '')){
          this.style.borderColor = 'red';
          valid = false;
        }
