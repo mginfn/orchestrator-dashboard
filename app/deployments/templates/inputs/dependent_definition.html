@@ -1,4 +1,7 @@
-<div class="dependent_definition" id="{{key}}" data-input-name="{{key}}" data-parent-id="{{value.parent}}" data-input-ref="{{value.constraints}}"></div>
+<div class="dependent_definition" id="{{key}}" data-input-name="{{key}}" data-parent-id="{{value.parent}}" data-input-ref="{{value.constraints}}">
+    <input type="hidden" id="{{key}}-type" name="{{key}}-type" value="">
+</div>
+
 
 
 
@@ -11,7 +14,7 @@ $(document).ready(function () {
         var elem = $(el);
 
         // hide this auxiliary input
-        var div = elem.closest('div[class^="form-group"]');
+        var div = $("#form-group-{{key}}");
         div.hide();
 
         // link this element to the parent
@@ -32,54 +35,34 @@ function prepareInput(parent){
   var data = $(childid).data('inputRef').replace(/'/g, '"');
   var obj = JSON.parse(data);
 
-  var parentvalue = $(parent).find('option:selected').text(); // store parent value
+
+  var parentvalue = $(parent).find('option:selected').val(); // store parent value
+  var iname = $(parent).attr('data-child-id');
 
   obj.forEach(function(element) {
 
       var input = $('#' + element['ref']);
-      var div = input.closest('div[class^="form-group"]');
-      var label = div.find('label');
+      var div = $("#form-group-" + element['ref']);
+      //var label = $('label[for^=' + element['ref'] + ']').filter(':not(.custom-file-label)');
 
       div.hide();
       div.find('input').prop("disabled", true);
       div.find('select').prop("disabled", true);
 
       if(element['parent_value'] == parentvalue){
-         input.attr('name', $(parent).attr('data-child-id'));
-         label.text($(parent).attr('data-child-id'));
+         input.attr('name', iname);
+         //label.text(iname);
          div.show();
          div.find('input').prop("disabled", false);
          div.find('select').prop("disabled", false);
+
+         //set type name
+         $('#' + iname + "-type").val(input.attr('data-type'));
       }
 
   });
 
-/*
-  var optionContainerId = "#option-container-" + $(parent).data('childId');
-
-  var parentvalue = $(parent).find('option:selected').text(); // stores parent value
-
-  $(optionContainerId).children().appendTo(childid); // moves <option> contained in #option-container back to their <select>
-  var toMove = $(childid).find("option:not([data-parent-value='"+ parentvalue + "'])"); // selects elements to move out
-  toMove.appendTo(optionContainerId); // moves elements in #option-container
-  //$(childid).removeAttr("disabled"); // enables select
-
-*/
 }
-
-/*
-function setfields(elem){
-
-   var values = $(elem).find('option:selected').data('values').replace(/'/g, '"');;
-   var obj = JSON.parse(values);
-
-   Object.keys(obj).forEach(function(key) {
-     $("#" + key).val(obj[key]);
-
-   })
-
-}
-*/
 
 </script>
 
