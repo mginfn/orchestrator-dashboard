@@ -48,7 +48,14 @@
             <div class="alert alert-info">
                 <strong>Description:</strong> {{template['description']}}
             </div>
-
+            {% if template['metadata']['disclaimer'] is defined %}
+            <div class="alert alert-danger">
+                    <span>
+                        <i class="fas fa-exclamation-circle"><strong> Please read carefully:</strong></i><br><br>
+                        {{template['metadata']['disclaimer']}}
+                    </span>
+            </div>
+            {% endif %}
             <form id="depSubmit" action="{{ url_for('deployments_bp.createdep', template=selectedTemplate) }}" method="post" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="additional_description">Deployment description</label>
