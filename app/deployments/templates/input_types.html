@@ -22,10 +22,12 @@
       <input type="text" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
     <!-- end text type -->
 
-    <!-- number type -->
+    <!-- number types -->
     {% elif value.type == "integer" %}
       <input type="number" min="0" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
-    <!-- end number type -->
+    {% elif value.type == "float" %}
+      <input type="number" step="any" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
+    <!-- end number types -->
 
     <!-- list text type -->
     {% elif value.type == "list" and value.entry_schema.type|lower == "string" %}
