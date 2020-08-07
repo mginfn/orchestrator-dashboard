@@ -1,14 +1,10 @@
-<div class="dependent_definition" id="{{key}}" data-input-name="{{key}}" data-parent-id="{{value.parent}}" data-input-ref="{{value.constraints}}">
+<div class="dependent_definition" id="{{key}}" data-input-name="{{key}}" data-child-id="[]" data-parent-id="{{value.parent}}" data-input-ref="{{value.constraints}}">
     <input type="hidden" id="{{key}}-type" name="{{key}}-type" value="">
 </div>
 
 
-
-
 <script>
-
-
-$(document).ready(function () {
+ $(function () {
 
     $(".dependent_definition").each(function(i, el) {
         var elem = $(el);
@@ -20,7 +16,10 @@ $(document).ready(function () {
         // link this element to the parent
         if( elem.data('parentId') ){
           var parentid = "#" + elem.data('parentId');
-          $(parentid).attr('data-child-id', elem.attr("id"));
+
+          //console.log("parent: " + parentid)
+          //console.log($(parentid).attr('data-children-id'))
+
           prepareInput($(parentid));
           $(parentid).on("change", function(event) {
                 prepareInput(this);
@@ -31,19 +30,26 @@ $(document).ready(function () {
 
 function prepareInput(parent){
 
-  var childid = "#" + $(parent).attr('data-child-id');
-  var data = $(childid).data('inputRef').replace(/'/g, '"');
-  var obj = JSON.parse(data);
+  var childid = JSON.parse($(parent).data('childrenId').replace(/'/g, '"'));
+  nchildren = childid.length;
+
+  //console.log("childid: " + childid);
+
+  for (i = 0; i < nchildren; i++ ){
+
+    //console.log("childid[i]: " + childid[i]);
+
+    var data = $("#" + childid[i]).data('inputRef').replace(/'/g, '"');
+    var obj = JSON.parse(data);
 
 
-  var parentvalue = $(parent).find('option:selected').val(); // store parent value
-  var iname = $(parent).attr('data-child-id');
+    var parentvalue = $(parent).find('option:selected').val(); // store parent value
+    var iname = childid[i];
 
-  obj.forEach(function(element) {
+    obj.forEach(function(element) {
 
       var input = $('#' + element['ref']);
       var div = $("#form-group-" + element['ref']);
-      //var label = $('label[for^=' + element['ref'] + ']').filter(':not(.custom-file-label)');
 
       div.hide();
       div.find('input').prop("disabled", true);
@@ -51,7 +57,6 @@ function prepareInput(parent){
 
       if(element['parent_value'] == parentvalue){
          input.attr('name', iname);
-         //label.text(iname);
          div.show();
          div.find('input').prop("disabled", false);
          div.find('select').prop("disabled", false);
@@ -60,9 +65,9 @@ function prepareInput(parent){
          $('#' + iname + "-type").val(input.attr('data-type'));
       }
 
-  });
+     });
+  }
 
 }
-
 </script>
 
