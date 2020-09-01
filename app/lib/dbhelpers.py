@@ -125,6 +125,7 @@ def updatedeploymentsstatus(deployments, userid):
                                     description='',
                                     status=dep_json['status'],
                                     outputs=json.dumps(dep_json['outputs']),
+                                    stoutputs='',
                                     task=dep_json['task'],
                                     links=json.dumps(dep_json['links']),
                                     sub=userid,
@@ -189,6 +190,9 @@ def cvdeployment(d):
                             outputs=json.loads(d.outputs.replace("\n",
                                                                  "\\n")) if (d.outputs is not None
                                                                              and d.outputs is not '') else '',
+                            stoutputs=json.loads(
+                                d.stoutputs.replace("\n", "\\n")) if (
+                                        d.stoutputs is not None and d.stoutputs is not '') else '',
                             task=d.task,
                             links=json.loads(
                                 d.links.replace("\n", "\\n")) if (d.links is not None and d.links is not '') else '',

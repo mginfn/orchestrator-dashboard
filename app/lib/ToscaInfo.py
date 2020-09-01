@@ -72,10 +72,12 @@ class ToscaInfo(object):
             "metadata": {
                 "icon": "https://cdn4.iconfinder.com/data/icons/mosaicon-04/512/websettings-512.png",
                         "allowed_groups": '*',
-                        "require_ssh_key": False
+                        "require_ssh_key": False,
+                        "template_type": ""
             },
             "enable_config_form": False,
             "inputs": {},
+            "outputs": {},
             "node_templates": {},
             "policies": {},
             "tabs": {},
@@ -113,12 +115,16 @@ class ToscaInfo(object):
                                         for k, v in metadata_template['metadata'].items():
                                             tosca_info["metadata"][k] = v
 
-            # initialize inputs
+            # initialize inputs/outputs
             tosca_inputs = {}
-            # get inputs from template, if provided
+            tosca_outputs = {}
+            # get inputs/outputs from template, if provided
             if 'inputs' in template['topology_template']:
                 tosca_inputs = template['topology_template']['inputs']
                 tosca_info['inputs'] = tosca_inputs
+            if 'outputs' in template['topology_template']:
+                tosca_outputs = template['topology_template']['outputs']
+                tosca_info['outputs'] = tosca_outputs
 
             if 'node_templates' in template['topology_template']:
                 tosca_info['deployment_type'] = getdeploymenttype(template['topology_template']['node_templates'])
@@ -142,6 +148,9 @@ class ToscaInfo(object):
                                     pars_data = yaml.full_load(io.StringIO(tosca_info['parameters_file']))
                                     pars_inputs = pars_data["inputs"]
                                     tosca_info['inputs'] = {**tosca_inputs, **pars_inputs}
+                                    if "outputs" in pars_data:
+                                        pars_outputs = pars_data["outputs"]
+                                        tosca_info['outputs'] = {**tosca_outputs, **pars_outputs}
                                     if "tabs" in pars_data:
                                         tosca_info['tabs'] = pars_data["tabs"]
 

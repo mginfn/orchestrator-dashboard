@@ -1,7 +1,26 @@
 <br>
+
 {% for k,v in outputs.items() %}
 
-{% if "node_creds" in k or "cluster_creds" in k %}
+{% set output_type='' %}
+
+{% if stoutputs[k] %}
+{% if stoutputs[k]['type'] %} {% set output_type = stoutputs[k]['type'] %} {% endif %}
+{% endif %}
+
+
+{% if output_type == 'kubeconfig' or 'kubeconfig' in k %}
+
+<p><strong>{{k}}</strong>:
+<div id="{{k}}-creds" class="d-none">{{ v | replace("\\n", "\n") }}</div>
+<button class="btn btn-primary btn-sm" data-key="{{k}}" id="downloadBtn{{k}}" onclick="downloadCreds(this)"><i class="fa fa-download"></i> Download</button>
+<button class="btn btn-success btn-sm" data-key="{{k}}" id="copyBtn{{k}}" onclick="copyCreds(this)"><i class="fa fa-copy"></i> Copy to clipboard</button>
+<p></p>
+
+
+
+{% elif "node_creds" in k or "cluster_creds" in k %}
+
 
 {% if v['token'] is  defined %}
 {% set v=[v] %}
@@ -17,9 +36,9 @@
 {% endif %}
 <p><strong>ssh_login</strong>: {{ creds['user'] }}</p>
 <p><strong>ssh_private_key</strong>:
-<div id="{{k}}_{{loop.index}}-sshkey" class="d-none ssh-key">{{ creds['token'] | replace("\\n", "\n") }}</div>
-<button class="btn btn-primary btn-sm" data-key="{{k}}_{{loop.index}}" id="downloadBtn{{k}}" onclick="downloadSshKey(this)"><i class="fa fa-download"></i> Download</button>
-<button class="btn btn-success btn-sm" data-key="{{k}}_{{loop.index}}" id="copyBtn{{k}}" onclick="copySshKey(this)"><i class="fa fa-copy"></i> Copy to clipboard</button>
+<div id="{{k}}_{{loop.index}}-creds" class="d-none ssh-key">{{ creds['token'] | replace("\\n", "\n") }}</div>
+<button class="btn btn-primary btn-sm" data-key="{{k}}_{{loop.index}}" id="downloadBtn{{k}}" onclick="downloadCreds(this, 'id_rsa_')"><i class="fa fa-download"></i> Download</button>
+<button class="btn btn-success btn-sm" data-key="{{k}}_{{loop.index}}" id="copyBtn{{k}}" onclick="copyCreds(this)"><i class="fa fa-copy"></i> Copy to clipboard</button>
 <p></p>
 </fieldset>
 {% endfor %}
@@ -28,10 +47,12 @@
 {% elif "endpoint" in k or "url" in k %}
 <p><strong>{{k}}</strong>: <a href="{{v}}" target="_blank">{{v}}</a></p>
 
+
 {% else %}
 <p><strong>{{k}}</strong>: {{v}}</p>
 {% endif %}
 
+{% endfor %}
 
 <script>
 
@@ -49,9 +70,9 @@ function download(filename, text) {
 }
 
 
-function copySshKey(button){
+function copyCreds(button){
   // build text area id from data-key attribute value
-  var keyid = "#" + button.getAttribute('data-key') + "-sshkey";
+  var keyid = "#" + button.getAttribute('data-key') + "-creds";
   var text = $(button).parent().find(keyid)[0].innerHTML;
 
   // Create a new textarea element and give it id='temp_element'
@@ -68,16 +89,15 @@ function copySshKey(button){
 
 }
 
-function downloadSshKey(button){
+function downloadCreds(button, prefix=""){
   // build text area id from data-key attribute value
-  var keyid = "#" + button.getAttribute('data-key') + "-sshkey";
+  var keyid = "#" + button.getAttribute('data-key') + "-creds";
   var text = $(button).parent().find(keyid)[0].innerHTML;
 
-  var filename = "id_rsa_" + button.getAttribute('data-key');
+  var filename = prefix + button.getAttribute('data-key');
 
   download(filename, text);
 }
 
 </script>
 
-{% endfor %}

@@ -107,15 +107,69 @@ def depoutput(depid=None):
         i = json.loads(dep.inputs.strip('\"')) if dep.inputs else {}
         stinputs = json.loads(dep.stinputs.strip('\"')) if dep.stinputs else {}
         outputs = json.loads(dep.outputs.strip('\"')) if dep.outputs else {}
+        stoutputs = json.loads(dep.stoutputs.strip('\"')) if dep.stoutputs else {}
         inputs = {}
         for k, v in i.items():
             if ((stinputs[k]['printable'] if 'printable' in stinputs[k] else True) if k in stinputs else True):
                 inputs[k] = v
+
+
+        additional_outputs = getadditionaloutputs(dep, iam_blueprint.session.token['access_token'])
+
+        outputs = {**outputs, **additional_outputs}
+
         return render_template('depoutput.html',
                                deployment=dep,
                                inputs=inputs,
-                               outputs=outputs)
+                               outputs=outputs,
+                               stoutputs=stoutputs)
 
+def getadditionaloutputs(dep, access_token):
+    uuid = dep.uuid
+    status = dep.status
+    template_type = dep.template_type
+    additional_outputs = json.loads(dep.additional_outputs.strip('\"')) if dep.additional_outputs else {}
+
+    update = False
+    if status == "CREATE_COMPLETE" and additional_outputs == {} and template_type == 'kubernetes':
+        # try to get kubeconfig file from log
+        try:
+            kubeconfig = extract_info_from_deplog(access_token, uuid, 'kubeconfig')
+            additional_outputs = { "kubeconfig": kubeconfig }
+            update = True
+        except:
+            app.logger.debug("Error while extracting kubeconfig file from log for deployment {}".format(dep.uuid))
+
+    if update:
+        dep.additional_outputs = json.dumps(additional_outputs)
+        dbhelpers.add_object(dep)
+
+    return additional_outputs
+
+
+
+def extract_info_from_deplog(access_token, uuid, info_type):
+    print("extract_info_from_deplog")
+    headers = {'Authorization': 'bearer %s' % access_token}
+
+    url = settings.orchestratorUrl + "/deployments/" + uuid + "/log"
+    response = requests.get(url, headers=headers)
+
+    info = ""
+
+    if response.ok:
+        log = response.text
+        lines = log.split('\n\n')
+
+        if info_type == "kubeconfig":
+
+            match = None
+            for line in lines:
+                match = re.search('^.*KUBECONFIG file.*\n.*\n.*\n.*\n.*\n.*\"(apiVersion.*)\"\n.*\n.*$', line)
+                if match is not None:
+                    info = match.group(1)
+
+    return info
 
 @deployments_bp.route('/<depid>/templatedb')
 def deptemplatedb(depid):
@@ -229,6 +283,9 @@ def depupdate(depid=None):
                 if k in inputs:
                     if 'default' in tosca_info['inputs'][k]:
                         tosca_info['inputs'][k]['default'] = inputs[k]
+
+            stoutputs = json.loads(dep.stoutputs.strip('\"')) if dep.stoutputs else {}
+            tosca_info['outputs'] = {**tosca_info['outputs'], **stoutputs}
 
             sla_id = tosca_helpers.getslapolicy(tosca_info)
             slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'],
@@ -587,6 +644,7 @@ def createdep():
                                         description=additionaldescription,
                                         status=rs_json['status'],
                                         outputs=json.dumps(rs_json['outputs']),
+                                        stoutputs=json.dumps(source_template['outputs']),
                                         task=rs_json['task'],
                                         links=json.dumps(rs_json['links']),
                                         sub=rs_json['createdBy']['subject'],
@@ -598,6 +656,7 @@ def createdep():
                                         stinputs=json.dumps(stinputs),
                                         params=json.dumps(params),
                                         deployment_type=source_template['deployment_type'],
+                                        template_type=source_template['metadata']['template_type'],
                                         provider_name=providername,
                                         endpoint='',
                                         feedback_required=feedback_required,
