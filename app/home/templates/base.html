@@ -92,7 +92,7 @@
                 <ul class="navbar-nav mr-auto">
                     {% if session['username'] %}
                     <li class="nav-item active"><a class="nav-link" href="{{ url_for("deployments_bp.showdeployments") }}">Deployments</a></li>
-                    {% if enable_advanced_menu == "yes" %}
+                    {% if enable_advanced_menu == "yes" or  session['userrole'] == 'admin' %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Advanced</a>
                         <div class="dropdown-menu">

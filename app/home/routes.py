@@ -69,8 +69,8 @@ def home():
                 app.logger.debug("No match on group membership. User group membership: "
                                  + json.dumps(user_groups))
                 message = Markup(
-                    'You need to be a member of one (or more) of these IAM groups: {}. <br>'.format(json.dumps(settings.iamGroups)) +
-                    'Please, visit <a href="{}">{}</a> and apply for the requested membership.'.format(settings.iamUrl, settings.iamUrl))
+                    'Your identity has been verified successfully, but you are not authorized to access the services.<br>' +
+                    'Please, contact the administrators ({}) in order to get proper permissions'.format(app.config.get('SUPPORT_EMAIL')))
                 raise Forbidden(description=message)
 
         session['userid'] = account_info_json['sub']

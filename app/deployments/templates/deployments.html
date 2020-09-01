@@ -102,7 +102,7 @@
                   {% else %}
                     <a class="dropdown-item" href="{{ url_for('deployments_bp.unlockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock-open mr-2"></span>Unlock</a>
                   {% endif %}
-                  {% if deployment.deployment_type == "CLOUD" %}
+                  {% if deployment.deployment_type == "CLOUD" and session['userrole'] == 'admin' %}
                       <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.depinfradetails', depid=deployment.uuid) }}">
                           <span class="fas fa-bars mr-2 grey-text"></span>VM details</a>
                   {% endif %}
