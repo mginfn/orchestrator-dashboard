@@ -88,7 +88,7 @@ def updatedeploymentsstatus(deployments, userid):
 
         if dep is not None:
             if dep.status != dep_json['status'] or dep.provider_name != providername \
-                    or dep.status_reason != status_reason:
+                    or str(dep.status_reason or '') != status_reason:
                 dep.update_time = dep_json['updateTime']
                 dep.physicalId = vphid
                 dep.status = dep_json['status']
