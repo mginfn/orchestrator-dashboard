@@ -66,6 +66,22 @@ class VaultClient:
 
         self.client.secrets.kv.v1.delete_secret(path=vault_secret_path, mount_point="secret")
 
+    def v1_read_secret(self, path):
+
+        vault_secret_path = "data/" + self.vault_entity_id + "/" + path
+
+        try:
+            secret = self.client.secrets.kv.v1.read_secret(path=vault_secret_path, mount_point="secret")
+        except hvac.exceptions.InvalidPath as e:
+            secret = None
+        return secret
+
+    def v1_write_secret(self, path, secret):
+
+        vault_secret_path = "data/" + self.vault_entity_id + "/" + path
+
+        self.client.secrets.kv.v1.create_or_update_secret(path=vault_secret_path, mount_point="secret", secret=secret)
+
     def get_wrapping_token(self, wrap_ttl, policy, ttl, period):
         """
         Get Vault wrapping token with specific policy
