@@ -3,12 +3,16 @@ import copy
 from flask import Blueprint, session, render_template, flash, redirect, url_for, json, request
 from app import app, iam_blueprint, tosca, vaultservice
 from app.lib import auth, utils, settings, dbhelpers
+from app.lib.ldap_user import LdapUserManager
 from app.models.Deployment import Deployment
 from app.providers import sla
 from app.lib import ToscaInfo as tosca_helpers
+from app.lib import openstack_ec2credentials as keystone
+from app.lib import s3 as s3
 from werkzeug.utils import secure_filename
 from app.swift.swift import Swift
 from packaging import version
+from urllib.parse import urlparse
 import uuid as uuid_generator
 import requests
 import yaml
@@ -193,13 +197,15 @@ def deplog(depid=None):
 
     # app.logger.debug("Configuration: " + json.dumps(settings.orchestratorConf))
     dep = dbhelpers.get_deployment(depid)
-    if dep is not None and dep.physicalId is not None:
+
+    log = "Not available"
+
+    if dep is not None:
         url = settings.orchestratorUrl + "/deployments/" + depid + "/log"
         response = requests.get(url, headers=headers)
+        log = "Not available" if not response.ok else response.text
 
-        log = "Not found" if not response.ok else response.text
-        return render_template('deplog.html', log=log)
-    return redirect(url_for('deployments_bp.showdeployments'))
+    return render_template('deplog.html', log=log)
 
 
 @deployments_bp.route('/<depid>/infradetails')
@@ -476,9 +482,12 @@ def createdep():
 
     stinputs = copy.deepcopy(source_template['inputs'])
 
+    doprocess = True
     swift = None
     swift_filename = []
     swift_map = {}
+
+    uuidgen_deployment = str(uuid_generator.uuid1());
 
     for key,value in stinputs.items():
         # Manage security groups
@@ -548,6 +557,76 @@ def createdep():
             if key in request.files:
                 swift_filename.append(key)
 
+        if value["type"] == "random_password":
+            inputs[key] = utils.generate_password()
+
+        if value["type"] == "uuidgen":
+            prefix = ''
+            suffix = ''
+            if "extra_specs" in value:
+              prefix = value["extra_specs"]["prefix"] if "prefix" in value["extra_specs"] else ""
+              suffix = value["extra_specs"]["suffix"] if "suffix" in value["extra_specs"] else ""
+            inputs[key] = prefix + uuidgen_deployment + suffix
+
+        if value["type"] == "openstack_ec2credentials":
+            try:
+                del inputs[key]
+                access, secret = keystone.get_or_create_ec2_creds(access_token, value["auth"]["url"], value["auth"]["identity_provider"], value["auth"]["protocol"])
+                access_key_input_name = value["inputs"]["aws_access_key"]
+                inputs[access_key_input_name] = access
+                secret_key_input_name = value["inputs"]["aws_secret_key"]
+                inputs[secret_key_input_name] = secret
+
+                functions = {'s3.create_bucket': s3.create_bucket, "s3.delete_bucket": s3.delete_bucket}
+
+                if "tests" in value and value["tests"]:
+                    for test in value["tests"]:
+                       func = test["action"]
+                       args = test["args"]
+                       args["access_key"] = access
+                       args["secret_key"] = secret
+                       if func in functions:
+                           functions[func](**args)
+            except Exception as e:
+                flash(" The deployment submission failed with: {} <br><strong>Please contact the admin(s):</strong> {}".format(e, app.config.get('SUPPORT_EMAIL')))
+                doprocess = False
+
+        if value["type"] == "ldap_user":
+            try:
+                del inputs[key]
+
+                iam_base_url = settings.iamUrl
+                iam_client_id = settings.iamClientID
+                iam_client_secret = settings.iamClientSecret
+
+                username = '{}_{}'.format(session['userid'], urlparse(iam_base_url).netloc)
+                email = session['useremail']
+
+                jwt_token = auth.exchange_token_with_audience(iam_base_url,
+                                                      iam_client_id,
+                                                      iam_client_secret,
+                                                      access_token,
+                                                      app.config.get('VAULT_BOUND_AUDIENCE'))
+
+                vaultclient = vaultservice.connect(jwt_token, app.config.get("VAULT_ROLE"))
+                luser = LdapUserManager(app.config.get('LDAP_SOCKET'),
+                                        app.config.get('LDAP_BASE'),
+                                        app.config.get('LDAP_BIND_USER'),
+                                        app.config.get('LDAP_BIND_PASSWORD'),
+                                        vaultclient)
+
+                username, password = luser.create_user(username, email)
+                username_input_name = value["inputs"]["username"]
+                inputs[username_input_name] = username
+                password_input_name = value["inputs"]["password"]
+                inputs[password_input_name] = password
+
+            except Exception as e:
+                flash(" The deployment submission failed with: {} <br><strong>Please contact the admin(s):</strong> {}".format(e, app.config.get('SUPPORT_EMAIL')))
+                doprocess = False
+
+
+
     if swift and swift_map:
         for k, v in swift_map.items():
             val = swift.mapvalue(k)
@@ -555,7 +634,7 @@ def createdep():
                 inputs[v] = val
 
 
-    doprocess = True
+
     swiftprocess = False
     containername = filename = None
 
@@ -602,6 +681,8 @@ def createdep():
         else:
             doprocess = False
             flash("Missing file object!")
+
+
 
     if doprocess:
 
