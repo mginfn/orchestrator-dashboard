@@ -46,7 +46,7 @@
 
         <div class="card-body">
             <div class="alert alert-info">
-                <strong>Description:</strong> {{template['description']}}
+                <strong>Description:</strong> {{template['description'] | safe}}
             </div>
             {% if template['metadata']['disclaimer'] is defined %}
             <div class="alert alert-danger">
