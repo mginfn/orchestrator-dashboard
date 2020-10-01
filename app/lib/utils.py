@@ -3,6 +3,8 @@ import requests
 import linecache
 import sys
 import re
+import string
+import secrets
 from hashlib import md5
 from app import app
 
@@ -74,3 +76,16 @@ def format_json_radl(vminfo):
                     res[field] = value
 
     return res
+
+
+def generate_password():
+    alphabet = string.ascii_letters + string.digits
+    password = ""
+    while True:
+        password = ''.join(secrets.choice(alphabet) for i in range(10))
+        if (any(c.islower() for c in password)
+                and any(c.isupper() for c in password)
+                and sum(c.isdigit() for c in password) >= 3):
+            break
+
+    return password
