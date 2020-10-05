@@ -29,7 +29,7 @@ function filter(parent){
   var childid = "#" + $(parent).data('childId');
   var optionContainerId = "#option-container-" + $(parent).data('childId');
 
-  var parentvalue = $(parent).find('option:selected').text(); // stores parent value
+  var parentvalue = $(parent).find('option:selected').val(); // stores parent value
 
   $(optionContainerId).children().appendTo(childid); // moves <option> contained in #option-container back to their <select>
   var toMove = $(childid).find("option:not([data-parent-value='"+ parentvalue + "'])"); // selects elements to move out
