@@ -57,7 +57,7 @@
 
     <!-- password type -->
     {% elif value.type == "password" %}
-      <input type="password" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" placeholder="Enter your password" {% if value.required %}required{%endif%} {{mode}}>
+      <input type="password" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" data-toggle="password" placeholder="Enter your password" {% if value.required %}required{%endif%} {{mode}}>
     <!-- end password type -->
 
     <!-- random_password type -->
@@ -189,7 +189,7 @@
       </select>
       {% else %}
       <!-- text type, hide fields with password -->
-      <input {% if 'password' in key %}type="password"{% else %}type="text"{% endif %} class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if value.required %}required{%endif%} {{mode}} />
+      <input {% if 'password' in key %}type="password" data-toggle="password"{% else %}type="text"{% endif %} class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if value.required %}required{%endif%} {{mode}} />
       {% endif %}
     {% endif %}  <!-- end tag type existence if -->
 
