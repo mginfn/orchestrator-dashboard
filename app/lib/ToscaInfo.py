@@ -125,6 +125,10 @@ class ToscaInfo(object):
                                         for k, v in metadata_template['metadata'].items():
                                             tosca_info["metadata"][k] = v
 
+            # override description from metadata, if available
+            if 'description' in tosca_info['metadata']:
+                tosca_info["description"] = tosca_info['metadata']['description']
+
             # initialize inputs/outputs
             tosca_inputs = {}
             tosca_outputs = {}
