@@ -21,7 +21,7 @@ from app.lib.ldap_user import LdapUserManager
 from app.models.Deployment import Deployment
 from app.providers import sla
 from app.lib import ToscaInfo as tosca_helpers
-from app.lib import openstack_ec2credentials as keystone
+from app.lib import openstack as keystone
 from app.lib import s3 as s3
 from werkzeug.utils import secure_filename
 from app.swift.swift import Swift

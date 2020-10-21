@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from .. import app, iam_blueprint, mail, tosca
-from app.lib import utils, auth, settings, dbhelpers
+from app.lib import utils, auth, settings, dbhelpers, openstack
 from app.models.User import User
 from markupsafe import Markup
 from werkzeug.exceptions import Forbidden
@@ -202,6 +202,23 @@ def callback():
     return resp
 
 
+@home_bp.route('/getauthorization', methods=['POST'])
+def getauthorization():
+
+    tasks = json.loads(request.form.to_dict()["pre_tasks"].replace("'", "\""))
+
+    functions = {'openstack.get_unscoped_keystone_token': openstack.get_unscoped_keystone_token, 'send_mail': send_authorization_request_email }
+
+    for task in tasks["pre_tasks"]:
+        func = task["action"]
+        args = task["args"]
+        args["access_token"] = iam_blueprint.session.token['access_token']
+        if func in functions:
+            functions[func](**args)
+
+    return render_template("success_message.html", title="Message sent", message="Your request has been sent to the support team. <br>You will receive soon a notification email about your request. <br>Thank you!")
+
+
 @home_bp.route('/contact', methods=['POST'])
 def contact():
     app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
@@ -221,6 +238,15 @@ def contact():
 
     return Markup("<div class='alert alert-success' role='alert'>Your message has been sent, Thank you!</div>")
 
+
+def send_authorization_request_email(service_type, **kwargs):
+    message = Markup(
+        "The following user has requested access for {}: <br>username: {} <br>sub: {} <br>email: {}".format(service_type, session['username'], session['userid'], session['useremail'], service_type))
+
+    send_email("New Authorization Request",
+               sender=app.config.get('MAIL_SENDER'),
+               recipients = ["marica.antonacci@ba.infn.it"],
+               html_body= message )
 
 def create_and_send_email(subject, sender, recipients, uuid, status):
     send_email(subject,
