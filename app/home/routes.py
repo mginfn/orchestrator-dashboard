@@ -93,6 +93,7 @@ def home():
         session['userrole'] = 'user'
         session['gravatar'] = utils.avatar(account_info_json['email'], 26)
         session['organisation_name'] = account_info_json['organisation_name']
+        session['usergroups'] = account_info_json['groups']
         # access_token = iam_blueprint.session.token['access_token']
 
         # check database
@@ -241,7 +242,7 @@ def contact():
 
 def send_authorization_request_email(service_type, **kwargs):
     message = Markup(
-        "The following user has requested access for {}: <br>username: {} <br>sub: {} <br>email: {}".format(service_type, session['username'], session['userid'], session['useremail'], service_type))
+        "The following user has requested access for {}: <br>username: {} <br>IAM id (sub): {} <br>IAM groups: {} <br>email: {}".format(service_type, session['username'], session['userid'], session['usergroups'], session['useremail'], service_type))
 
     send_email("New Authorization Request",
                sender=app.config.get('MAIL_SENDER'),
