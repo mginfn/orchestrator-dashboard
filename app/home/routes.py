@@ -245,7 +245,7 @@ def send_authorization_request_email(service_type, **kwargs):
 
     send_email("New Authorization Request",
                sender=app.config.get('MAIL_SENDER'),
-               recipients = ["marica.antonacci@ba.infn.it"],
+               recipients = [app.config.get('SUPPORT_EMAIL')],
                html_body= message )
 
 def create_and_send_email(subject, sender, recipients, uuid, status):
