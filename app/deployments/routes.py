@@ -515,6 +515,9 @@ def createdep():
                 except:
                     del inputs[key]
                     inputs[key] = { "ssh": { "protocol": "tcp", "source": 22 } }
+
+                if "required_ports" in value:
+                    inputs[key] = {**value["required_ports"], **inputs[key]}
             else:
                 inputs[key] = { "ssh": { "protocol": "tcp", "source": 22 } }
         # Manage map of string
