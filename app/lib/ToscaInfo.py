@@ -64,7 +64,7 @@ class ToscaInfo(object):
                     if name[0] != '.':
                         toscatemplates.append(os.path.relpath(os.path.join(path, name), self.tosca_dir))
 
-        return toscatemplates
+        return sorted(toscatemplates)
 
     def _extractalltoscainfo(self, tosca_templates):
         tosca_info = {}
