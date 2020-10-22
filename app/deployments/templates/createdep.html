@@ -56,10 +56,10 @@
                     </span>
             </div>
             {% endif %}
-            <form id="depSubmit" action="{{ url_for('deployments_bp.createdep', template=selectedTemplate) }}" method="post" enctype="multipart/form-data">
+            <form id="depSubmit" action="{{ url_for('deployments_bp.createdep', template=selectedTemplate) }}" method="post" autocomplete="off" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="additional_description">Deployment description</label>
-                    <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="description" value="" maxlength="20" required>
+                    <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="description" value="" maxlength="50" required>
                 </div>
                 {% include 'config_form.html' %}
                 <div id="myalert" class="alert alert-danger alert-dismissible fade show" style="display:none;" role="danger">

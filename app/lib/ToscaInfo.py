@@ -37,6 +37,7 @@ class ToscaInfo(object):
         self.tosca_params_dir = tosca_params_dir
         self.tosca_metadata_dir = tosca_metadata_dir
         self.tosca_info = {}
+        self.tosca_gmetadata = {}
         self.tosca_templates = []
 
         self.app = app
@@ -54,6 +55,10 @@ class ToscaInfo(object):
 
         self.tosca_templates = self._loadtoscatemplates()
         self.tosca_info = self._extractalltoscainfo(self.tosca_templates)
+
+        if os.path.isfile(self.tosca_metadata_dir + "/metadata.yml"):
+            with io.open(self.tosca_metadata_dir + "/metadata.yml") as stream:
+                self.tosca_gmetadata = yaml.full_load(stream)
 
     def _loadtoscatemplates(self):
         toscatemplates = []

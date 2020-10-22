@@ -9,7 +9,7 @@
       <input id="cardFilter" class="form-control py-2 border" type="text" onkeyup="cardFilter()" placeholder="Search...">
     </div>
 
- {% for tosca_filename, tosca in templates.items() %}
+ {% for tosca_name, tosca in templates_info.items() %}
     {% if loop.index % 3 == 1 %}
     <div class="card-deck">
     {% endif %}
@@ -18,7 +18,7 @@
             <div class="card-body">
                 <h5 class="card-title text-center">
                     <strong>
-                    {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_filename}}{% endif %}
+                    {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}
                     </strong>
                 </h5>
             </div>
@@ -31,7 +31,7 @@
             <div class="card-img-overlay text-center">
                 <h5>
                     <strong>
-                    {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_filename}}{% endif %}
+                    {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}
                     </strong>
                 </h5>
                 <div id="toscaDescription" class="card-text tosca-descr"><small>{{tosca['description'] | safe}}</small></div>
@@ -41,14 +41,18 @@
                 <form style='display:inline;' action="{{url_for('home_bp.getauthorization')}}" method="post"> <input type="hidden" name="pre_tasks" value="{{pre_tasks}}"> <button type="submit" class="badge badge-pill badge-danger"> Request Access</button>
                 </form>
                 {% endif %}
-                <a href="{{ url_for('deployments_bp.configure', selected_tosca=tosca_filename) }}" class="badge badge-pill badge-primary">Configure</a>
+                {% if tg %}
+                <a href="{{ url_for('deployments_bp.configure', selected_group=tosca_name) }}" class="badge badge-pill badge-primary">Configure</a>
+                {% else %}
+                <a href="{{ url_for('deployments_bp.configure', selected_tosca=tosca_name) }}" class="badge badge-pill badge-primary">Configure</a>
+                {% endif %}
             </div>
         </div>
     {% if loop.index % 3 == 0 %}
     </div>
     {% endif %}
     {% endfor %}
-    {% if templates|count % 3 != 0 %}
+    {% if templates_info|count % 3 != 0 %}
     </div>
     {% endif %}
 </div>

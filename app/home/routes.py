@@ -60,7 +60,7 @@ def login():
 def check_template_access(allowed_groups, user_groups):
 
     # check intersection of user groups with user membership
-    if (set(allowed_groups.split(',')) & set(user_groups)) != set() or allowed_groups == '*':
+    if (allowed_groups is None or set(allowed_groups.split(',')) & set(user_groups)) != set() or allowed_groups == '*':
         return True
     else:
         return False
@@ -120,10 +120,19 @@ def home():
 
         session['userrole'] = user.role  # role
 
-        templates = {k: v for (k, v) in toscaInfo.items() if
-                     check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
+        templates_info = {}
+        tg = False
 
-        return render_template(app.config.get('PORTFOLIO_TEMPLATE'), templates=templates)
+        if tosca.tosca_gmetadata:
+            templates_info = {k: v for (k, v) in tosca.tosca_gmetadata.items() if
+                     check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
+            tg = True
+        else:
+            templates_info = {k: v for (k, v) in toscaInfo.items() if
+             check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
+
+
+        return render_template(app.config.get('PORTFOLIO_TEMPLATE'), templates_info=templates_info, tg=tg)
 
 
 @home_bp.route('/logout')

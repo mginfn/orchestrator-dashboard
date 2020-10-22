@@ -401,31 +401,47 @@ def updatedep():
     return redirect(url_for('deployments_bp.showdeployments'))
 
 
-@deployments_bp.route('/configure')
+@deployments_bp.route('/configure', methods=['GET', 'POST'])
 @auth.authorized_with_valid_token
 def configure():
     access_token = iam_blueprint.session.token['access_token']
 
-    selected_tosca = request.args['selected_tosca']
+    selected_tosca = None
 
-    template = tosca.tosca_info[selected_tosca]
-    sla_id = tosca_helpers.getslapolicy(template)
+    if request.method == 'POST':
+        selected_tosca = request.form.get('selected_tosca')
 
-    slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'],
-                        template["deployment_type"])
+    if 'selected_tosca' in request.args:
+        selected_tosca = request.args['selected_tosca']
 
-    ssh_pub_key = dbhelpers.get_ssh_pub_key(session['userid'])
+    if 'selected_group' in request.args:
+        print(tosca.tosca_gmetadata[request.args['selected_group']])
+        templates = tosca.tosca_gmetadata[request.args['selected_group']]['templates']
+        if len(templates) == 1:
+            selected_tosca = templates[0]['name']
+        else:
+            return render_template('choosedep.html', templates=templates)
 
-    return render_template('createdep.html',
-                           template=template,
-                           feedback_required=True,
-                           keep_last_attempt=False,
-                           provider_timeout=app.config['PROVIDER_TIMEOUT'],
-                           selectedTemplate=selected_tosca,
-                           ssh_pub_key=ssh_pub_key,
-                           slas=slas,
-                           sla_id=sla_id,
-                           update=False)
+    if selected_tosca:
+
+        template = tosca.tosca_info[selected_tosca]
+        sla_id = tosca_helpers.getslapolicy(template)
+
+        slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'],
+                            template["deployment_type"])
+
+        ssh_pub_key = dbhelpers.get_ssh_pub_key(session['userid'])
+
+        return render_template('createdep.html',
+                               template=template,
+                               feedback_required=True,
+                               keep_last_attempt=False,
+                               provider_timeout=app.config['PROVIDER_TIMEOUT'],
+                               selectedTemplate=selected_tosca,
+                               ssh_pub_key=ssh_pub_key,
+                               slas=slas,
+                               sla_id=sla_id,
+                               update=False)
 
 
 def remove_sla_from_template(template):
