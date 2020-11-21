@@ -16,7 +16,7 @@ import copy
 
 from flask import Blueprint, session, render_template, flash, redirect, url_for, json, request
 from app import app, iam_blueprint, tosca, vaultservice
-from app.lib import auth, utils, settings, dbhelpers
+from app.lib import auth, utils, settings, dbhelpers, yourls
 from app.lib.ldap_user import LdapUserManager
 from app.models.Deployment import Deployment
 from app.providers import sla
@@ -110,6 +110,20 @@ def unlockdeployment(depid=None):
     return redirect(url_for('deployments_bp.showdeployments'))
 
 
+def preprocess_outputs(browser, depid, outputs, stoutputs):
+    for key, value in stoutputs.items():
+        if value["type"] == "download-url":
+            if value["action"] == "shorturl":
+                try:
+                    shorturl = yourls.url_shorten(outputs[key], depid)
+                    if shorturl:
+                        outputs[key] = shorturl
+                except:
+                    pass
+            if browser['name'] == "chrome" and browser['version'] >= 86:
+                message = stoutputs[key]['warning'] if 'warning' in stoutputs[key] else ""
+                stoutputs[key]['warning'] = "{}<br>{}".format("The download will be blocked by Chrome. Please, use Firefox for a full user experience.", message)
+
 @deployments_bp.route('/<depid>/details')
 @auth.authorized_with_valid_token
 def depoutput(depid=None):
@@ -135,6 +149,11 @@ def depoutput(depid=None):
         additional_outputs = getadditionaloutputs(dep, iam_blueprint.session.token['access_token'])
 
         outputs = {**outputs, **additional_outputs}
+
+        browser = request.user_agent.browser
+        version = request.user_agent.version and int(request.user_agent.version.split('.')[0])
+
+        preprocess_outputs(dict(name = browser, version = version), depid, outputs, stoutputs)
 
         return render_template('depoutput.html',
                                deployment=dep,
