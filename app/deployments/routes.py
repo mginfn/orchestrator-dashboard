@@ -112,8 +112,8 @@ def unlockdeployment(depid=None):
 
 def preprocess_outputs(browser, depid, outputs, stoutputs):
     for key, value in stoutputs.items():
-        if value["type"] == "download-url":
-            if value["action"] == "shorturl":
+        if value.get("type") == "download-url":
+            if value.get("action") == "shorturl":
                 try:
                     shorturl = yourls.url_shorten(outputs[key], depid)
                     if shorturl:
