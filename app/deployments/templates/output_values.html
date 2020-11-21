@@ -2,22 +2,22 @@
 
 {% for k,v in outputs.items() %}
 
-{% set output_type='' %}
-
-{% if stoutputs[k] %}
-{% if stoutputs[k]['type'] %} {% set output_type = stoutputs[k]['type'] %} {% endif %}
+{% set name = k %}
+{% if stoutputs[k] and stoutputs[k]['display_name'] %}
+{% set name = stoutputs[k]['display_name'] %}
 {% endif %}
 
 
-{% if output_type == 'kubeconfig' or 'kubeconfig' in k %}
+{% if (stoutputs[k] and stoutputs[k]['type'] == 'kubeconfig') or 'kubeconfig' in k %}
 
-<p><strong>{{k}}</strong>:
+<p><strong>{{name}}</strong>:
 <div id="{{k}}-creds" class="d-none">{{ v | replace("\\n", "\n") }}</div>
 <button class="btn btn-primary btn-sm" data-key="{{k}}" id="downloadBtn{{k}}" onclick="downloadCreds(this)"><i class="fa fa-download"></i> Download</button>
 <button class="btn btn-success btn-sm" data-key="{{k}}" id="copyBtn{{k}}" onclick="copyCreds(this)"><i class="fa fa-copy"></i> Copy to clipboard</button>
 <p></p>
 
-
+{% elif (stoutputs[k] and stoutputs[k]['type'] == 'url') or "url" in k or "endpoint" in k %}
+<p><strong>{{name}}</strong>: <a href="{{v}}" target="_blank">{{v}}</a></p>
 
 {% elif "node_creds" in k or "cluster_creds" in k %}
 
@@ -44,13 +44,21 @@
 {% endfor %}
 <p></p>
 
-{% elif "endpoint" in k or "url" in k %}
-<p><strong>{{k}}</strong>: <a href="{{v}}" target="_blank">{{v}}</a></p>
-
 
 {% else %}
 <p><strong>{{k}}</strong>: {{v}}</p>
 {% endif %}
+
+<!-- Description -->
+{% if stoutputs[k] and stoutputs[k]['description'] %}
+<p style="margin-left:20px;">{{stoutputs[k]['description'] | safe}}</p>
+{% endif %}
+{% if stoutputs[k] and stoutputs[k]['warning'] %}
+<div class="alert alert-warning" role="alert">
+  <strong>Warning: </strong>{{ stoutputs[k]['warning'] | safe }}
+</div>
+{% endif %}
+
 
 {% endfor %}
 
