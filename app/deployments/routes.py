@@ -114,13 +114,16 @@ def preprocess_outputs(browser, depid, outputs, stoutputs):
     for key, value in stoutputs.items():
         if value.get("type") == "download-url":
             if value.get("action") == "shorturl":
+                origin_url = urlparse(outputs[key])
                 try:
                     shorturl = yourls.url_shorten(outputs[key], depid)
                     if shorturl:
                         outputs[key] = shorturl
-                except:
+                except Exception as e:
+                    app.logger.debug('Error creating short url: {}'.format(str(e)))
                     pass
-            if browser['name'] == "chrome" and browser['version'] >= 86:
+
+            if origin_url.scheme == 'http' and browser['name'] == "chrome" and browser['version'] >= 86:
                 message = stoutputs[key]['warning'] if 'warning' in stoutputs[key] else ""
                 stoutputs[key]['warning'] = "{}<br>{}".format("The download will be blocked by Chrome. Please, use Firefox for a full user experience.", message)
 
