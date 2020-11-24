@@ -110,13 +110,13 @@ def unlockdeployment(depid=None):
     return redirect(url_for('deployments_bp.showdeployments'))
 
 
-def preprocess_outputs(browser, depid, outputs, stoutputs):
+def preprocess_outputs(browser, outputs, stoutputs):
     for key, value in stoutputs.items():
         if value.get("type") == "download-url":
             if value.get("action") == "shorturl":
                 origin_url = urlparse(outputs[key])
                 try:
-                    shorturl = yourls.url_shorten(outputs[key], depid)
+                    shorturl = yourls.url_shorten(outputs[key])
                     if shorturl:
                         outputs[key] = shorturl
                 except Exception as e:
@@ -156,7 +156,7 @@ def depoutput(depid=None):
         browser = request.user_agent.browser
         version = request.user_agent.version and int(request.user_agent.version.split('.')[0])
 
-        preprocess_outputs(dict(name = browser, version = version), depid, outputs, stoutputs)
+        preprocess_outputs(dict(name = browser, version = version), outputs, stoutputs)
 
         return render_template('depoutput.html',
                                deployment=dep,
