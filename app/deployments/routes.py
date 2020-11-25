@@ -113,19 +113,20 @@ def unlockdeployment(depid=None):
 def preprocess_outputs(browser, outputs, stoutputs):
     for key, value in stoutputs.items():
         if value.get("type") == "download-url":
-            if value.get("action") == "shorturl":
-                origin_url = urlparse(outputs[key])
-                try:
-                    shorturl = yourls.url_shorten(outputs[key])
-                    if shorturl:
-                        outputs[key] = shorturl
-                except Exception as e:
-                    app.logger.debug('Error creating short url: {}'.format(str(e)))
-                    pass
+            if key in outputs:
+                if value.get("action") == "shorturl":
+                    origin_url = urlparse(outputs[key])
+                    try:
+                        shorturl = yourls.url_shorten(outputs[key])
+                        if shorturl:
+                            outputs[key] = shorturl
+                    except Exception as e:
+                        app.logger.debug('Error creating short url: {}'.format(str(e)))
+                        pass
 
-            if origin_url.scheme == 'http' and browser['name'] == "chrome" and browser['version'] >= 86:
-                message = stoutputs[key]['warning'] if 'warning' in stoutputs[key] else ""
-                stoutputs[key]['warning'] = "{}<br>{}".format("The download will be blocked by Chrome. Please, use Firefox for a full user experience.", message)
+                if origin_url.scheme == 'http' and browser['name'] == "chrome" and browser['version'] >= 86:
+                    message = stoutputs[key]['warning'] if 'warning' in stoutputs[key] else ""
+                    stoutputs[key]['warning'] = "{}<br>{}".format("The download will be blocked by Chrome. Please, use Firefox for a full user experience.", message)
 
 @deployments_bp.route('/<depid>/details')
 @auth.authorized_with_valid_token
