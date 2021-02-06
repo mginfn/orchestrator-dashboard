@@ -46,13 +46,20 @@
 
         <div class="card-body">
             <div class="alert alert-info">
-                <strong>Description:</strong> {{template['description']}}
+                <strong>Description:</strong> {{template['description'] | safe}}
             </div>
-
-            <form id="depSubmit" action="{{ url_for('deployments_bp.createdep', template=selectedTemplate) }}" method="post" enctype="multipart/form-data">
+            {% if template['metadata']['disclaimer'] is defined %}
+            <div class="alert alert-danger">
+                    <span>
+                        <i class="fas fa-exclamation-circle"><strong> Please read carefully:</strong></i><br><br>
+                        {{template['metadata']['disclaimer']}}
+                    </span>
+            </div>
+            {% endif %}
+            <form id="depSubmit" action="{{ url_for('deployments_bp.createdep', template=selectedTemplate) }}" method="post" autocomplete="off" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="additional_description">Deployment description</label>
-                    <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="description" value="" maxlength="20" required>
+                    <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="description" value="" maxlength="50" required>
                 </div>
                 {% include 'config_form.html' %}
                 <div id="myalert" class="alert alert-danger alert-dismissible fade show" style="display:none;" role="danger">
@@ -97,12 +104,13 @@ $(document).ready(function () {
   $('input').on("input", function () {
      checkForm()
   });
+
 });
 
 function checkForm(){
     var valid = true;
     $('input').each(function(){
-       if (this.required && (this.value == '')){
+       if ( (this.disabled == false) && this.required && (this.value == '')){
          this.style.borderColor = 'red';
          valid = false;
        }
@@ -116,6 +124,7 @@ function checkForm(){
     else {
         document.getElementById('myalert').style.display = "none";
     }
+
     return valid;
 };
 
@@ -128,10 +137,37 @@ $(document).ready(function () {
         //disable cancel too
         $("#cancelBtn").attr("disabled", true);
         $("#cancelBtn").attr("onclick", "#");
+
+        // Process complex types, like list and map
+        var data_json = $('#depSubmit').serializeJSON();
+        var tmpElems = $("input[data-output-type='json']");
+
+        for (j = 0; j < tmpElems.length; j++) {
+          let jname = tmpElems[j].name;
+
+          if ( data_json[jname + "_tmp"] == undefined)
+          {
+             document.getElementById('id-' + jname).disabled = true;
+
+          }
+          else
+          {
+            //console.log(data_json[jname + "_tmp"]);
+
+            var el = document.getElementById('id-' + jname);
+            el.value =  JSON.stringify(data_json[jname + "_tmp"]);
+            // remove the "auxiliary" container
+            document.getElementById(jname + '-container').remove();
+          }
+        }
+
+        $("select[data-action='removeOnSubmit']").remove();
+
         return true;
 
     });
 });
+
 
 $(document).ready(function () {
 

@@ -1,3 +1,17 @@
+# Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2019-2020
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from app import db
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
@@ -13,6 +27,8 @@ class Deployment(db.Model):
     status = db.Column(db.String(128), nullable=True)
     status_reason = db.Column(db.Text, nullable=True)
     outputs = db.Column(db.Text, nullable=True)
+    additional_outputs = db.Column(db.Text, nullable=True)
+    stoutputs = db.Column(db.Text, nullable=True)
     task = db.Column(db.String(64), nullable=True)
     links = db.Column(db.Text, nullable=True)
     provider_name = db.Column(db.String(128), nullable=True)
@@ -25,6 +41,7 @@ class Deployment(db.Model):
     stinputs = db.Column(db.Text, nullable=True)
     params = db.Column(db.Text, nullable=True)
     deployment_type = db.Column(db.String(16), nullable=True)
+    template_type = db.Column(db.String(16), nullable=True)
     locked = db.Column(db.Integer, nullable=True, default=0)
     feedback_required = db.Column(db.Integer, nullable=True, default=1)
     keep_last_attempt = db.Column(db.Integer, nullable=True, default=0)

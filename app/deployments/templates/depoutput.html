@@ -79,7 +79,15 @@
         <div class="tab-pane fade" id="InputValues">
           <br>
 	      {% for k,v in inputs.items() %}
+          {% if "password" in k or "token" in k %}
+          <div>
+          <p><strong>{{k}}</strong>: <input type="password" id="{{k}}" disabled value="{{v}}">
+          <input type="checkbox" onclick="toggle({{k}})"> Show
+          </p>
+          </div>
+          {% else %}
           <p><strong>{{k}}</strong>: {{v}}</p>
+          {% endif %}
           {% endfor %}
         </div>
         <div class="tab-pane fade" id="OutputValues">
@@ -142,6 +150,16 @@ function fillModal(secret)
 function stopSpinner()
 {
   $("#retrieveBtn").html( `<span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase` );
+}
+</script>
+
+<script>
+  function toggle(x) {
+  if (x.type === "password") {
+    x.type = "text";
+  } else {
+    x.type = "password";
+  }
 }
 </script>
 

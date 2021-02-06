@@ -1,3 +1,17 @@
+# Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2019-2020
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from app import app, iam_blueprint, db
 from . import settings
 import requests
@@ -88,7 +102,7 @@ def updatedeploymentsstatus(deployments, userid):
 
         if dep is not None:
             if dep.status != dep_json['status'] or dep.provider_name != providername \
-                    or dep.status_reason != status_reason:
+                    or str(dep.status_reason or '') != status_reason:
                 dep.update_time = dep_json['updateTime']
                 dep.physicalId = vphid
                 dep.status = dep_json['status']
@@ -125,6 +139,7 @@ def updatedeploymentsstatus(deployments, userid):
                                     description='',
                                     status=dep_json['status'],
                                     outputs=json.dumps(dep_json['outputs']),
+                                    stoutputs='',
                                     task=dep_json['task'],
                                     links=json.dumps(dep_json['links']),
                                     sub=userid,
@@ -189,6 +204,9 @@ def cvdeployment(d):
                             outputs=json.loads(d.outputs.replace("\n",
                                                                  "\\n")) if (d.outputs is not None
                                                                              and d.outputs is not '') else '',
+                            stoutputs=json.loads(
+                                d.stoutputs.replace("\n", "\\n")) if (
+                                        d.stoutputs is not None and d.stoutputs is not '') else '',
                             task=d.task,
                             links=json.loads(
                                 d.links.replace("\n", "\\n")) if (d.links is not None and d.links is not '') else '',

@@ -14,7 +14,7 @@
 
         <div class="card-body">
 
-            SSH keys allow you to establish a secure connection between your computer and Galaxy.
+            SSH keys allow you to establish a secure connection between your computer and your virtual server(s).
 
             {% if sshkey is not none %}
 
@@ -83,7 +83,7 @@
             <hr>
             <label for="create_ssh_key_pair"><b>Create new key pair</b></label>
             <p>
-            SSH key pair will be created from scratch. The private key will be stored on vault, while the public key will be stored on the Dashboard database, allowing the access to Galaxy.
+            SSH key pair will be created from scratch. The private key will be safely stored in the Vault, while the public key will be stored in the Dashboard database.
             </p>
             <button id="createSSHKeyPair" class="btn btn-outline-success" onclick="location.href='{{ url_for('vault_bp.create_ssh_key', subject=session['userid']) }}'">
                 <span class="fas fa-plus mr-2"></span> Create new SSH key pair

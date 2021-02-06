@@ -9,7 +9,7 @@
       <input id="cardFilter" class="form-control py-2 border" type="text" onkeyup="cardFilter()" placeholder="Search...">
     </div>
 
- {% for tosca_filename, tosca in templates.items() %}
+ {% for tosca_name, tosca in templates_info.items() %}
     {% if loop.index % 3 == 1 %}
     <div class="card-deck">
     {% endif %}
@@ -18,7 +18,7 @@
             <div class="card-body">
                 <h5 class="card-title text-center">
                     <strong>
-                    {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_filename}}{% endif %}
+                    {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}
                     </strong>
                 </h5>
             </div>
@@ -31,19 +31,28 @@
             <div class="card-img-overlay text-center">
                 <h5>
                     <strong>
-                    {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_filename}}{% endif %}
+                    {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}
                     </strong>
                 </h5>
-                <p id="toscaDescription" class="card-text tosca-descr"><small>{{tosca['description']}}</small></p>
-                <a selector="toscaDescription" class="text-left badge badge-pill badge-info read_more" tabindex="0" data-toggle="popover" title="Full description" data-trigger="focus" data-content="{{tosca['description']}}">Read More</a>
-                <a href="{{ url_for('deployments_bp.configure', selected_tosca=tosca_filename) }}" class="badge badge-pill badge-primary">Configure</a>
+                <div id="toscaDescription" class="card-text tosca-descr"><small>{{tosca['description'] | safe}}</small></div>
+                <a selector="toscaDescription" class="text-left badge badge-pill badge-info read_more" tabindex="0" data-toggle="popover" title="Full description" data-trigger="focus" data-html="true" data-content="{{tosca['description']}}">Read More</a>
+                {% if tosca['metadata']['authorization_required'] is defined %}
+                {% set pre_tasks = tosca['metadata']['authorization_required'] %}
+                <form style='display:inline;' action="{{url_for('home_bp.getauthorization')}}" method="post"> <input type="hidden" name="pre_tasks" value="{{pre_tasks}}"> <button type="submit" class="badge badge-pill badge-danger"> Request Access</button>
+                </form>
+                {% endif %}
+                {% if tg %}
+                <a href="{{ url_for('deployments_bp.configure', selected_group=tosca_name) }}" class="badge badge-pill badge-primary">Configure</a>
+                {% else %}
+                <a href="{{ url_for('deployments_bp.configure', selected_tosca=tosca_name) }}" class="badge badge-pill badge-primary">Configure</a>
+                {% endif %}
             </div>
         </div>
     {% if loop.index % 3 == 0 %}
     </div>
     {% endif %}
     {% endfor %}
-    {% if templates|count % 3 != 0 %}
+    {% if templates_info|count % 3 != 0 %}
     </div>
     {% endif %}
 </div>
@@ -53,6 +62,7 @@ $(document).ready(function(){
   $('[data-toggle="popover"]').popover();
 });
 </script>
+
 
 <script>
 
@@ -112,6 +122,7 @@ $(".tosca-descr").dotdotdot({
 
 .popover {
     border: 2px solid #5BC0DE;
+    max-width: 50%;
 }
 
 .popover-header {
@@ -128,6 +139,8 @@ $(".tosca-descr").dotdotdot({
     //background-color: white;
     //color: #FFFFFF;
     padding: 25px;
+    //overflow-y: auto;
+    //max-height: 150px;
 }
 
 /* The ribbons */

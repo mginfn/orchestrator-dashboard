@@ -1,0 +1,58 @@
+<div class="mt-2">
+    <div id="{{key}}-container"></div>
+    <button type="button" class="btn btn-sm btn-outline-info" id="add-new-item" class="add-new" data-tag-name="{{key}}">Add</button>
+    <input id="id-{{key}}" type="hidden" data-output-type="json" name="{{key}}" value""/>
+</div>
+
+
+
+<script>
+
+
+let i = 1;
+document.getElementById('add-new-item').onclick = function () {
+    var tagname = this.getAttribute('data-tag-name');
+    let template = `
+        <div class="form-row" id="${tagname}-${i}">
+
+          <div class="form-group">
+            <!-- label>Option</label> <br-->
+            <input type="text" class="form-control" name="${tagname}_tmp[]" class="form-control" required>
+          </div>
+          <div class="mt-1 mx-2">
+            <button type=button class='btn btn-sm btn-outline-danger' href="" onclick="javascript:removeItem('${tagname}'+ '-' + ${i} + '' ); return false;">Remove</button>
+          </div>
+        </div>`;
+
+    let container = document.getElementById(tagname + '-container');
+    let div = document.createElement('div');
+    div.innerHTML = template;
+    container.appendChild(div);
+
+    i++;
+
+}
+
+</script>
+
+<style>
+
+label {
+  margin-bottom: 0;
+  margin-left: 5px;
+}
+
+.form-group {
+    margin-left: 15px;
+}
+
+</style>
+
+<script>
+function removeItem(elementId) {
+    var element = document.getElementById(elementId);
+    console.log("id: " + elementId)
+    console.log(element)
+    element.parentNode.removeChild(element);
+}
+</script>

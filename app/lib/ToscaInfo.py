@@ -1,9 +1,19 @@
+# Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2019-2020
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
-    Flask-Tosca
-    :author: Marica Antonacci <marica.antonacci@ba.infn.it>
-    :license: Apache
-    -------------------
-    Allows to load tosca templates in Flask applications.
+    Class to load tosca templates at application start
 """
 
 import os
@@ -27,6 +37,7 @@ class ToscaInfo(object):
         self.tosca_params_dir = tosca_params_dir
         self.tosca_metadata_dir = tosca_metadata_dir
         self.tosca_info = {}
+        self.tosca_gmetadata = {}
         self.tosca_templates = []
 
         self.app = app
@@ -45,6 +56,10 @@ class ToscaInfo(object):
         self.tosca_templates = self._loadtoscatemplates()
         self.tosca_info = self._extractalltoscainfo(self.tosca_templates)
 
+        if os.path.isfile(self.tosca_metadata_dir + "/metadata.yml"):
+            with io.open(self.tosca_metadata_dir + "/metadata.yml") as stream:
+                self.tosca_gmetadata = yaml.full_load(stream)
+
     def _loadtoscatemplates(self):
         toscatemplates = []
         for path, subdirs, files in os.walk(self.tosca_dir):
@@ -54,7 +69,7 @@ class ToscaInfo(object):
                     if name[0] != '.':
                         toscatemplates.append(os.path.relpath(os.path.join(path, name), self.tosca_dir))
 
-        return toscatemplates
+        return sorted(toscatemplates)
 
     def _extractalltoscainfo(self, tosca_templates):
         tosca_info = {}
@@ -72,10 +87,12 @@ class ToscaInfo(object):
             "metadata": {
                 "icon": "https://cdn4.iconfinder.com/data/icons/mosaicon-04/512/websettings-512.png",
                         "allowed_groups": '*',
-                        "require_ssh_key": False
+                        "require_ssh_key": False,
+                        "template_type": ""
             },
             "enable_config_form": False,
             "inputs": {},
+            "outputs": {},
             "node_templates": {},
             "policies": {},
             "tabs": {},
@@ -113,12 +130,20 @@ class ToscaInfo(object):
                                         for k, v in metadata_template['metadata'].items():
                                             tosca_info["metadata"][k] = v
 
-            # initialize inputs
+            # override description from metadata, if available
+            if 'description' in tosca_info['metadata']:
+                tosca_info["description"] = tosca_info['metadata']['description']
+
+            # initialize inputs/outputs
             tosca_inputs = {}
-            # get inputs from template, if provided
+            tosca_outputs = {}
+            # get inputs/outputs from template, if provided
             if 'inputs' in template['topology_template']:
                 tosca_inputs = template['topology_template']['inputs']
                 tosca_info['inputs'] = tosca_inputs
+            if 'outputs' in template['topology_template']:
+                tosca_outputs = template['topology_template']['outputs']
+                tosca_info['outputs'] = tosca_outputs
 
             if 'node_templates' in template['topology_template']:
                 tosca_info['deployment_type'] = getdeploymenttype(template['topology_template']['node_templates'])
@@ -142,6 +167,9 @@ class ToscaInfo(object):
                                     pars_data = yaml.full_load(io.StringIO(tosca_info['parameters_file']))
                                     pars_inputs = pars_data["inputs"]
                                     tosca_info['inputs'] = {**tosca_inputs, **pars_inputs}
+                                    if "outputs" in pars_data:
+                                        pars_outputs = pars_data["outputs"]
+                                        tosca_info['outputs'] = {**tosca_outputs, **pars_outputs}
                                     if "tabs" in pars_data:
                                         tosca_info['tabs'] = pars_data["tabs"]
 

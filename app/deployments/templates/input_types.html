@@ -1,10 +1,11 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.serializeJSON/2.9.0/jquery.serializejson.min.js" integrity="sha256-A6ALIKGCsaO4m9Bg8qeVYZpvU575sGTBvtpzEFdL0z8=" crossorigin="anonymous"></script>
 {% if update == True and (value.updatable is not defined or value.updatable == False) %}
  {% set mode = "disabled" %}
 {% else %}
  {% set mode = "" %}
 {% endif %}
-<div class="form-group">
-  {% if (value.type is not defined or (value.type != "hidden" and value.type != "swift_upload" and value.type != "swift_token" and value.type != "swift_autouuid" ))
+<div class="form-group" id="form-group-{{key}}">
+  {% if (value.type is not defined or (value.type != "hidden" and value.type != "swift_token" and value.type != "swift_autouuid" and value.type != "random_password" and value.type != "openstack_ec2credentials" and value.type != "uuidgen" and value.type != "ldap_user" ))
           and (update == False or value.updatable is not defined or value.updatable == True)%}
   <label for="{{key}}">
     {% if value.display_name is defined %}
@@ -18,41 +19,74 @@
 
     <!-- text type -->
     {% if value.type == "text" %}
-      <input type="text" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
-    <!-- end select type -->
+      <input type="text" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
+    <!-- end text type -->
 
-    <!-- hidden text type -->
-    {% elif value.type == "hidden" %}
-      <input type="hidden" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" >
-    <!-- end hidden text type -->
+    <!-- number types -->
+    {% elif value.type == "integer" %}
+      <input type="number" min="0" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
+    {% elif value.type == "float" %}
+      <input type="number" step="any" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
+    <!-- end number types -->
+
+    <!-- list text type -->
+    {% elif value.type == "list" and value.entry_schema.type|lower == "string" %}
+      <fieldset class="border p-2">
+        <!--legend class="w-auto">{{key}}</legend-->
+      {% include 'inputs/list.html' %}
+      </fieldset>
+    <!-- end list text type -->
+
+    <!-- list text type -->
+    {% elif value.type == "list" and value.entry_schema.type|lower == "map" %}
+      <fieldset class="border p-2">
+        <!--legend class="w-auto">{{key}}</legend-->
+      {% include 'inputs/list_map_string.html' %}
+      </fieldset>
+    <!-- end list text type -->
+
+    <!-- hidden types -->
+    {% elif value.type == "hidden" or value.type == "openstack_ec2credentials" or value.type == "uuidgen" or value.type == "ldap_user" %}
+      <input type="hidden" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" >
+    <!-- end hidden types -->
 
     <!-- email type -->
     {% elif value.type == "email" %}
-      <input type="email" class="form-control" id="{{key}}" name="{{key}}" placeholder="Enter your email" {% if value.required %}required{%endif%} {{mode}} >
+      <input type="email" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" placeholder="Enter your email" {% if value.required %}required{%endif%} {{mode}} >
     <!-- end email type -->
 
     <!-- password type -->
     {% elif value.type == "password" %}
-      <input type="password" class="form-control" id="{{key}}" name="{{key}}" placeholder="Enter your password" {% if value.required %}required{%endif%} {{mode}}>
+      <input type="password" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" data-toggle="password" placeholder="Enter your password" {% if value.required %}required{%endif%} {{mode}}>
+    <!-- end password type -->
+
+    <!-- random_password type -->
+    {% elif value.type == "random_password" %}
+      <input type="hidden" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="">
     <!-- end password type -->
 
     <!-- select type -->
     <!-- https://github.com/select2/select2/issues/4220 -->
     {% elif value.type == "select" %}
-      <select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}" {{mode}}>
+      <select class="js-example-basic-single js-states form-control" data-type="{{value.type}}" data-children-id="{{value.dependent_inputs}}" id="{{key}}" name="{{key}}" {{mode}}>
       {% for constraint in value.constraints %}
-        <option value="{{constraint['value']}}">{{constraint['label']}}</option>
+        <option value="{{constraint['value']}}" {% if constraint['value']==value.default %}selected="selected"{% endif %}>{{constraint['label']}}</option>
       {% endfor %}
       </select>
+    <!-- end select type -->
+
+    <!-- dependent select type -->
+    {% elif value.type == "dependent_select" %}
+      {% include 'inputs/dependent_select.html' %}
     <!-- end select type -->
 
     <!-- radio type -->
     {% elif value.type == "radio" %}
       {% for constraint in value.constraints %}
         {% if loop.first %}
-          <br><input type="radio" id="{{key}}" name="{{key}}" value={{constraint['value']}} checked {{mode}}> {{constraint['label']}}<br>
+          <br><input type="radio" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value={{constraint['value']}} checked {{mode}}> {{constraint['label']}}<br>
         {% else %}
-          <input type="radio" id="{{key}}" name="{{key}}" value={{constraint['value']}} {{mode}}> {{constraint['label']}}<br>
+          <input type="radio" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value={{constraint['value']}} {{mode}}> {{constraint['label']}}<br>
         {% endif %}
       {% endfor %}
     <!-- end radio type -->
@@ -61,7 +95,7 @@
     {% elif value.type == "toggle" %}
       {% for constraint in value.constraints %}
       <div>
-        <input type="checkbox" data-toggle="toggle" id="{{key}}" name="{{key}}" data-size="sm" data-offstyle="dark" value={{constraint['value']}} {{mode}}>
+        <input type="checkbox" data-type="{{value.type}}" data-toggle="toggle" id="{{key}}" name="{{key}}" data-size="sm" data-offstyle="dark" value={{constraint['value']}} {{mode}}>
 
         <div id="encryption_alert" class="modal fade" role="dialog">
           <div class="modal-dialog" role="document">
@@ -99,39 +133,63 @@
 
     <!-- ssh special input field -->
     {% elif value.type == "ssh_pub_key_type" %}
-      <input type="text" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if ssh_pub_key is not none %}placeholder="{{value.placeholder}}"{% endif %} {% if ssh_pub_key is none %}required{% endif %} {{mode}} />
+      <input type="text" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if ssh_pub_key is not none %}placeholder="{{value.placeholder}}"{% endif %} {% if ssh_pub_key is none %}required{% endif %} {{mode}} />
     <!-- end ssh special input type -->
+
+    <!-- List of map of strings -->
+    {% elif value.type == "map" and value.entry_schema.type == "string" %}
+      <fieldset class="border p-2">
+      {% include 'inputs/map_string.html' %}
+      </fieldset>
+    <!-- end Port field -->
+
+    <!-- Port field -->
+    {% elif value.type == "map" and value.entry_schema.type == "tosca.datatypes.network.PortSpec" %}
+      <fieldset class="border p-2">
+      {% include 'inputs/ports.html' %}
+      </fieldset>
+    <!-- end Port field -->
+
+    <!-- combined special input field -->
+    {% elif value.type == "combined" %}
+      {% include 'inputs/combined.html' %}
+    <!-- end combined special input field -->
+
+    <!-- dependent_definition special input field -->
+    {% elif value.type == "dependent_definition" %}
+      {% include 'inputs/dependent_definition.html' %}
+    <!-- end dependent_definition special input field -->
 
     <!-- swift_upload special input field -->
     {% elif value.type == "swift_upload" %}
         <div class="custom-file">
-          <input type="file" class="custom-file-input" id="{{key}}" name="{{key}}" {{mode}}>
+          <input type="file" class="custom-file-input" data-type="{{value.type}}" id="{{key}}" name="{{key}}" {% if value.required %}required{%endif%} {{mode}}>
           <label class="custom-file-label" for="{{key}}">Choose file</label>
         </div>
     <!-- end swift_upload special input type -->
 
     <!-- swift_autouuid special input type -->
     {% elif value.type == "swift_autouuid" %}
-      <input type="hidden" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" >
+      <input type="hidden" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" >
     <!-- end swift_autouuid special input type -->
 
     <!-- swift_token special input type -->
     {% elif value.type == "swift_token" %}
-      <input type="hidden" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" >
+      <input type="hidden" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" >
     <!-- end swift_token special input type -->
 
     {% else %}
       <!-- select type if constraints are defined -->
 	  {% set constraints = value.constraints | selectattr('valid_values') | map(attribute='valid_values') | list  %}
 	  {% if constraints %}
-	  <select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}" {{mode}}>
+	  <select class="js-example-basic-single js-states form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" {{mode}}>
           {% for val in constraints[0] %}
-             <option value="{{val}}">{{val}}</option>
+             <option value="{{val}}" {% if val==value.default %}selected="selected"{% endif %}>{{val}}</option>
           {% endfor %}
       </select>
       {% else %}
       <!-- text type, hide fields with password -->
-      <input {% if 'password' in key %}type="password"{% else %}type="text"{% endif %} class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if value.required %}required{%endif%} {{mode}} />
+      <input {% if 'password' in key %}type="password" data-toggle="password"{% else %}type="text"{% endif %} class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if value.required %}required{%endif%} {{mode}} />
       {% endif %}
     {% endif %}  <!-- end tag type existence if -->
 
@@ -143,6 +201,9 @@
   $('.custom-file-input').on('change', function() {
    let fileName = $(this).val().split('\\').pop();
    $(this).next('.custom-file-label').addClass("selected").html(fileName);
+
 });
 
 </script>
+
+

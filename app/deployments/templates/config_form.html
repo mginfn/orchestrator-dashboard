@@ -15,7 +15,7 @@
     {% endif %}
   {% endfor %}
 
-  {% if enable_advanced_menu == "yes" %}
+  {% if enable_advanced_menu == "yes" or session['userrole'] == 'admin' %}
   <li class="nav-item"><a class="nav-link" data-toggle="tab" href=#Advanced>Advanced</a></li> <!-- always create advanced tab -->
   {% endif %}
 </ul>

@@ -23,7 +23,11 @@ MAIL_PORT = "25"
 MAIL_DEFAULT_SENDER = "admin@orchestrator-dashboard"
 MAIL_USERNAME = None
 MAIL_PASSWORD = None
+MAIL_DEBUG = False
 
+### YOURLS SETTINGS
+YOURLS_SITE = None
+YOURLS_API_SIGNATURE_TOKEN=None
 
 ### ADMIN SETTINGS
 SUPPORT_EMAIL = "marica.antonacci@ba.infn.it"
@@ -46,7 +50,7 @@ VAULT_OIDC_AUDIENCE = "ff2c57dc-fa09-43c9-984e-9ad8afc3fb56"
 #### LOOK AND FEEL SETTINGS
 WELCOME_MESSAGE = "Welcome! This is the PaaS Orchestrator Dashboard"
 NAVBAR_BRAND_TEXT = "PaaS Orchestrator Dashboard"
-NAVBAR_BRAND_ICON = "/home/static/images/orchestrator-logo.png"
+NAVBAR_BRAND_ICON = "/home/static/images/indigodc_logo.png"
 FAVICON_PATH = "/home/static/images/favicon_io"
 MAIL_IMAGE_SRC = "https://raw.githubusercontent.com/maricaantonacci/orchestrator-dashboard/stateful/app/home/static/images/orchestrator-logo.png"
 

@@ -1,0 +1,26 @@
+<select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}" data-action="removeOnSubmit" onchange="setfields(this)" required>
+    <option value="" disabled selected>--Select--</option>
+  {% for constraint in value.constraints %}
+    <option value="{{constraint['value']}}" data-values="{{constraint['set']}}">{{constraint['label']}}</option>
+  {% endfor %}
+</select>
+
+
+
+
+<script>
+
+function setfields(elem){
+
+   var values = $(elem).find('option:selected').data('values').replace(/'/g, '"');;
+   var obj = JSON.parse(values);
+
+   Object.keys(obj).forEach(function(key) {
+     $("#" + key).val(obj[key]);
+
+   })
+
+}
+
+</script>
+
