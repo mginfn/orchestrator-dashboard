@@ -2,16 +2,15 @@
 {% if allowed_groups is not defined or allowed_groups == '*' %}
 {% set groups = session['supported_usergroups'] %}
 {% else %}
-{% set groups = ([allowed_groups] | intersect(session['supported_usergroups'])) %}
+{% set groups = ( allowed_groups.split(',') | intersect(session['supported_usergroups'])) %}
 {% endif %}
 
-{% if groups|length > 1 %}
 <div class="dropdown show">
   <a class="badge badge-pill badge-primary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
     Configure
   </a>
   <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-    <h6 class="dropdown-header">Choose the active group</h6>
+    <h6 class="dropdown-header">Choose the active project</h6>
     {% for group in groups %}
       {% if enable_template_groups %}
         <a class="dropdown-item {% if group==session['active_usergroup'] %}active{% endif %}" href="{{ url_for('deployments_bp.configure', selected_group=tosca, active_user_group=group) }}">{{ group }}</a>
@@ -21,11 +20,4 @@
     {% endfor %}
   </div>
 </div>
-{% else %}
-{% if enable_template_groups %}
-<a href="{{ url_for('deployments_bp.configure', selected_group=tosca, active_user_group=group) }}" class="badge badge-pill badge-primary">Configure</a>
-{% else %}
-<a href="{{ url_for('deployments_bp.configure', selected_tosca=tosca, active_user_group=group) }}" class="badge badge-pill badge-primary">Configure</a>
-{% endif %}
-{% endif %}
 {%- endmacro -%}
