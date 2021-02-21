@@ -97,6 +97,6 @@ def show_deployments(subject):
 
         return render_template('dep_user.html', user=user, deployments=deployments)
     else:
-        flash("User not found!")
+        flash("User not found!", 'warning')
         users = User.get_users()
         return render_template('users.html', users=users)

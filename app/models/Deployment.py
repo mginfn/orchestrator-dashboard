@@ -32,6 +32,7 @@ class Deployment(db.Model):
     task = db.Column(db.String(64), nullable=True)
     links = db.Column(db.Text, nullable=True)
     provider_name = db.Column(db.String(128), nullable=True)
+    user_group = db.Column(db.String(256), nullable=True)
     endpoint = db.Column(db.String(256), nullable=True)
     selected_template = db.Column(db.Text, nullable=True)
     template = db.Column(db.Text, nullable=True)

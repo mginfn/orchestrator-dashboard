@@ -24,28 +24,38 @@
             </div>
             <div class="wrapper">
                 <img class="card-img-bottom img-fluid" src="{{tosca['metadata']['icon']}}" alt="Card image cap">
-		{% if tosca['metadata']['tag'] is defined %}
-		<div class="ribbon {{tosca['metadata']['tag_color']}}"><span>{{tosca['metadata']['tag']}}</span></div>
+            {% if tosca['metadata']['access_locked'] %}
+                <div class="ribbon red"><span>LOCKED</span></div>
+            {% else %}
+		        {% if tosca['metadata']['tag'] is defined %}
+		        <div class="ribbon {{tosca['metadata']['tag_color']}}"><span>{{tosca['metadata']['tag']}}</span></div>
                 {% endif %}
+            {% endif %}
             </div>
-            <div class="card-img-overlay text-center">
+            <div class="card-img-overlay text-center" style="z-index: 1;">
                 <h5>
                     <strong>
                     {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}
                     </strong>
                 </h5>
                 <div id="toscaDescription" class="card-text tosca-descr"><small>{{tosca['description'] | safe}}</small></div>
-                <a selector="toscaDescription" class="text-left badge badge-pill badge-info read_more" tabindex="0" data-toggle="popover" title="Full description" data-trigger="focus" data-html="true" data-content="{{tosca['description']}}">Read More</a>
-                {% if tosca['metadata']['authorization_required'] is defined %}
-                {% set pre_tasks = tosca['metadata']['authorization_required'] %}
-                <form style='display:inline;' action="{{url_for('home_bp.getauthorization')}}" method="post"> <input type="hidden" name="pre_tasks" value="{{pre_tasks}}"> <button type="submit" class="badge badge-pill badge-danger"> Request Access</button>
-                </form>
-                {% endif %}
-                {% if tg %}
-                <a href="{{ url_for('deployments_bp.configure', selected_group=tosca_name) }}" class="badge badge-pill badge-primary">Configure</a>
-                {% else %}
-                <a href="{{ url_for('deployments_bp.configure', selected_tosca=tosca_name) }}" class="badge badge-pill badge-primary">Configure</a>
-                {% endif %}
+                <div class="row justify-content-center">
+                    <div class="col-4">
+                        <a class="badge badge-pill badge-info text-left read_more" tabindex="0" data-toggle="popover" title="Full description" data-trigger="focus" data-html="true" data-content="{{tosca['description']}}">Read More</a>
+                    </div>
+                    {% if tosca['metadata']['access_locked'] %}
+                    {% set pre_tasks = tosca['metadata']['authorization_required'] %}
+                    <div class="col-4">
+                        {% if tosca['metadata']['display_name'] is defined %}{% set service_label = tosca['metadata']['display_name'] %}{% else %}{% set service_label = tosca_name %}{% endif %}
+                        <a role="button" data-id="{{ service_label }}" data-action="{{ url_for('home_bp.sendaccessrequest', service_type=service_label) }}" class="badge badge-pill badge-danger" data-toggle="modal" data-target="#requestAccess" > Request Access</a>
+                    </div>
+                    {% else %}
+                    <div class="col-4">
+                    {% import 'configure.j2' as configure %}
+                    {{ configure.create_configure_button(enable_template_groups, tosca_name, tosca['metadata']['allowed_groups']) }}
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     {% if loop.index % 3 == 0 %}
@@ -55,6 +65,48 @@
     {% if templates_info|count % 3 != 0 %}
     </div>
     {% endif %}
+    <!-- Modal begin -->
+    <div class="modal fade" id="requestAccess" tabindex="-1" role="dialog" aria-labelledby="requestAccess" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header px-lg-5">
+                    <h5 class="modal-title" id="listingModalLabel">Request Access</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="modal-body">
+                    <form id="requestform" action="#" method="post">
+                        <div class="form-group">
+                            <label for="username"><strong>User</strong></label>
+                            <div>
+                                <input type="text" class="form-control" name="username" id="username" value="{{ session['username'] }}" disabled>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="email"><strong>Mail</strong></label>
+                            <div>
+                                <input type="email" class="form-control" name="email" id="email" value="{{ session['useremail'] }}" data-toggle="email">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Message</label>
+                            <textarea required class="form-control" id="message" rows="3"></textarea>
+                        </div>
+                        <input type="hidden" name="service_type" value="">
+                        <div class="form-group">
+                            <div>
+                                <button type="submit" class="btn btn-success">Submit</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!--  end Modal -->
 </div>
 
 <script>
@@ -252,6 +304,21 @@ function cardFilter() {
         }
     }
 }
+</script>
+
+
+<script>
+$('#requestAccess').on('show.bs.modal', function (event) {
+    var target = $(event.relatedTarget) // Button that triggered the modal
+    // Extract info from data-* attributes
+    var service = target.data('id')
+    var url = target.data('action')
+
+    var modal = $(this)
+    modal.find('.modal-title').text('Request access to service \"' + service + '\"')
+    modal.find('input[name="service_type"]').val(service)
+    modal.find('#requestform').prop('action', url)
+})
 </script>
 
 {% endblock %}

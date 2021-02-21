@@ -52,9 +52,14 @@ def is_enabling_services(deployment_type, service_type):
 
 
 def get_slas(access_token, slam_url, cmdb_url, deployment_type=""):
-    headers = {'Authorization': 'bearer %s' % access_token}
+    headers = {'Authorization': 'Bearer %s' % access_token}
 
-    url = slam_url + "/preferences/" + session['organisation_name']
+    if 'active_usergroup' in session and session['active_usergroup'] is not None:
+        group = session['active_usergroup']
+    else:
+        group = session['organisation_name']
+
+    url = slam_url + "/preferences/" + group
 
     response = requests.get(url, headers=headers, timeout=20, verify=False)
 

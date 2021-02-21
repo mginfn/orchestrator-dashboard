@@ -16,12 +16,10 @@ from .. import app, iam_blueprint, mail, tosca
 from app.lib import utils, auth, settings, dbhelpers, openstack
 from app.models.User import User
 from markupsafe import Markup
-from werkzeug.exceptions import Forbidden
-from flask import Blueprint, json, render_template, request, redirect, url_for, session, make_response
+from flask import Blueprint, json, render_template, request, redirect, url_for, session, make_response, flash
 from flask_mail import Message
 from threading import Thread
 import json
-
 
 iam_base_url = settings.iamUrl
 iam_client_id = settings.iamClientID
@@ -33,6 +31,7 @@ if not issuer.endswith('/'):
 
 app.jinja_env.filters['tojson_pretty'] = utils.to_pretty_json
 app.jinja_env.filters['extract_netinterface_ips'] = utils.extract_netinterface_ips
+app.jinja_env.filters['intersect'] = utils.intersect
 
 toscaInfo = tosca.tosca_info
 
@@ -40,6 +39,7 @@ app.logger.debug("TOSCA INFO: " + json.dumps(toscaInfo))
 app.logger.debug("TOSCA DIR: " + tosca.tosca_dir)
 
 home_bp = Blueprint('home_bp', __name__, template_folder='templates', static_folder='static')
+
 
 @home_bp.route('/settings')
 @auth.authorized_with_valid_token
@@ -57,13 +57,32 @@ def login():
     return render_template(app.config.get('HOME_TEMPLATE'))
 
 
-def check_template_access(allowed_groups, user_groups):
-
+def is_template_locked(allowed_groups, user_groups):
     # check intersection of user groups with user membership
     if (allowed_groups is None or set(allowed_groups.split(',')) & set(user_groups)) != set() or allowed_groups == '*':
-        return True
-    else:
         return False
+    else:
+        return True
+
+
+def set_template_access(tosca, user_groups):
+    info = {}
+    for k, v in tosca.items():
+        access_locked = is_template_locked(v.get("metadata").get("allowed_groups"), user_groups)
+        if ("visibility" not in v.get("metadata") or v["metadata"]["visibility"] == "public") or not access_locked:
+            v["metadata"]["access_locked"] = access_locked
+            info[k] = v
+    return info
+
+
+def check_template_access(user_groups):
+    if tosca.tosca_gmetadata:
+        templates_info = set_template_access(tosca.tosca_gmetadata, user_groups)
+        enable_template_groups = True
+    else:
+        templates_info = set_template_access(toscaInfo, user_groups)
+        enable_template_groups = False
+    return templates_info, enable_template_groups
 
 
 @app.route('/')
@@ -77,23 +96,24 @@ def home():
     if account_info.ok:
         account_info_json = account_info.json()
         user_groups = account_info_json['groups']
+        user_id = account_info_json['sub']
 
+        supported_groups = []
         if settings.iamGroups:
-            if set(settings.iamGroups)&set(user_groups) == set():
-                app.logger.debug("No match on group membership. User group membership: "
-                                 + json.dumps(user_groups))
-                message = Markup(
-                    'Your identity has been verified successfully, but you are not authorized to access the services.<br>' +
-                    'Please, contact the administrators ({}) in order to get proper permissions'.format(app.config.get('SUPPORT_EMAIL')))
-                raise Forbidden(description=message)
+            supported_groups = list(set(settings.iamGroups) & set(user_groups))
+            if len(supported_groups) == 0:
+                app.logger.warning("The user {} does not belong to any supported user group".format(user_id))
 
-        session['userid'] = account_info_json['sub']
+        session['userid'] = user_id
         session['username'] = account_info_json['name']
         session['useremail'] = account_info_json['email']
         session['userrole'] = 'user'
         session['gravatar'] = utils.avatar(account_info_json['email'], 26)
         session['organisation_name'] = account_info_json['organisation_name']
-        session['usergroups'] = account_info_json['groups']
+        session['usergroups'] = user_groups
+        session['supported_usergroups'] = supported_groups
+        if 'active_usergroup' not in session:
+            session['active_usergroup'] = next(iter(supported_groups), None)
         # access_token = iam_blueprint.session.token['access_token']
 
         # check database
@@ -106,7 +126,7 @@ def home():
             admins = json.dumps(app.config['ADMINS'])
             role = 'admin' if email in admins else 'user'
 
-            user = User(sub=account_info_json['sub'],
+            user = User(sub=user_id,
                         name=account_info_json['name'],
                         username=account_info_json['preferred_username'],
                         given_name=account_info_json['given_name'],
@@ -120,19 +140,27 @@ def home():
 
         session['userrole'] = user.role  # role
 
-        templates_info = {}
-        tg = False
+        # templates_info = {}
+        # tg = False
+        #
+        # if tosca.tosca_gmetadata:
+        #     templates_info = {k: v for (k, v) in tosca.tosca_gmetadata.items() if
+        #              check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
+        #     tg = True
+        # else:
+        #     templates_info = {k: v for (k, v) in toscaInfo.items() if
+        #      check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
+        templates_info, enable_template_groups = check_template_access(user_groups)
 
-        if tosca.tosca_gmetadata:
-            templates_info = {k: v for (k, v) in tosca.tosca_gmetadata.items() if
-                     check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
-            tg = True
-        else:
-            templates_info = {k: v for (k, v) in toscaInfo.items() if
-             check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
+        return render_template(app.config.get('PORTFOLIO_TEMPLATE'), templates_info=templates_info,
+                               enable_template_groups=enable_template_groups)
 
 
-        return render_template(app.config.get('PORTFOLIO_TEMPLATE'), templates_info=templates_info, tg=tg)
+@home_bp.route('/set_active/<string:group>')
+def set_active_usergroup(group):
+    session['active_usergroup'] = group
+    flash("Project switched to {}".format(group), 'info')
+    return redirect(request.referrer)
 
 
 @home_bp.route('/logout')
@@ -214,10 +242,10 @@ def callback():
 
 @home_bp.route('/getauthorization', methods=['POST'])
 def getauthorization():
-
     tasks = json.loads(request.form.to_dict()["pre_tasks"].replace("'", "\""))
 
-    functions = {'openstack.get_unscoped_keystone_token': openstack.get_unscoped_keystone_token, 'send_mail': send_authorization_request_email }
+    functions = {'openstack.get_unscoped_keystone_token': openstack.get_unscoped_keystone_token,
+                 'send_mail': send_authorization_request_email}
 
     for task in tasks["pre_tasks"]:
         func = task["action"]
@@ -226,7 +254,26 @@ def getauthorization():
         if func in functions:
             functions[func](**args)
 
-    return render_template("success_message.html", title="Message sent", message="Your request has been sent to the support team. <br>You will receive soon a notification email about your request. <br>Thank you!")
+    return render_template("success_message.html", title="Message sent",
+                           message="Your request has been sent to the support team. <br>You will receive soon a notification email about your request. <br>Thank you!")
+
+
+@home_bp.route('/sendaccessreq', methods=['POST'])
+def sendaccessrequest():
+    form_data = request.form.to_dict()
+
+    try:
+        send_authorization_request_email(form_data['service_type'], email=form_data['email'])
+
+        flash(
+            "Your request has been sent to the support team. You will receive soon a notification email about your request. Thank you!",
+            "success")
+
+    except Exception as error:
+        utils.logexception("sending email:".format(error))
+        flash("Sorry, an error occurred while sending your request. Please retry.", "danger")
+
+    return redirect(url_for('home_bp.home'))
 
 
 @home_bp.route('/contact', methods=['POST'])
@@ -236,7 +283,8 @@ def contact():
     form_data = request.form.to_dict()
 
     try:
-        message = Markup("Name: {}<br>Email: {}<br>Message: {}".format(form_data['name'], form_data['email'], form_data['message']))
+        message = Markup(
+            "Name: {}<br>Email: {}<br>Message: {}".format(form_data['name'], form_data['email'], form_data['message']))
         send_email("New contact",
                    sender=app.config.get('MAIL_SENDER'),
                    recipients=[app.config.get('SUPPORT_EMAIL')],
@@ -251,12 +299,16 @@ def contact():
 
 def send_authorization_request_email(service_type, **kwargs):
     message = Markup(
-        "The following user has requested access for {}: <br>username: {} <br>IAM id (sub): {} <br>IAM groups: {} <br>email: {}".format(service_type, session['username'], session['userid'], session['usergroups'], session['useremail'], service_type))
+        "The following user has requested access for service \"{}\": <br>username: {} " \
+        "<br>IAM id (sub): {} <br>IAM groups: {} <br>email registered in IAM: {} " \
+        "<br> email provided by the user: {}".format(service_type, session['username'], session['userid'],
+                                                     session['usergroups'], session['useremail'], kwargs['email']))
 
     send_email("New Authorization Request",
                sender=app.config.get('MAIL_SENDER'),
-               recipients = [app.config.get('SUPPORT_EMAIL')],
-               html_body= message )
+               recipients=[app.config.get('SUPPORT_EMAIL')],
+               html_body=message)
+
 
 def create_and_send_email(subject, sender, recipients, uuid, status):
     send_email(subject,
@@ -268,7 +320,7 @@ def create_and_send_email(subject, sender, recipients, uuid, status):
 def send_email(subject, sender, recipients, html_body):
     msg = Message(subject, sender=sender, recipients=recipients)
     msg.html = html_body
-    msg.body = "This email is an automatic notification" # Add plain text, needed to avoid MPART_ALT_DIFF with AntiSpam
+    msg.body = "This email is an automatic notification"  # Add plain text, needed to avoid MPART_ALT_DIFF with AntiSpam
     Thread(target=send_async_email, args=(app, msg)).start()
 
 

@@ -28,6 +28,10 @@ def to_pretty_json(value):
                       indent=4, separators=(',', ': '))
 
 
+def intersect(a, b):
+    return set(a).intersection(b)
+
+
 def extract_netinterface_ips(input):
     res = {}
     for key,value in input.items():

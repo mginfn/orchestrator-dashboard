@@ -121,6 +121,19 @@
                 </ul>
                 {% if session['username'] %}
                 <ul class="navbar-nav ml-auto">
+                    {% if session['active_usergroup'] != None %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">
+                            {{ session['active_usergroup'] }}<span class="caret"></span>
+                        </a>
+                        <div class="dropdown-menu">
+                            {% for group in session['supported_usergroups'] %}
+                            {% if 'configure' in request.path or group==session['active_usergroup'] %}{% set prop='disabled' %}{% else %}{% set prop='' %}{% endif %}
+                            <a class="dropdown-item {{prop}}" href="{{ url_for('home_bp.set_active_usergroup', group=group) }}">{{group}}</a>
+                            {% endfor %}
+                        </div>
+                    </li>
+                    {% endif %}
 	                <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">
                             <img class="rounded-circle" src="{{ session['gravatar'] }}"/> {{ session['username'] }}<span class="caret"></span>
@@ -139,6 +152,7 @@
             </div>
         </div>
     </nav>
+    {% include 'flashed_messages.html' %}
     <main>
     {% block content %}{% endblock %}
     </main>

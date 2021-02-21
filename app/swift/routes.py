@@ -48,5 +48,5 @@ def createswifttoken():
             token = swift.pack(t)
             return render_template('createswifttoken.html', token=token)
         else:
-            flash("All fields must be filled! Cannot create swift token.")
+            flash("All fields must be filled! Cannot create swift token.", 'danger')
     return render_template('createswifttoken.html')

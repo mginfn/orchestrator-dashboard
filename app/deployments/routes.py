@@ -54,8 +54,12 @@ def showdeployments():
     access_token = iam_blueprint.session.token['access_token']
 
     headers = {'Authorization': 'bearer %s' % access_token}
+    params = "createdBy=me&page={}&size={}".format(0, 999999)
 
-    url = settings.orchestratorUrl + "/deployments?createdBy=me&page={}&size={}".format(0, 999999)
+    if 'active_usergroup' in session and session['active_usergroup'] is not None:
+        params = params + "&userGroup={}".format(session['active_usergroup'])
+
+    url = settings.orchestratorUrl + "/deployments?{}".format(params)
     response = requests.get(url, headers=headers)
 
     deployments = {}
@@ -83,7 +87,7 @@ def deptemplate(depid=None):
     response = requests.get(url, headers=headers)
 
     if not response.ok:
-        flash("Error getting template: " + response.text)
+        flash("Error getting template: " + response.text, 'danger')
         return redirect(url_for('home_bp.home'))
 
     template = response.text
@@ -132,7 +136,7 @@ def preprocess_outputs(browser, outputs, stoutputs):
 @auth.authorized_with_valid_token
 def depoutput(depid=None):
     if not session['userrole'].lower() == 'admin' and depid not in session['deployments_uuid_array']:
-        flash("You are not allowed to browse this page!")
+        flash("You are not allowed to browse this page!", 'danger')
         return redirect(url_for('deployments_bp.showdeployments'))
 
     # retrieve deployment from DB
@@ -190,7 +194,6 @@ def getadditionaloutputs(dep, access_token):
 
 
 def extract_info_from_deplog(access_token, uuid, info_type):
-    print("extract_info_from_deplog")
     headers = {'Authorization': 'bearer %s' % access_token}
 
     url = settings.orchestratorUrl + "/deployments/" + uuid + "/log"
@@ -299,7 +302,7 @@ def depdel(depid=None):
     response = requests.delete(url, headers=headers)
 
     if not response.ok:
-        flash("Error deleting deployment: " + response.text)
+        flash("Error deleting deployment: " + response.text, 'danger')
     else:
         dep = dbhelpers.get_deployment(depid)
         if dep is not None and dep.storage_encryption == 1:
@@ -408,7 +411,7 @@ def updatedep():
         response = requests.put(url, json=payload, headers=headers)
 
         if not response.ok:
-            flash("Error updating deployment: \n" + response.text)
+            flash("Error updating deployment: \n" + response.text, 'danger')
         else:
             # store data into database
             dep.keep_last_attempt = keep_last_attempt
@@ -437,8 +440,10 @@ def configure():
     if 'selected_tosca' in request.args:
         selected_tosca = request.args['selected_tosca']
 
+    if 'active_user_group' in request.args:
+        session['active_usergroup'] = request.args['active_user_group']
+
     if 'selected_group' in request.args:
-        print(tosca.tosca_gmetadata[request.args['selected_group']])
         templates = tosca.tosca_gmetadata[request.args['selected_group']]['templates']
         if len(templates) == 1:
             selected_tosca = templates[0]['name']
@@ -523,6 +528,8 @@ def createdep():
         'PROVIDER_TIMEOUT']
     params['timeoutMins'] = app.config['OVERALL_TIMEOUT']
     params['callback'] = app.config['CALLBACK_URL']
+    if 'active_usergroup' in session and session['active_usergroup'] is not None:
+        params['userGroup'] = session['active_usergroup']
 
     if form_data['extra_opts.schedtype'].lower() == "man":
         template = add_sla_to_template(template, form_data['extra_opts.selectedSLA'])
@@ -644,7 +651,7 @@ def createdep():
                        if func in functions:
                            functions[func](**args)
             except Exception as e:
-                flash(" The deployment submission failed with: {} <br><strong>Please contact the admin(s):</strong> {}".format(e, app.config.get('SUPPORT_EMAIL')))
+                flash(" The deployment submission failed with: {} <br><strong>Please contact the admin(s):</strong> {}".format(e, app.config.get('SUPPORT_EMAIL')), 'danger')
                 doprocess = False
 
         if value["type"] == "ldap_user":
@@ -678,7 +685,7 @@ def createdep():
                 inputs[password_input_name] = password
 
             except Exception as e:
-                flash(" The deployment submission failed with: {} <br><strong>Please contact the admin(s):</strong> {}".format(e, app.config.get('SUPPORT_EMAIL')))
+                flash(" The deployment submission failed with: {} <br><strong>Please contact the admin(s):</strong> {}".format(e, app.config.get('SUPPORT_EMAIL')), 'danger')
                 doprocess = False
 
 
@@ -733,10 +740,10 @@ def createdep():
 
             if calchash != objecthash:
                 doprocess = False
-                flash("Wrong swift file checksum!")
+                flash("Wrong swift file checksum!", 'danger')
         else:
             doprocess = False
-            flash("Missing file object!")
+            flash("Missing file object!", 'danger')
 
 
 
@@ -762,7 +769,7 @@ def createdep():
         response = requests.post(url, json=payload, headers=headers)
 
         if not response.ok:
-            flash("Error submitting deployment: \n" + response.text)
+            flash("Error submitting deployment: \n" + response.text, 'danger')
             doprocess = False
         else:
             # store data into database
@@ -795,6 +802,7 @@ def createdep():
                                         deployment_type=source_template['deployment_type'],
                                         template_type=source_template['metadata']['template_type'],
                                         provider_name=providername,
+                                        user_group=rs_json['userGroup'],
                                         endpoint='',
                                         feedback_required=feedback_required,
                                         keep_last_attempt=keep_last_attempt,
@@ -808,7 +816,7 @@ def createdep():
                 dbhelpers.add_object(deployment)
 
             else:
-                flash("Deployment with uuid:{} is already in the database!".format(uuid))
+                flash("Deployment with uuid:{} is already in the database!".format(uuid), 'warning')
 
     if doprocess is False and swiftprocess is True:
         swift.removeobject(containername, filename)
