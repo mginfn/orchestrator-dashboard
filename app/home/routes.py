@@ -263,7 +263,7 @@ def sendaccessrequest():
     form_data = request.form.to_dict()
 
     try:
-        send_authorization_request_email(form_data['service_type'], email=form_data['email'])
+        send_authorization_request_email(form_data['service_type'], email=form_data['email'], message=form_data['message'])
 
         flash(
             "Your request has been sent to the support team. You will receive soon a notification email about your request. Thank you!",
@@ -301,8 +301,9 @@ def send_authorization_request_email(service_type, **kwargs):
     message = Markup(
         "The following user has requested access for service \"{}\": <br>username: {} " \
         "<br>IAM id (sub): {} <br>IAM groups: {} <br>email registered in IAM: {} " \
-        "<br> email provided by the user: {}".format(service_type, session['username'], session['userid'],
-                                                     session['usergroups'], session['useremail'], kwargs['email']))
+        "<br>email provided by the user: {} " \
+        "<br>Message: {}".format(service_type, session['username'], session['userid'],
+                                 session['usergroups'], session['useremail'], kwargs['email'], kwargs['message']))
 
     send_email("New Authorization Request",
                sender=app.config.get('MAIL_SENDER'),
