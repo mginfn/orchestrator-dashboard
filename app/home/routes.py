@@ -298,6 +298,7 @@ def contact():
 
 
 def send_authorization_request_email(service_type, **kwargs):
+
     message = Markup(
         "The following user has requested access for service \"{}\": <br>username: {} " \
         "<br>IAM id (sub): {} <br>IAM groups: {} <br>email registered in IAM: {} " \
@@ -305,8 +306,9 @@ def send_authorization_request_email(service_type, **kwargs):
         "<br>Message: {}".format(service_type, session['username'], session['userid'],
                                  session['usergroups'], session['useremail'], kwargs['email'], kwargs['message']))
 
+    sender = kwargs['email'] if 'email' in kwargs else session['useremail']
     send_email("New Authorization Request",
-               sender=app.config.get('MAIL_SENDER'),
+               sender=sender,
                recipients=[app.config.get('SUPPORT_EMAIL')],
                html_body=message)
 
