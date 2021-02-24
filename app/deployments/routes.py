@@ -565,7 +565,8 @@ def createdep():
                 if "required_ports" in value:
                     inputs[key] = {**value["required_ports"], **inputs[key]}
             else:
-                inputs[key] = { "ssh": { "protocol": "tcp", "source": 22 } }
+                if "required_ports" in value:
+                    inputs[key] = value["required_ports"]
         # Manage map of string
         if value["type"]=="map" and value["entry_schema"]["type"]=="string":
             if key in inputs:
