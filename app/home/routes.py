@@ -156,8 +156,9 @@ def home():
                                enable_template_groups=enable_template_groups)
 
 
-@home_bp.route('/set_active/<string:group>')
-def set_active_usergroup(group):
+@home_bp.route('/set_active')
+def set_active_usergroup():
+    group = request.args['group']
     session['active_usergroup'] = group
     flash("Project switched to {}".format(group), 'info')
     return redirect(request.referrer)
