@@ -635,7 +635,8 @@ def createdep():
         if value["type"] == "openstack_ec2credentials":
             try:
                 del inputs[key]
-                access, secret = keystone.get_or_create_ec2_creds(access_token, value["auth"]["url"], value["auth"]["identity_provider"], value["auth"]["protocol"])
+                project = next(filter(lambda tenant: tenant.get('group') == session['active_usergroup'], value['auth']['tenants']), None)
+                access, secret = keystone.get_or_create_ec2_creds(access_token, project.get('name'), value["auth"]["url"], value["auth"]["identity_provider"], value["auth"]["protocol"])
                 access_key_input_name = value["inputs"]["aws_access_key"]
                 inputs[access_key_input_name] = access
                 secret_key_input_name = value["inputs"]["aws_secret_key"]
@@ -652,7 +653,7 @@ def createdep():
                        if func in functions:
                            functions[func](**args)
             except Exception as e:
-                flash(" The deployment submission failed with: {} <br><strong>Please contact the admin(s):</strong> {}".format(e, app.config.get('SUPPORT_EMAIL')), 'danger')
+                flash(" The deployment submission failed with: {}. Please contact the admin(s): {}".format(e, app.config.get('SUPPORT_EMAIL')), 'danger')
                 doprocess = False
 
         if value["type"] == "ldap_user":
