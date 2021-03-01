@@ -161,7 +161,7 @@ def create_ec2_credentials(auth_url, user_id,project_id,scoped_token):
     return credential
 
 
-def get_or_create_ec2_creds(access_token, auth_url, identity_provider='infn-cc', protocol='oidc'):
+def get_or_create_ec2_creds(access_token, project, auth_url, identity_provider='infn-cc', protocol='oidc'):
     """Get EC2 credentials from access token. If some EC2 credentials are already available, they will be re-used.
     Otherwise new credentials will be generated
 
@@ -169,6 +169,8 @@ def get_or_create_ec2_creds(access_token, auth_url, identity_provider='infn-cc',
     ----------
     access_token : str
         The user access token issued by the OpenID Connect IdP
+    project : str
+        The project the credentials must be valid for
     identity_provider : str
         the identity provider as configured in keystone (default is infn-cc)
     protocol:
@@ -189,7 +191,8 @@ def get_or_create_ec2_creds(access_token, auth_url, identity_provider='infn-cc',
 
     if unscoped_token:
         projects = get_project_list(auth_url, unscoped_token)
-        project_id = projects[0].get('id') if projects and len(projects) >= 1 else None
+        prj = next(filter(lambda prj: prj.get('name') == project, projects), None)
+        project_id = prj.get('id') if prj else None
 
         if project_id:
             scoped_token = get_scoped_token(auth_url, unscoped_token, project_id)
@@ -227,12 +230,16 @@ def delete_ec2_credential(auth_url, user_id, credential_id, scoped_token):
 
 
 
-def delete_ec2_creds(access_token, auth_url, identity_provider='infn-cc', protocol='oidc'):
+def delete_ec2_creds(access_token, project, auth_url, identity_provider='infn-cc', protocol='oidc'):
     """Delete EC2 credential using the user access token issued by an OpenID Connect IdP
 
     Parameters
     ----------
-     identity_provider : str
+    access_token : str
+        The user access token issued by the OpenID Connect IdP
+    project : str
+        The project the credentials must be valid for
+    identity_provider : str
         the identity provider as configured in keystone (default is infn-cc)
     protocol:
         the protocol as configured in keystone (default is oidc)
@@ -242,7 +249,8 @@ def delete_ec2_creds(access_token, auth_url, identity_provider='infn-cc', protoc
 
     if unscoped_token:
         projects = get_project_list(auth_url, unscoped_token)
-        project_id = projects[0].get('id') if projects and len(projects) >= 1 else None
+        prj = next(filter(lambda prj: prj.get('name') == project, projects), None)
+        project_id = prj.get('id') if prj else None
 
         if project_id:
             scoped_token = get_scoped_token(auth_url, unscoped_token, project_id)
