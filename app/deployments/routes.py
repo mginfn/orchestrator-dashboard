@@ -674,10 +674,10 @@ def createdep():
                                                       app.config.get('VAULT_BOUND_AUDIENCE'))
 
                 vaultclient = vaultservice.connect(jwt_token, app.config.get("VAULT_ROLE"))
-                luser = LdapUserManager(app.config.get('LDAP_SOCKET'),
-                                        app.config.get('LDAP_BASE'),
-                                        app.config.get('LDAP_BIND_USER'),
-                                        app.config.get('LDAP_BIND_PASSWORD'),
+                luser = LdapUserManager(app.config['LDAP_SOCKET'],
+                                        app.config['LDAP_BASE'],
+                                        app.config['LDAP_BIND_USER'],
+                                        app.config['LDAP_BIND_PASSWORD'],
                                         vaultclient)
 
                 username, password = luser.create_user(username, email)
@@ -687,7 +687,8 @@ def createdep():
                 inputs[password_input_name] = password
 
             except Exception as e:
-                flash(" The deployment submission failed with: {} <br><strong>Please contact the admin(s):</strong> {}".format(e, app.config.get('SUPPORT_EMAIL')), 'danger')
+                app.logger.error("Error: {}".format(e))
+                flash(" The deployment submission failed with: {}. Please try later or contact the admin(s): {}".format(e, app.config.get('SUPPORT_EMAIL')), 'danger')
                 doprocess = False
 
 
