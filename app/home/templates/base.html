@@ -1,5 +1,4 @@
 <html>
-
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -44,6 +43,7 @@
     <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.0.3/cookieconsent.min.css" />
     <script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.0.3/cookieconsent.min.js"></script>
     <script>
+    let link = "{{ privacy_policy_url }}"
     window.addEventListener("load", function(){
         window.cookieconsent.initialise({
           "palette": {
@@ -55,7 +55,10 @@
             }
           },
           "theme": "classic",
-          "position": "top"
+          "position": "top",
+          "content": {
+            "href": link
+          }
         })
     });
     </script>

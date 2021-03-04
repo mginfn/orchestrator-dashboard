@@ -9,4 +9,7 @@ MAIL_IMAGE_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAAB9CAYAAADn
 HOME_TEMPLATE = 'infn-cloud/home.html'
 FOOTER_TEMPLATE = 'infn-cloud/footer.html'
 
+### Links
+PRIVACY_POLICY_URL = 'https://www-cloud.infn.it/privacy-policy/'
+
 

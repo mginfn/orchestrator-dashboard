@@ -66,6 +66,7 @@ def inject_settings():
         navbar_brand_text=app.config.get('NAVBAR_BRAND_TEXT'),
         navbar_brand_icon=app.config.get('NAVBAR_BRAND_ICON'),
         favicon_path=app.config.get('FAVICON_PATH'),
+        privacy_policy_url=app.config.get('PRIVACY_POLICY_URL'),
         mail_image_src=app.config.get('MAIL_IMAGE_SRC'),
         enable_vault_integration=False if app.config.get('FEATURE_VAULT_INTEGRATION').lower() == 'no' else True,
         external_links=app.config.get('EXTERNAL_LINKS') if app.config.get('EXTERNAL_LINKS') else [],
