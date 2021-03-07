@@ -145,7 +145,11 @@ def read_privkey(subject):
     secret_path = session['userid'] + '/ssh_private_key'
     privkey_key = 'ssh_private_key'
 
-    response_output = vault_client.read_secret(read_token, secret_path, privkey_key)
+    try:
+        response_output = vault_client.read_secret(read_token, secret_path, privkey_key)
+    except Exception as e:
+        app.logger.warning("Error retrieving ssh key for user {}: {}".format(session["username"], str(e)))
+        response_output = "Not Available"
 
     vault_client.revoke_token()
 

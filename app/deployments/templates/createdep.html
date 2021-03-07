@@ -19,7 +19,6 @@
               <p>SSH keys allow you to establish a secure connection between your computer and your virtual machine. At least one public key has to be provided.</p>
               <hr>
               <p>To create a new ssh key pair or upload your public key, please go <a target="_blank" href="{{ url_for("vault_bp.ssh_keys") }}">here</a></p>
-              <p>You can still provide a key in the dedicated field of the form.</p>
               {% if user_documentation_url is defined %}
               <p>For more information, please visit our <a href="{{ user_documentation_url }}" target="_blank">documentation site</a>.</p>
               {% endif %}
