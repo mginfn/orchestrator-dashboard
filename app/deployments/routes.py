@@ -460,6 +460,9 @@ def configure():
 
         ssh_pub_key = dbhelpers.get_ssh_pub_key(session['userid'])
 
+        if not ssh_pub_key and app.config.get('FEATURE_REQUIRE_USER_SSH_PUBKEY') == 'yes':
+            flash('Warning! You will not be able to deploy your service as no Public SSH key has been uploaded.', "danger")
+
         return render_template('createdep.html',
                                template=template,
                                feedback_required=True,
@@ -587,6 +590,15 @@ def createdep():
                         for el in json_data:
                             array.append({el['key']: el['value']})
                         inputs[key] = array
+                    elif value["entry_schema"]["type"]=="tosca.datatypes.indigo.User":
+                        if app.config.get('FEATURE_REQUIRE_USER_SSH_PUBKEY')=='yes':
+                            if dbhelpers.get_ssh_pub_key(session['userid']):
+                                inputs[key] = [ { "os_user_name": session['preferred_username'], "os_user_add_to_sudoers": True, "os_user_ssh_public_key": dbhelpers.get_ssh_pub_key(session['userid'])  } ]
+                            else:
+                                flash("Deployment request failed: no SSH key found. Please upload your key.", "danger")
+                                doprocess = False
+                        else:
+                            inputs[key] = json_data
                     else:
                         inputs[key] = json_data
                 except:
@@ -753,9 +765,6 @@ def createdep():
     if doprocess:
 
         storage_encryption, vault_secret_uuid, vault_secret_key = add_storage_encryption(access_token, inputs)
-
-        if 'instance_key_pub' in inputs and inputs['instance_key_pub'] == '':
-            inputs['instance_key_pub'] = dbhelpers.get_ssh_pub_key(session['userid'])
 
         app.logger.debug("Parameters: " + json.dumps(inputs))
 

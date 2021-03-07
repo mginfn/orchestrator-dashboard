@@ -20,7 +20,7 @@
 <p><strong>{{name}}</strong>: <a href="{{v}}" target="_blank">{{v}}</a></p>
 
 {% elif "node_creds" in k or "cluster_creds" in k %}
-
+{%if require_ssh_pubkey=='no' %}
 
 {% if v['token'] is  defined %}
 {% set v=[v] %}
@@ -43,7 +43,7 @@
 </fieldset>
 {% endfor %}
 <p></p>
-
+{% endif %}
 
 {% else %}
 <p><strong>{{k}}</strong>: {{v}}</p>

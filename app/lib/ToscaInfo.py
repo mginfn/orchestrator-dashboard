@@ -88,7 +88,7 @@ class ToscaInfo(object):
                 "icon": "https://cdn4.iconfinder.com/data/icons/mosaicon-04/512/websettings-512.png",
                         "visibility": "public",
                         "allowed_groups": '*',
-                        "require_ssh_key": False,
+                        "require_ssh_key": True,
                         "template_type": ""
             },
             "enable_config_form": False,

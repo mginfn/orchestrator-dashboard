@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-
+<br>
 <div class="container">
 
     {% if enable_vault_integration and template['metadata']['require_ssh_key'] and ssh_pub_key is none  %}
@@ -16,17 +16,21 @@
                 </button>
               </div>
               <div class="modal-body">
-              <p>SSH keys allow you to establish a secure connection between your computer and your virtual machine. At least one public key has to be provided mandatorily.</p>
+              <p>SSH keys allow you to establish a secure connection between your computer and your virtual machine. At least one public key has to be provided.</p>
               <hr>
-              <p>To create a new ssh key pair or upload your public key, please go <a href="{{ url_for("vault_bp.ssh_keys") }}">here</a></p>
+              <p>To create a new ssh key pair or upload your public key, please go <a target="_blank" href="{{ url_for("vault_bp.ssh_keys") }}">here</a></p>
               <p>You can still provide a key in the dedicated field of the form.</p>
-              <p>For more information, please visit our <a href="https://laniakea.readthedocs.io/en/latest/user_documentation/ssh_keys/ssh_keys.html" target="_blank">documentation page</a>.</p>
+              {% if user_documentation_url is defined %}
+              <p>For more information, please visit our <a href="{{ user_documentation_url }}" target="_blank">documentation site</a>.</p>
+              {% endif %}
               </div>
               <div class="modal-footer">
+                  {% if require_ssh_pubkey=='no' %}
                   <div class="d-flex flex-grow-1 justify-content-start custom-control custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="popupMaintenanceCheckbox" name="checkbox-maintenance"/>
                       <label class="custom-control-label checkbox-maintenance" for="popupMaintenanceCheckbox">Don't show me again</label>
                   </div>
+                  {% endif %}
                   <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
               </div>
             </div>

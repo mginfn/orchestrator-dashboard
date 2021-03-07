@@ -106,6 +106,7 @@ def home():
 
         session['userid'] = user_id
         session['username'] = account_info_json['name']
+        session['preferred_username'] = account_info_json['preferred_username']
         session['useremail'] = account_info_json['email']
         session['userrole'] = 'user'
         session['gravatar'] = utils.avatar(account_info_json['email'], 26)

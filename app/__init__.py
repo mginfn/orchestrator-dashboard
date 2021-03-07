@@ -74,6 +74,8 @@ def inject_settings():
             'FEATURE_ADVANCED_MENU') else "no",
         enable_update_deployment=app.config.get('FEATURE_UPDATE_DEPLOYMENT') if app.config.get(
             'FEATURE_UPDATE_DEPLOYMENT') else "no",
+        require_ssh_pubkey=app.config.get('FEATURE_REQUIRE_USER_SSH_PUBKEY') if app.config.get(
+            'FEATURE_REQUIRE_USER_SSH_PUBKEY') else "no",
         hidden_deployment_columns=app.config.get('FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') if app.config.get(
             'FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') else ""
     )
