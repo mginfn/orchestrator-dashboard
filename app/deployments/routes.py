@@ -23,6 +23,7 @@ from app.providers import sla
 from app.lib import ToscaInfo as tosca_helpers
 from app.lib import openstack as keystone
 from app.lib import s3 as s3
+from werkzeug.exceptions import Forbidden
 from werkzeug.utils import secure_filename
 from app.swift.swift import Swift
 from packaging import version
@@ -33,6 +34,7 @@ import yaml
 import io
 import os
 import re
+
 
 
 deployments_bp = Blueprint('deployments_bp', __name__,
@@ -672,6 +674,11 @@ def createdep():
                        args["secret_key"] = secret
                        if func in functions:
                            functions[func](**args)
+            except Forbidden as e:
+                app.logger.error("Error while testing S3: {}".format(e))
+                flash(" Sorry, your request needs a special authorization. A notification has been sent automatically to the support team. You will be contacted soon.", 'danger')
+                utils.send_authorization_request_email("Sync&Share aaS for group {}".format(session["active_usergroup"]))
+                doprocess = False
             except Exception as e:
                 flash(" The deployment submission failed with: {}. Please contact the admin(s): {}".format(e, app.config.get('SUPPORT_EMAIL')), 'danger')
                 doprocess = False
