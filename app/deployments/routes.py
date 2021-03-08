@@ -590,19 +590,28 @@ def createdep():
                         for el in json_data:
                             array.append({el['key']: el['value']})
                         inputs[key] = array
-                    elif value["entry_schema"]["type"]=="tosca.datatypes.indigo.User":
-                        if app.config.get('FEATURE_REQUIRE_USER_SSH_PUBKEY')=='yes':
-                            if dbhelpers.get_ssh_pub_key(session['userid']):
-                                inputs[key] = [ { "os_user_name": session['preferred_username'], "os_user_add_to_sudoers": True, "os_user_ssh_public_key": dbhelpers.get_ssh_pub_key(session['userid'])  } ]
-                            else:
-                                flash("Deployment request failed: no SSH key found. Please upload your key.", "danger")
-                                doprocess = False
-                        else:
-                            inputs[key] = json_data
+                    # elif value["entry_schema"]["type"]=="tosca.datatypes.indigo.User":
+                    #     if app.config.get('FEATURE_REQUIRE_USER_SSH_PUBKEY')=='yes':
+                    #         if dbhelpers.get_ssh_pub_key(session['userid']):
+                    #             inputs[key] = [ { "os_user_name": session['preferred_username'], "os_user_add_to_sudoers": True, "os_user_ssh_public_key": dbhelpers.get_ssh_pub_key(session['userid'])  } ]
+                    #         else:
+                    #             flash("Deployment request failed: no SSH key found. Please upload your key.", "danger")
+                    #             doprocess = False
+                    #     else:
+                    #         inputs[key] = json_data
                     else:
                         inputs[key] = json_data
                 except:
                     del inputs[key]
+
+        if value['type'] == 'ssh_user':
+            app.logger.info("Add ssh user")
+            if app.config.get('FEATURE_REQUIRE_USER_SSH_PUBKEY')=='yes':
+                if dbhelpers.get_ssh_pub_key(session['userid']):
+                    inputs[key] = [ { "os_user_name": session['preferred_username'], "os_user_add_to_sudoers": True, "os_user_ssh_public_key": dbhelpers.get_ssh_pub_key(session['userid'])  } ]
+                else:
+                    flash("Deployment request failed: no SSH key found. Please upload your key.", "danger")
+                    doprocess = False
 
         # Manage special type 'dependent_definition'
         if value["type"] == "dependent_definition":
@@ -616,13 +625,12 @@ def createdep():
                 swift_uuid = inputs[key] = str(uuid_generator.uuid1())
 
         if value["type"] == "hidden":
-                try:
-                    if re.match(r"^swift_[avuktc]$", value["default"]):
-                        if key in inputs:
-                            swift_map[value["default"]] = key
-                except:
-                    pass
-
+            try:
+                if re.match(r"^swift_[avuktc]$", value["default"]):
+                    if key in inputs:
+                        swift_map[value["default"]] = key
+            except:
+                pass
 
         if value["type"] == "swift_token":
             if key in inputs:
