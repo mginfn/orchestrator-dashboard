@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .. import app, iam_blueprint, mail, tosca
+from .. import app, iam_blueprint, tosca
 from app.lib import utils, auth, settings, dbhelpers, openstack
 from app.models.User import User
 from markupsafe import Markup
 from flask import Blueprint, json, render_template, request, redirect, url_for, session, make_response, flash
-from flask_mail import Message
-from threading import Thread
 import json
 
 iam_base_url = settings.iamUrl
@@ -213,25 +211,25 @@ def callback():
     if mail_sender and user_email != '' and rf == 1:
         if status == 'CREATE_COMPLETE':
             try:
-                create_and_send_email("Deployment complete", mail_sender, [user_email], uuid, status)
+                utils.create_and_send_email("Deployment complete", mail_sender, [user_email], uuid, status)
             except Exception as error:
                 utils.logexception("sending email:".format(error))
 
         if status == 'CREATE_FAILED':
             try:
-                create_and_send_email("Deployment failed", mail_sender, [user_email], uuid, status)
+                utils.create_and_send_email("Deployment failed", mail_sender, [user_email], uuid, status)
             except Exception as error:
                 utils.logexception("sending email:".format(error))
 
         if status == 'UPDATE_COMPLETE':
             try:
-                create_and_send_email("Deployment update complete", mail_sender, [user_email], uuid, status)
+                utils.create_and_send_email("Deployment update complete", mail_sender, [user_email], uuid, status)
             except Exception as error:
                 utils.logexception("sending email:".format(error))
 
         if status == 'UPDATE_FAILED':
             try:
-                create_and_send_email("Deployment update failed", mail_sender, [user_email], uuid, status)
+                utils.create_and_send_email("Deployment update failed", mail_sender, [user_email], uuid, status)
             except Exception as error:
                 utils.logexception("sending email:".format(error))
 
@@ -247,7 +245,7 @@ def getauthorization():
     tasks = json.loads(request.form.to_dict()["pre_tasks"].replace("'", "\""))
 
     functions = {'openstack.get_unscoped_keystone_token': openstack.get_unscoped_keystone_token,
-                 'send_mail': send_authorization_request_email}
+                 'send_mail': utils.send_authorization_request_email}
 
     for task in tasks["pre_tasks"]:
         func = task["action"]
@@ -265,7 +263,7 @@ def sendaccessrequest():
     form_data = request.form.to_dict()
 
     try:
-        send_authorization_request_email(form_data['service_type'], email=form_data['email'], message=form_data['message'])
+        utils.send_authorization_request_email(form_data['service_type'], email=form_data['email'], message=form_data['message'])
 
         flash(
             "Your request has been sent to the support team. You will receive soon a notification email about your request. Thank you!",
@@ -287,7 +285,7 @@ def contact():
     try:
         message = Markup(
             "Name: {}<br>Email: {}<br>Message: {}".format(form_data['name'], form_data['email'], form_data['message']))
-        send_email("New contact",
+        utils.send_email("New contact",
                    sender=app.config.get('MAIL_SENDER'),
                    recipients=[app.config.get('SUPPORT_EMAIL')],
                    html_body=message)
@@ -297,38 +295,3 @@ def contact():
         return Markup("<div class='alert alert-danger' role='alert'>Oops, error sending message.</div>")
 
     return Markup("<div class='alert alert-success' role='alert'>Your message has been sent, Thank you!</div>")
-
-
-def send_authorization_request_email(service_type, **kwargs):
-
-    message = Markup(
-        "The following user has requested access for service \"{}\": <br>username: {} " \
-        "<br>IAM id (sub): {} <br>IAM groups: {} <br>email registered in IAM: {} " \
-        "<br>email provided by the user: {} " \
-        "<br>Message: {}".format(service_type, session['username'], session['userid'],
-                                 session['usergroups'], session['useremail'], kwargs['email'], kwargs['message']))
-
-    sender = kwargs['email'] if 'email' in kwargs else session['useremail']
-    send_email("New Authorization Request",
-               sender=sender,
-               recipients=[app.config.get('SUPPORT_EMAIL')],
-               html_body=message)
-
-
-def create_and_send_email(subject, sender, recipients, uuid, status):
-    send_email(subject,
-               sender=sender,
-               recipients=recipients,
-               html_body=render_template(app.config.get('MAIL_TEMPLATE'), uuid=uuid, status=status))
-
-
-def send_email(subject, sender, recipients, html_body):
-    msg = Message(subject, sender=sender, recipients=recipients)
-    msg.html = html_body
-    msg.body = "This email is an automatic notification"  # Add plain text, needed to avoid MPART_ALT_DIFF with AntiSpam
-    Thread(target=send_async_email, args=(app, msg)).start()
-
-
-def send_async_email(app, msg):
-    with app.app_context():
-        mail.send(msg)
