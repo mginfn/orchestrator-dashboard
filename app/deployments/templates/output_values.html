@@ -19,6 +19,9 @@
 {% elif (stoutputs[k] and stoutputs[k]['type'] == 'url') or "url" in k or "endpoint" in k %}
 <p><strong>{{name}}</strong>: <a href="{{v}}" target="_blank">{{v}}</a></p>
 
+{% elif (stoutputs[k] and stoutputs[k]['type'] == 'ssh_user') %}
+<p><strong>ssh_account</strong>: {{v['os_user_name']}} </p>
+
 {% elif "node_creds" in k or "cluster_creds" in k %}
 {%if require_ssh_pubkey=='no' %}
 
