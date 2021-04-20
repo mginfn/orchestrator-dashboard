@@ -163,6 +163,14 @@ $(document).ready(function () {
 
         $("select[data-action='removeOnSubmit']").remove();
 
+        // fix scalar-unit.size combining value with units
+        var tmpElems = $("input[data-type='scalar-unit.size']");
+        for (j = 0; j < tmpElems.length; j++) {
+          let elem = tmpElems[j];
+          elem.type = "text";
+          elem.value = elem.value + " " + elem.getAttribute("data-units");
+        }
+
         return true;
 
     });

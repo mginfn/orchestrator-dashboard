@@ -45,6 +45,20 @@
       </fieldset>
     <!-- end list text type -->
 
+    <!-- scalar-unit.size type -->
+    {% elif value.type == "scalar-unit.size" %}
+      {% if 'in_range' in value.constraints %}
+      {% set range_min = value.constraints['in_range'][0].split(' ')[0] %}
+      {% set range_max = value.constraints['in_range'][1].split(' ')[0] %}
+      {% endif %}
+      <div class="input-group mb-3">
+        <input type="number" min="{{range_min}}" max="{{range_max}}" class="form-control" aria-describedby="{{key}}_append" data-validate-function="validateScalarUnitSize" data-type="{{value.type}}" data-units="{{value.default.split(' ')[1]}}" id="{{key}}" name="{{key}}" value="{{value.default.split(' ')[0]}}" {% if value.required %}required{%endif%} {{mode}} />
+        <div class="input-group-append">
+          <span class="input-group-text" id="{{key}}_append">{{value.default.split(' ')[1]}}</span>
+        </div>
+      </div>
+    <!-- end scalar-unit.size type-->
+
     <!-- hidden types -->
     {% elif value.type == "hidden" or value.type == "openstack_ec2credentials" or value.type == "uuidgen" or value.type == "ldap_user" or value.type == "ssh_user" %}
       <input type="hidden" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" >
