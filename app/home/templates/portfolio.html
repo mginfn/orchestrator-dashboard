@@ -49,6 +49,8 @@
                         {% if tosca['metadata']['display_name'] is defined %}{% set service_label = tosca['metadata']['display_name'] %}{% else %}{% set service_label = tosca_name %}{% endif %}
                         <a role="button" data-id="{{ service_label }}" data-action="{{ url_for('home_bp.sendaccessrequest', service_type=service_label) }}" class="badge badge-pill badge-danger" data-toggle="modal" data-target="#requestAccess" > Request Access</a>
                     </div>
+                    {% elif tosca['metadata']['tag'] is defined and tosca['metadata']['tag']|upper == 'MAINTENANCE'   %}
+                       <!-- maintenance: do not show configure button -->
                     {% else %}
                     <div class="col-4">
                     {% import 'configure.j2' as configure %}
