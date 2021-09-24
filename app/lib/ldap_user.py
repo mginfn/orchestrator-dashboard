@@ -36,12 +36,15 @@ class PasswordMismatch(Error):
 
 class LdapUserManager(object):
 
-    def __init__(self, ldapsocket, ldapbase, binduser, bindpw, secretstore : VaultClient):
+    def __init__(self, ldapsocket, ldapcacert, ldapbase, binduser, bindpw, secretstore : VaultClient):
 
         self.ldapsocket = ldapsocket
         self.ldapbase = ldapbase
         self.binduser = "uid={},{}".format(binduser,self.ldapbase)
         self.bindpw = bindpw
+
+        if(ldapcacert):
+            ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, ldapcacert)
 
         # bind
         self.l = ldap.initialize(ldapsocket)

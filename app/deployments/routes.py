@@ -702,6 +702,7 @@ def createdep():
 
                 vaultclient = vaultservice.connect(jwt_token, app.config.get("VAULT_ROLE"))
                 luser = LdapUserManager(app.config['LDAP_SOCKET'],
+                                        app.config.get['LDAP_TLS_CACERT_FILE'],
                                         app.config['LDAP_BASE'],
                                         app.config['LDAP_BIND_USER'],
                                         app.config['LDAP_BIND_PASSWORD'],
