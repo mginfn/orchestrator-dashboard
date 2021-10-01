@@ -152,7 +152,7 @@ def updatedeploymentsstatus(deployments, userid):
                                     params='',
                                     deployment_type=getdeploymenttype(dep_json),
                                     provider_name=providername,
-                                    user_group=dep_json['userGroup'],
+                                    user_group=dep_json.get('userGroup'),
                                     endpoint=endpoint,
                                     remote=1,
                                     locked=0,
