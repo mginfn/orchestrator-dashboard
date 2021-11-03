@@ -84,22 +84,19 @@
                   <span class="sr-only">Toggle Dropdown</span>
                 </button>
                 <div class="dropdown-menu">
-                  {% if deployment.locked == 0 %}
-                    <a class="dropdown-item" href="#delete_confirm_{{deployment.uuid}}" data-toggle="modal" data-backdrop="static" data-keyboard="false"
-                       data-target="#delete_confirm_{{deployment.uuid}}"><span class="fas fa-trash-alt mr-2"></span>Delete</a>
-                  {% endif %}
-                  <a class="dropdown-item" href="{{ url_for('deployments_bp.deptemplate', depid=deployment.uuid) }}"><span class="fas fa-search mr-2 grey-text"></span>Show template</a>
+                    <a class="dropdown-item" data-toggle="modal" data-target="#editDeployment" data-id="{{ deployment.uuid }}" data-description="{{ deployment.description }}" data-action="{{ url_for('deployments_bp.editdeployment') }}">
+                        <span class="fas fa-edit mr-2 grey-text"></span>Edit</a>
+                    <a class="dropdown-item" href="{{ url_for('deployments_bp.deptemplate', depid=deployment.uuid) }}"><span class="fas fa-search mr-2 grey-text"></span>Show template</a>
                   {% if enable_update_deployment == "yes" and deployment.updatable == 1 %}
                     <a class="dropdown-item" href="{{ url_for('deployments_bp.depupdate', depid=deployment.uuid) }}"><span class="fas fa-plus mr-2 grey-text"></span>Update</a>
                   {% endif %}
                   {% if deployment.deployment_type == "CLOUD" %}
                       <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.deplog', depid=deployment.uuid) }}">
                           <span class="fas fa-file-alt mr-2 grey-text"></span>Log</a>
-                  {% endif %}
-                  {% if deployment.locked == 0 %}
-                    <a class="dropdown-item" href="{{ url_for('deployments_bp.lockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock mr-2"></span>Lock</a>
-                  {% else %}
-                    <a class="dropdown-item" href="{{ url_for('deployments_bp.unlockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock-open mr-2"></span>Unlock</a>
+                      {% if enable_ports_request == "yes" %}
+                      <a class="dropdown-item" data-toggle="modal" data-target="#requestPorts" data-id="{{ deployment.uuid }}" data-action="{{ url_for('deployments_bp.sendportsrequest') }}" >
+                          <span class="fas fa-ticket-alt mr-2 grey-text"></span>Request Ports</a>
+                     {% endif %}
                   {% endif %}
                   {% if deployment.deployment_type == "CLOUD" and session['userrole'] == 'admin' %}
                       <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.depinfradetails', depid=deployment.uuid) }}">
@@ -109,7 +106,15 @@
                       <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.depqcgdetails', depid=deployment.uuid) }}">
                           <span class="fas fa-bars mr-2 grey-text"></span>Job details</a>
                   {% endif %}
-                    </div>
+                  {% if deployment.locked == 0 %}
+                    <a class="dropdown-item" href="{{ url_for('deployments_bp.lockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock mr-2"></span>Lock</a>
+                    <a class="dropdown-item" style="color: red;" href="#delete_confirm_{{deployment.uuid}}" data-toggle="modal" data-backdrop="static" data-keyboard="false"
+                       data-target="#delete_confirm_{{deployment.uuid}}"><span class="fas fa-trash-alt mr-2"></span>Delete</a>
+                  {% else %}
+                    <a class="dropdown-item" href="{{ url_for('deployments_bp.unlockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock-open mr-2"></span>Unlock</a>
+                  {% endif %}
+
+                </div>
               </div>
             </td>
         </tr>
@@ -139,6 +144,76 @@
     </div>
     </div>
     <br><br>
+    <!-- Modal REQUEST PORTS -->
+    <div class="modal fade" id="requestPorts" tabindex="-1" role="dialog" aria-labelledby="requestPorts" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header px-lg-5">
+                    <h5 class="modal-title" id="listingModalLabel">Request Ports</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="modal-body">
+                    <form id="requestform" action="#" method="post">
+                        <div class="form-group">
+                            <label for="username"><strong>User</strong></label>
+                            <div>
+                                <input type="text" class="form-control" name="username" id="username" value="{{ session['username'] }}" disabled>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="email"><strong>Mail</strong></label>
+                            <div>
+                                <input type="email" class="form-control" name="email" id="email" value="{{ session['useremail'] }}" data-toggle="email">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Message</label>
+                            <textarea required class="form-control" name="message" id="message" placeholder="Please, provide the list of ports to be opened." rows="3"></textarea>
+                        </div>
+                        <input type="hidden" name="deployment_uuid" value="">
+                        <div class="form-group">
+                            <div>
+                                <button type="submit" class="btn btn-success">Submit</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal EDIT DEPLOYMENT -->
+    <div class="modal fade" id="editDeployment" tabindex="-1" role="dialog" aria-labelledby="editDeployment" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header px-lg-5">
+                    <h5 class="modal-title">Edit</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editform" action="#" method="post">
+                        <div class="form-group">
+                            <label for="description"><strong>Description</strong></label>
+                            <div>
+                                <input type="text" class="form-control" maxlength="50" name="description" id="description" value="">
+                            </div>
+                        </div>
+                        <input type="hidden" name="deployment_uuid" value="">
+                        <div class="form-group">
+                            <div>
+                                <button type="submit" class="btn btn-success">Submit</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 {% if ar.found %}
@@ -178,6 +253,34 @@ $(document).ready(function () {
 });
 </script>
 
+<script>
+$('#requestPorts').on('show.bs.modal', function (event) {
+    var target = $(event.relatedTarget) // Button that triggered the modal
+    // Extract info from data-* attributes
+    var deployment = target.data('id')
+    var url = target.data('action')
 
+    var modal = $(this)
+    modal.find('.modal-title').text('Request ports for deployment \"' + deployment + '\"')
+    modal.find('input[name="deployment_uuid"]').val(deployment)
+    modal.find('#requestform').prop('action', url)
+})
+</script>
+
+<script>
+$('#editDeployment').on('show.bs.modal', function (event) {
+    var target = $(event.relatedTarget) // Button that triggered the modal
+    // Extract info from data-* attributes
+    var deployment = target.data('id')
+    var description = target.data('description')
+    var url = target.data('action')
+
+    var modal = $(this)
+    modal.find('.modal-title').text('Edit deployment \"' + deployment + '\"')
+    modal.find('input[name="deployment_uuid"]').val(deployment)
+    modal.find('input[name="description"]').val(description)
+    modal.find('#editform').prop('action', url)
+})
+</script>
 {% endblock %}
 

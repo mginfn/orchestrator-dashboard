@@ -77,7 +77,9 @@ def inject_settings():
         require_ssh_pubkey=app.config.get('FEATURE_REQUIRE_USER_SSH_PUBKEY') if app.config.get(
             'FEATURE_REQUIRE_USER_SSH_PUBKEY') else "no",
         hidden_deployment_columns=app.config.get('FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') if app.config.get(
-            'FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') else ""
+            'FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') else "",
+        enable_ports_request=app.config.get('FEATURE_PORTS_REQUEST') if app.config.get(
+            'FEATURE_PORTS_REQUEST') else "no"
     )
 
 

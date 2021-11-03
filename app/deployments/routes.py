@@ -115,6 +115,12 @@ def unlockdeployment(depid=None):
         dbhelpers.add_object(dep)
     return redirect(url_for('deployments_bp.showdeployments'))
 
+@deployments_bp.route('/edit', methods=['POST'])
+@auth.authorized_with_valid_token
+def editdeployment():
+    form_data = request.form.to_dict()
+    dbhelpers.update_deployment(form_data["deployment_uuid"],dict(description=form_data["description"]))
+    return redirect(url_for('deployments_bp.showdeployments'))
 
 def preprocess_outputs(browser, outputs, stoutputs):
     for key, value in stoutputs.items():
@@ -917,3 +923,21 @@ def add_storage_encryption(access_token, inputs):
         inputs['vault_secret_path'] = session['userid'] + '/' + vault_secret_uuid
 
     return storage_encryption, vault_secret_uuid, vault_secret_key
+
+
+@deployments_bp.route('/sendportsreq', methods=['POST'])
+def sendportsrequest():
+    form_data = request.form.to_dict()
+
+    try:
+        utils.send_ports_request_email(form_data['deployment_uuid'], email=form_data['email'], message=form_data['message'])
+
+        flash(
+            "Your request has been sent to the support team. You will receive soon a notification email about your request. Thank you!",
+            "success")
+
+    except Exception as error:
+        utils.logexception("sending email:".format(error))
+        flash("Sorry, an error occurred while sending your request. Please retry.", "danger")
+
+    return redirect(url_for('deployments_bp.showdeployments'))

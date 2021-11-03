@@ -7,6 +7,7 @@ MAIL_IMAGE_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAAB7CAYAAAAx
 
 
 FEATURE_REQUIRE_USER_SSH_PUBKEY = "yes"
+FEATURE_PORTS_REQUEST = "yes"
 
 ### Template Paths
 HOME_TEMPLATE = 'infn-cloud/home.html'
