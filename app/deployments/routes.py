@@ -448,8 +448,8 @@ def configure():
     if 'selected_tosca' in request.args:
         selected_tosca = request.args['selected_tosca']
 
-    if 'active_user_group' in request.args:
-        session['active_usergroup'] = request.args['active_user_group']
+    #if 'active_user_group' in request.args:
+    #    session['active_usergroup'] = request.args['active_user_group']
 
     if 'selected_group' in request.args:
         templates = tosca.tosca_gmetadata[request.args['selected_group']]['templates']

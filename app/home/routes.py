@@ -62,26 +62,27 @@ def is_template_locked(allowed_groups, user_groups):
     else:
         return True
 
-
-def set_template_access(tosca, user_groups):
+def set_template_access(tosca, user_groups, active_group):
     info = {}
     for k, v in tosca.items():
-        access_locked = is_template_locked(v.get("metadata").get("allowed_groups"), user_groups)
-        if ("visibility" not in v.get("metadata") or v["metadata"]["visibility"] == "public") or not access_locked:
+        allowed_groups = v.get("metadata").get("allowed_groups")
+        if not allowed_groups:
+          app.logger.error("Null - {}".format(k))
+        access_locked = is_template_locked(allowed_groups, user_groups)
+        if (access_locked and ("visibility" not in v.get("metadata") or v["metadata"]["visibility"] == "public")) or (not access_locked and (active_group in allowed_groups.split(',') or allowed_groups == "*")):
             v["metadata"]["access_locked"] = access_locked
-            info[k] = v
+            info[k]=v
     return info
 
 
-def check_template_access(user_groups):
+def check_template_access(user_groups, active_group):
     if tosca.tosca_gmetadata:
-        templates_info = set_template_access(tosca.tosca_gmetadata, user_groups)
+        templates_info = set_template_access(tosca.tosca_gmetadata, user_groups, active_group)
         enable_template_groups = True
     else:
-        templates_info = set_template_access(toscaInfo, user_groups)
+        templates_info = set_template_access(toscaInfo, user_groups, active_group)
         enable_template_groups = False
     return templates_info, enable_template_groups
-
 
 @app.route('/')
 @home_bp.route('/')
@@ -149,7 +150,7 @@ def home():
         # else:
         #     templates_info = {k: v for (k, v) in toscaInfo.items() if
         #      check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
-        templates_info, enable_template_groups = check_template_access(user_groups)
+        templates_info, enable_template_groups = check_template_access(user_groups, session['active_usergroup'])
 
         return render_template(app.config.get('PORTFOLIO_TEMPLATE'), templates_info=templates_info,
                                enable_template_groups=enable_template_groups)

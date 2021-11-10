@@ -53,8 +53,11 @@
                        <!-- maintenance: do not show configure button -->
                     {% else %}
                     <div class="col-4">
-                    {% import 'configure.j2' as configure %}
-                    {{ configure.create_configure_button(enable_template_groups, tosca_name, tosca['metadata']['allowed_groups']) }}
+                        {% if enable_template_groups %}
+                        <a href="{{ url_for('deployments_bp.configure', selected_group=tosca_name) }}" class="badge badge-pill badge-primary">Configure</a>
+                        {% else %}
+                        <a href="{{ url_for('deployments_bp.configure', selected_tosca=tosca_name) }}" class="badge badge-pill badge-primary">Configure</a>
+                        {% endif %}
                     </div>
                     {% endif %}
                 </div>
