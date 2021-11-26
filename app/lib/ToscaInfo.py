@@ -117,6 +117,8 @@ class ToscaInfo(object):
                 tosca_metadata_path = self.tosca_metadata_dir + "/"
                 for mpath, msubs, mnames in os.walk(tosca_metadata_path):
                     for mname in mnames:
+                        fmname = os.path.relpath(os.path.join(mpath, mname), self.tosca_metadata_dir)
+                        if fnmatch(fmname, os.path.splitext(tosca)[0] + '.metadata.yml') or \
                         if fnmatch(mname, os.path.splitext(tosca)[0] + '.metadata.yml') or \
                                 fnmatch(mname, os.path.splitext(tosca)[0] + '.metadata.yaml'):
                             # skip hidden files
@@ -157,8 +159,9 @@ class ToscaInfo(object):
                 tosca_pars_path = self.tosca_params_dir + "/"  # this has to be reassigned here because is local.
                 for fpath, subs, fnames in os.walk(tosca_pars_path):
                     for fname in fnames:
-                        if fnmatch(fname, os.path.splitext(tosca)[0] + '.parameters.yml') or \
-                                fnmatch(fname, os.path.splitext(tosca)[0] + '.parameters.yaml'):
+                        ffname = os.path.relpath(os.path.join(fpath, fname), self.tosca_params_dir)
+                        if fnmatch(ffname, os.path.splitext(tosca)[0] + '.parameters.yml') or \
+                                fnmatch(ffname, os.path.splitext(tosca)[0] + '.parameters.yaml'):
                             # skip hidden files
                             if fname[0] != '.':
                                 tosca_pars_file = os.path.join(fpath, fname)
@@ -222,7 +225,7 @@ def eleasticdeployment(template):
 
 def updatabledeployment(inputs):
     updatable = False
-    for key,value in inputs.items():
+    for key, value in inputs.items():
         if 'updatable' in value:
             if value['updatable'] == True:
                 updatable = True
