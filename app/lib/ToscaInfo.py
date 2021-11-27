@@ -119,7 +119,7 @@ class ToscaInfo(object):
                     for mname in mnames:
                         fmname = os.path.relpath(os.path.join(mpath, mname), self.tosca_metadata_dir)
                         if fnmatch(fmname, os.path.splitext(tosca)[0] + '.metadata.yml') or \
-                                fnmatch(mname, os.path.splitext(tosca)[0] + '.metadata.yaml'):
+                                fnmatch(fmname, os.path.splitext(tosca)[0] + '.metadata.yaml'):
                             # skip hidden files
                             if mname[0] != '.':
                                 tosca_metadata_file = os.path.join(mpath, mname)
