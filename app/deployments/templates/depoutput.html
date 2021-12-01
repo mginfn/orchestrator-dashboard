@@ -37,7 +37,7 @@
           <br>
           <p><b>STATUS:</b> {{deployment.status}}</p>
           {% if deployment.status_reason %}
-          <p><b>ERROR MSG:</b> {{deployment.status_reason}}</p>
+          <p style="white-space: pre-line;"><b>ERROR MSG:</b> {{deployment.status_reason}}</p>
           {% endif %}
           <p><b>CREATED AT:</b> {{deployment.creation_time}}</p>
           <p><b>UPDATED AT:</b> {{deployment.update_time}}</p>
