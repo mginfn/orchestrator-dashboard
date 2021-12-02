@@ -51,7 +51,7 @@
       {% set range_min = value.constraints['in_range'][0].split(' ')[0] %}
       {% set range_max = value.constraints['in_range'][1].split(' ')[0] %}
       {% endif %}
-      <div class="input-group mb-3">
+      <div class="input-group">
         <input type="number" min="{{range_min}}" max="{{range_max}}" class="form-control" aria-describedby="{{key}}_append" data-validate-function="validateScalarUnitSize" data-type="{{value.type}}" data-units="{{value.default.split(' ')[1]}}" id="{{key}}" name="{{key}}" value="{{value.default.split(' ')[0]}}" {% if value.required %}required{%endif%} {{mode}} />
         <div class="input-group-append">
           <span class="input-group-text" id="{{key}}_append">{{value.default.split(' ')[1]}}</span>
