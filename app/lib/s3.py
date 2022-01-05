@@ -29,7 +29,7 @@ def create_bucket(access_key, secret_key, s3_url, bucket, **kwargs):
     try:
         response = client.create_bucket(Bucket=bucket)
     except botocore.exceptions.ClientError as error:
-        if error.response['Error']['Code'] == 'SignatureDoesNotMatch':
+        if error.response['ResponseMetadata']['HTTPStatusCode'] == 403:
             raise Forbidden("You don't have the permission for the requested storage resource")
         else:
             raise error

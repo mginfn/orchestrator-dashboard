@@ -53,6 +53,9 @@ app.config.from_json('config.json')
 if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
     app.config.from_json('vault-config.json')
 
+if app.config.get("FEATURE_S3CREDS_MENU") == "yes":
+    app.config.from_json('s3-config.json')
+
 profile = app.config.get('CONFIGURATION_PROFILE')
 if profile is not None and profile != 'default':
     app.config.from_object('config.' + profile)
@@ -79,7 +82,9 @@ def inject_settings():
         hidden_deployment_columns=app.config.get('FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') if app.config.get(
             'FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') else "",
         enable_ports_request=app.config.get('FEATURE_PORTS_REQUEST') if app.config.get(
-            'FEATURE_PORTS_REQUEST') else "no"
+            'FEATURE_PORTS_REQUEST') else "no",
+        enable_s3creds=app.config.get('FEATURE_S3CREDS_MENU') if app.config.get(
+            'FEATURE_S3CREDS_MENU') else "no"
     )
 
 
@@ -126,7 +131,7 @@ from app.providers.routes import providers_bp
 app.register_blueprint(providers_bp, url_prefix="/providers")
 
 from app.swift.routes import swift_bp
-app.register_blueprint(swift_bp, url_prefix="/providers")
+app.register_blueprint(swift_bp, url_prefix="/swift")
 
 if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
     from app.vault.routes import vault_bp
