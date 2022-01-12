@@ -84,7 +84,8 @@ def inject_settings():
         enable_ports_request=app.config.get('FEATURE_PORTS_REQUEST') if app.config.get(
             'FEATURE_PORTS_REQUEST') else "no",
         enable_s3creds=app.config.get('FEATURE_S3CREDS_MENU') if app.config.get(
-            'FEATURE_S3CREDS_MENU') else "no"
+            'FEATURE_S3CREDS_MENU') else "no",
+        s3_allowed_groups=app.config.get("S3_IAM_GROUPS") if app.config.get("S3_IAM_GROUPS") else []
     )
 
 

@@ -29,7 +29,12 @@
                 <div>
                     <label for="project">Project</label>
                     <select class="js-example-basic-single js-states form-control" id="project" name="project" required>
-                        {% for prj in session['supported_usergroups'] %}
+                        {% if s3_allowed_groups|length == 0 %}
+                          {% set s3_groups = session['supported_usergroups'] %}
+                        {% else %}
+                          {% set s3_groups = session['supported_usergroups']| intersect(s3_allowed_groups) %}
+                        {% endif %}
+                        {% for prj in s3_groups %}
                         <option value="{{prj}}">{{prj}}</option>
                         {% endfor %}
                     </select>
