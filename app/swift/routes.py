@@ -59,7 +59,6 @@ def createswifttoken():
 
 @swift_bp.route('/gets3creds', methods=['GET', 'POST'])
 @auth.authorized_with_valid_token
-@auth.only_for_admin
 def gets3creds():
     s3_endpoints = app.config.get("S3_ENDPOINTS")
     urls = [u['url'] for u in s3_endpoints]
