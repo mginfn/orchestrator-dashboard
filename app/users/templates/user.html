@@ -66,6 +66,7 @@
         <label for="role">Role</label>
         <select id="role" name="role" class="form-control"  value="{{user,role}}"  {% if user.sub==session['userid'] %}disabled{% endif %}>
             <option {% if user.role=='user' %}selected{% endif %} value="user">User</option>
+            <option {% if user.role=='user:s3' %}selected{% endif %} value="user:s3">User:S3</option>
             <option {% if user.role=='admin' %}selected{% endif %} value="admin">Admin</option>
         </select>
       </div>

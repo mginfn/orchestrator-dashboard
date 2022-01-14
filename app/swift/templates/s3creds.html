@@ -29,7 +29,7 @@
                 <div>
                     <label for="project">Project</label>
                     <select class="js-example-basic-single js-states form-control" id="project" name="project" required>
-                        {% if s3_allowed_groups|length == 0 %}
+                        {% if s3_allowed_groups|length == 0 or session['userrole'] == 'user:s3' %}
                           {% set s3_groups = session['supported_usergroups'] %}
                         {% else %}
                           {% set s3_groups = session['supported_usergroups']| intersect(s3_allowed_groups) %}
