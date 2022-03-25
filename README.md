@@ -4,7 +4,7 @@ INDIGO PaaS Orchestrator - Simple Graphical UI
 Functionalities:
 - IAM authentication
 - Display user's deployments
-- Display deployment details and template
+- Display deployment details, template and log
 - Delete deployment
 - Create new deployment
 
@@ -44,6 +44,42 @@ You need to run the Orchestrator dashboard on HTTPS (otherwise you will get an e
 
 Details are provided in the next paragraphs.
 
+## TOSCA Template Metadata 
+
+The Orchestrator dashboard can exploit some optional information provided in the TOSCA templates for rendering the cards describing the type of applications/services or virtual infrastructure that a user can deploy.
+
+
+In particular, the following tags are supported:
+
+| Tag name  | Description        | Type               |
+| -------------- | ------------- | ------------------ |              
+| description | Used for showing the card description  |  String |
+| metadata.display_name | Used for the card title. If not pro  |    String |
+| metadata.icon  |  Used for showing the card image. If no image URL is provided, the dashboard will load this [icon](https://cdn4.iconfinder.com/data/icons/mosaicon-04/512/websettings-512.png). | String |
+| metadata.display_name | Used for the card title. If not provided, the template name will be used   | String |
+| metadata.tag  | Used for the card ribbon (displayed on the right bottom corner)   |     String |
+| metadata.allowed_groups | Used for showing the template only to members of specific groups |  String <br> - "*" == any group can see the template <br> - "group1,group2" == only members of _group1_ and _group2_ can see the template |
+
+
+Example of template metadata:
+
+```
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+imports:
+  - indigo_custom_types: https://raw.githubusercontent.com/indigo-dc/tosca-types/v4.0.0/custom_types.yaml
+
+description: Deploy a Mesos Cluster (with Marathon and Chronos frameworks) on top of Virtual machines
+
+metadata:
+  display_name: Deploy a Mesos cluster
+  icon: https://indigo-paas.cloud.ba.infn.it/public/images/apache-mesos-icon.png
+
+topology_template:
+
+....
+```
+
 ### Enabling HTTPS
 
 You would need to provide
@@ -59,7 +95,7 @@ docker run -d -p 443:5001 --name='orchestrator-dashboard' \
            -v $PWD/key.pem:/certs/key.pem \
            -v $PWD/instance:/app/instance \
            -v $PWD/tosca-templates:/opt/tosca-templates \
-           indigo-dc/orchestrator-dashboard:latest
+           indigodatacloud/orchestrator-dashboard:latest
 ```
 Access the dashboard at `https://<DASHBOARD_HOST>/`
 
@@ -105,7 +141,7 @@ Run the docker container:
 docker run -d -p 5001:5001 --name='orchestrator-dashboard' \
            -v $PWD/instance:/app/instance \
            -v $PWD/tosca-templates:/opt/tosca-templates \
-           indigo-dc/orchestrator-dashboard:latest
+           indigodatacloud/orchestrator-dashboard:latest
 ```
 :warning: Remember to update the redirect uri in the IAM client to `https://<PROXY_HOST>/login/iam/authorized`
 
@@ -135,7 +171,7 @@ Check the [documentation](http://docs.gunicorn.org/en/stable/design.html#how-man
 ## How to build the docker image
 
 ```
-git clone https://github.com/maricaantonacci/orchestrator-dashboard.git
+git clone https://github.com/indigo-dc/orchestrator-dashboard.git
 cd orchestrator-dashboard
 docker build -f docker/Dockerfile -t orchestrator-dashboard .
 ```
@@ -143,7 +179,7 @@ docker build -f docker/Dockerfile -t orchestrator-dashboard .
 ## How to setup a development environment
 
 ```
-git clone https://github.com/maricaantonacci/orchestrator-dashboard.git
+git clone https://github.com/indigo-dc/orchestrator-dashboard.git
 cd orchestrator-dashboard
 python3 -m venv venv
 source venv/bin/activate
