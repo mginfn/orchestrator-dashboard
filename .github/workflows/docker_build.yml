@@ -2,9 +2,9 @@ name: Build and push docker image to Docker Hub
 
 on:
   push:
-    branches: [ stateful ]
+    branches: [ main ]
   pull_request:
-    branches: [ stateful ]
+    branches: [ main ]
 
   workflow_dispatch:
 
