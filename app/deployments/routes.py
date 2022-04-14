@@ -460,7 +460,13 @@ def configure():
 
     if selected_tosca:
 
-        template = tosca.tosca_info[selected_tosca]
+        template = copy.deepcopy(tosca.tosca_info[selected_tosca])
+        # Manage eventual overrides
+        for k,v in template['inputs'].items():
+            if 'group_overrides' in v and session['active_usergroup'] in v['group_overrides']:
+                overrides = v['group_overrides'][session['active_usergroup']]
+                template['inputs'][k] = {**v, **overrides}
+
         sla_id = tosca_helpers.getslapolicy(template)
 
         slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'],
@@ -562,7 +568,7 @@ def createdep():
 
     for key,value in stinputs.items():
         # Manage security groups
-        if value["type"]=="map" and value["entry_schema"]["type"]=="tosca.datatypes.network.PortSpec":
+        if value["type"]=="map" and (value["entry_schema"]["type"]=="tosca.datatypes.network.PortSpec" or value["entry_schema"]["type"]=="tosca.datatypes.indigo.network.PortSpec"):
             if key in inputs:
                 try:
                     inputs[key] = json.loads(form_data[key])
@@ -664,6 +670,8 @@ def createdep():
             try:
                 del inputs[key]
                 project = next(filter(lambda tenant: tenant.get('group') == session['active_usergroup'], value['auth']['tenants']), None)
+                if not project:
+                    raise IndexError("Project not configured for S3")
                 access, secret = keystone.get_or_create_ec2_creds(access_token, project.get('name'), value["auth"]["url"], value["auth"]["identity_provider"], value["auth"]["protocol"])
                 access_key_input_name = value["inputs"]["aws_access_key"]
                 inputs[access_key_input_name] = access

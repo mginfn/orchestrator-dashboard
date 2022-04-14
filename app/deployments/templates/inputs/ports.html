@@ -1,7 +1,7 @@
 <div class="mt-2">
     <div id="{{key}}-container"></div>
-    <button type="button" class="btn btn-sm btn-outline-info" id="add-new-item" class="add-new" data-tag-name="{{key}}" onclick="addRule(this)">Add rule</button>
-    <input id="id-{{key}}" type="hidden" data-output-type="json" name="{{key}}" value""/>
+    <button type="button" class="btn btn-sm btn-outline-info" id="add-new-item" class="add-new" data-tag-name="{{key}}" onclick="addRule(this, '{{ports_type}}')">Add rule</button>
+    <input id="id-{{key}}" type="hidden" data-output-type="json" name="{{key}}" value=""/>
 </div>
 
 
@@ -11,9 +11,13 @@
 // initialize a unique counter
 let {{key}}_idx = 1;
 
-function addRule(elem) {
+function addRule(elem, ports_type) {
     j = {{key}}_idx;
     var tagname = elem.getAttribute('data-tag-name');
+    var enableRemoteCidr = 'disabled';
+    if (ports_type == 'indigo'){
+        enableRemoteCidr = 'enabled';
+    }
     let template = `
         <div class="form-row" id="${tagname}-${j}">
           <div enctype='application/json' class="form-group">
@@ -27,12 +31,15 @@ function addRule(elem) {
             <label>Port Range</label> <br>
             <input type="text" class="form-control" name="${tagname}_tmp[${j}][source]" onblur="validatePorts(this)" class="form-control" placeholder="e.g. [8080,8082] or 80" required>
             <div class="invalid-feedback">
-              Please respect the required format: <strong>[0-9]+</strong> for single port (e.g. 8080); <strong>\[[0-9]+,[0-9]+\]</strong> for port range (e.g. [8080,8082]).
+              Please respect the required format: <strong>[0-9]+</strong> for single port (e.g. 8080);<br> <strong>\[[0-9]+,[0-9]+\]</strong> for port range (e.g. [8080,8082]).
             </div>
           </div>
           <div class="form-group">
             <label>Source</label> <br>
-            <input type="text" class="form-control" name="${tagname}_tmp[${j}][source_cidr]" class="form-control" value="0.0.0.0/0" disabled>
+            <input type="text" class="form-control" name="${tagname}_tmp[${j}][remote_cidr]" onblur="validateCidr(this)" class="form-control" value="0.0.0.0/0" ${enableRemoteCidr} required>
+            <div class="invalid-feedback">
+              Please respect the CIDR notation: e.g. <strong>192.168.0.0/24</strong>.<br>For single IP: <strong>192.168.22.32/32</strong>.<br><strong>0.0.0.0/0</strong> allows access from all IP addresses.
+            </div>
           </div>
           <div class="p-3 mt-2">
             <button type=button class='btn btn-sm btn-outline-danger' href="" onclick="javascript:removeRule('${tagname}'+ '-' + ${j} + ''); return false;">Remove</button>

@@ -158,7 +158,8 @@
     <!-- end Port field -->
 
     <!-- Port field -->
-    {% elif value.type == "map" and value.entry_schema.type == "tosca.datatypes.network.PortSpec" %}
+    {% elif value.type == "map" and (value.entry_schema.type == "tosca.datatypes.network.PortSpec" or value.entry_schema.type == "tosca.datatypes.indigo.network.PortSpec") %}
+    {% set ports_type = "indigo" if 'indigo' in value.entry_schema.type else "" %}
       <fieldset class="border p-2">
       {% include 'inputs/ports.html' %}
       </fieldset>
