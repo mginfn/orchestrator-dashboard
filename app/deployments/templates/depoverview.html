@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.6.2/dist/chart.min.js"></script>
+
+<div class="container-fluid">
+{% set ar = namespace(found=false) %}
+  <br>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+          <div class="row">
+            <div class="col-md-6">
+              <!-- Title -->
+              <h4 class="font-weight-bold text-primary">Deployments Overview</h4>
+            </div>
+            <div class="col-md-6 text-right">
+              <!-- Button -->
+              <button type=button class='btn btn-outline-secondary' onclick='location.href="{{ url_for('deployments_bp.showdeploymentsoverview') }}"'><span class='fas fa-sync mr-2'></span>Refresh</button>
+
+              <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"><span class='fas fa-list mr-2'></span>Details </button>
+              <div class="dropdown-menu">
+                    {% for group in session['supported_usergroups'] %}
+                    <a class="dropdown-item" href="{{ url_for('deployments_bp.showdeploymentsingroup', group=group) }}">{{group}}</a>
+                    {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col">
+                    <canvas id="status_chart" width="300" height="500" style="max-width:300px;max-height:500px"></canvas>
+                </div>
+                <div class="col">
+                    <canvas id="projects_chart" width="300" height="500" style="max-width:300px;max-height:500px"></canvas>
+                </div>
+                <div class="col">
+                    <canvas id="providers_chart" width="300" height="500" style="max-width:300px;max-height:500px"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function drawchart(chartid, title, subtitle, labels, values, colors) {
+  var ctx = document.getElementById(chartid).getContext("2d");
+  var chart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+        labels: labels,
+        datasets: [{
+            data: values,
+            backgroundColor: colors,
+            borderWidth: 1
+        }]
+    },
+
+    // Configuration options go here
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+              display: true,
+              text: title ,
+              font: {
+                size: 18
+              },
+              color: "#111",
+              padding : {
+                bottom: 10
+              }
+            },
+            subtitle: {
+            display: true,
+            text: subtitle,
+            color: 'grey'
+            },
+            legend: {
+                position: "bottom",
+                align: "start"
+            }
+        }
+    }
+ });
+
+}
+console.log("{{s_text}}");
+drawchart("status_chart", "{{s_title}}", "", {{ s_labels | safe}}, {{ s_values }}, {{s_colors | safe}});
+drawchart("projects_chart", "{{p_title}}", "deployments distribution per project",  {{ p_labels | safe}}, {{ p_values }}, {{p_colors | safe}});
+drawchart("providers_chart", "{{pr_title}}", "deployments distribution per provider", {{ pr_labels | safe}}, {{ pr_values }}, {{pr_colors | safe}});
+</script>
+
+
+
+{% if ar.found %}
+<script>setTimeout(function(){location.reload();},30000);</script>
+{% endif %}
+{% endblock %}
+

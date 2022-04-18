@@ -49,8 +49,15 @@ issuer = settings.iamUrl
 if not issuer.endswith('/'):
     issuer += '/'
 
+@deployments_bp.route('/depls')
+@auth.authorized_with_valid_token
+def showdeploymentsingroup():
+    group = request.args['group']
+    session['active_usergroup'] = group
+    flash("Project set to {}".format(group), 'info')
+    return redirect(url_for('deployments_bp.showdeployments'))
 
-@deployments_bp.route('/all')
+@deployments_bp.route('/list')
 @auth.authorized_with_valid_token
 def showdeployments():
     access_token = iam_blueprint.session.token['access_token']
@@ -77,6 +84,67 @@ def showdeployments():
         session['deployments_uuid_array'] = deployments_uuid_array
 
     return render_template('deployments.html', deployments=deployments)
+
+
+def update_deployments():
+    issuer = settings.iamUrl
+    if not issuer.endswith('/'):
+        issuer += '/'
+
+    subject = session['userid']
+
+    # retrieve deployments from orchestrator
+    access_token = iam_blueprint.session.token['access_token']
+
+    headers = {'Authorization': 'bearer %s' % access_token}
+
+    url = settings.orchestratorUrl + "/deployments?createdBy={}&page={}&size={}".format(
+        '{}@{}'.format(subject, issuer), 0, 999999)
+    response = requests.get(url, headers=headers)
+
+    iids = []
+    if response.ok:
+        deporch = response.json()["content"]
+        iids = dbhelpers.updatedeploymentsstatus(deporch, subject)['iids']
+
+    #
+    # retrieve deployments from DB
+    deployments = dbhelpers.cvdeployments(dbhelpers.get_user_deployments(subject))
+    for dep in deployments:
+        newremote = dep.remote
+        if dep.uuid not in iids:
+            if dep.remote == 1:
+                newremote = 0
+        else:
+            if dep.remote == 0:
+                newremote = 1
+        if dep.remote != newremote:
+            dbhelpers.update_deployment(dep.uuid, dict(remote=newremote))
+
+@deployments_bp.route('/overview')
+@auth.authorized_with_valid_token
+def showdeploymentsoverview():
+
+    # refresh deployment list
+    update_deployments();
+
+    deps = dbhelpers.get_user_deployments(session["userid"])
+    statuses = {}
+    projects = {}
+    providers = {}
+    for dep in deps:
+        status = dep.status if dep.status else "UNKNOWN"
+        if status != 'DELETE_COMPLETE' and dep.remote == 1:
+            statuses[status] = 1 if status not in statuses else statuses[status] + 1
+            project = dep.user_group if dep.user_group else "UNKNOWN"
+            projects[project] = 1 if project not in projects else projects[project] + 1
+            provider = dep.provider_name if dep.provider_name else "UNKNOWN"
+            providers[provider] = 1 if provider not in providers else providers[provider] + 1
+
+    return render_template('depoverview.html',
+                            s_title="Deployments status", s_labels=list(statuses.keys()), s_values=list(statuses.values()), s_colors=utils.genstatuscolors(statuses),
+                            p_title="Projects", p_labels=list(projects.keys()), p_values=list(projects.values()), p_colors=utils.gencolors("blue", len(projects)),
+                            pr_title="Providers", pr_labels=list(providers.keys()), pr_values=list(providers.values()), pr_colors=utils.gencolors("green", len(providers)))
 
 
 @deployments_bp.route('/<depid>/template')

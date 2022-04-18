@@ -16,6 +16,7 @@ import json
 import requests
 import linecache
 import sys
+import randomcolor
 import re
 import string
 import secrets
@@ -30,6 +31,31 @@ from markupsafe import Markup
 def to_pretty_json(value):
     return json.dumps(value, sort_keys=True,
                       indent=4, separators=(',', ': '))
+
+
+
+def gencolors(hue, n):
+    rand_color = randomcolor.RandomColor(42)
+    rcolors = rand_color.generate(hue=hue, luminosity="dark", count=n)
+    return rcolors
+
+
+def genstatuscolors(statuses):
+    colors = []
+    for status in statuses:
+        if status == "CREATE_COMPLETE":
+            colors.append('green')
+        elif status == "CREATE_IN_PROGRESS":
+            colors.append("lightgreen")
+        elif status == "DELETE_IN_PROGRESS":
+            colors.append('salmon')
+        elif status == "CREATE_FAILED":
+            colors.append('red')
+        elif status == "DELETE_FAILED":
+            colors.append('firebrick')
+        else:
+            colors.append('lightgrey')
+    return colors
 
 
 def intersect(a, b):
