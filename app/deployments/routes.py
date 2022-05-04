@@ -801,6 +801,9 @@ def createdep():
                 flash(" The deployment submission failed with: {}. Please try later or contact the admin(s): {}".format(e, app.config.get('SUPPORT_EMAIL')), 'danger')
                 doprocess = False
 
+        if value["type"] == "userinfo":
+            if value["attribute"] == "sub":
+                inputs[key] = session['userid']
 
 
     if swift and swift_map:

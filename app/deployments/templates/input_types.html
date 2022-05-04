@@ -5,7 +5,7 @@
  {% set mode = "" %}
 {% endif %}
 <div class="form-group" id="form-group-{{key}}">
-  {% if (value.type is not defined or (value.type != "hidden" and value.type != "swift_token" and value.type != "swift_autouuid" and value.type != "random_password" and value.type != "openstack_ec2credentials" and value.type != "uuidgen" and value.type != "ldap_user" and value.type != "ssh_user"))
+  {% if (value.type is not defined or (value.type != "hidden" and value.type != "swift_token" and value.type != "swift_autouuid" and value.type != "random_password" and value.type != "openstack_ec2credentials" and value.type != "uuidgen" and value.type != "ldap_user" and value.type != "ssh_user" and value.type != "userinfo"))
           and (update == False or value.updatable is not defined or value.updatable == True)%}
   <label for="{{key}}">
     {% if value.display_name is defined %}
@@ -60,7 +60,7 @@
     <!-- end scalar-unit.size type-->
 
     <!-- hidden types -->
-    {% elif value.type == "hidden" or value.type == "openstack_ec2credentials" or value.type == "uuidgen" or value.type == "ldap_user" or value.type == "ssh_user" %}
+    {% elif value.type == "hidden" or value.type == "openstack_ec2credentials" or value.type == "uuidgen" or value.type == "ldap_user" or value.type == "ssh_user" or value.type == "userinfo" %}
       <input type="hidden" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" >
     <!-- end hidden types -->
 
