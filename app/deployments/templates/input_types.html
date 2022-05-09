@@ -29,6 +29,13 @@
       <input type="number" step="any" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
     <!-- end number types -->
 
+      <!-- boolean type -->
+    {% elif value.type == "boolean" %}
+      <select class="js-example-basic-single js-states form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" {{mode}}>
+        <option value="true" {% if value.default|lower =="true" %}selected="selected"{% endif %}>true</option>
+        <option value="false" {% if value.default|lower =="false" %}selected="selected"{% endif %}>false</option>
+      </select>
+
     <!-- list text type -->
     {% elif value.type == "list" and value.entry_schema.type|lower == "string" %}
       <fieldset class="border p-2">
