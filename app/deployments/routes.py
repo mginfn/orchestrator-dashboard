@@ -190,7 +190,10 @@ def editdeployment():
     dbhelpers.update_deployment(form_data["deployment_uuid"],dict(description=form_data["description"]))
     return redirect(url_for('deployments_bp.showdeployments'))
 
-def preprocess_outputs(browser, outputs, stoutputs):
+def preprocess_outputs(browser, outputs, stoutputs, inputs):
+    # note: inputs parameter is made available in this function 
+    # for evaluating output conditions (see below)
+
     for key, value in stoutputs.items():
         if value.get("type") == "download-url":
             if key in outputs:
@@ -207,6 +210,17 @@ def preprocess_outputs(browser, outputs, stoutputs):
                 if origin_url.scheme == 'http' and browser['name'] == "chrome" and browser['version'] >= 86:
                     message = stoutputs[key]['warning'] if 'warning' in stoutputs[key] else ""
                     stoutputs[key]['warning'] = "{}<br>{}".format("The download will be blocked by Chrome. Please, use Firefox for a full user experience.", message)
+
+        if 'condition' in value:
+            try:
+                if not eval(value.get('condition')):
+                    if key in outputs:
+                        del outputs[key]
+            except Exception as ex:
+                app.logger.warning("Error evaluating condition for output {}: {}".format(key,ex))
+
+
+
 
 @deployments_bp.route('/<depid>/details')
 @auth.authorized_with_valid_token
@@ -237,7 +251,7 @@ def depoutput(depid=None):
         browser = request.user_agent.browser
         version = request.user_agent.version and int(request.user_agent.version.split('.')[0])
 
-        preprocess_outputs(dict(name = browser, version = version), outputs, stoutputs)
+        preprocess_outputs(dict(name = browser, version = version), outputs, stoutputs, inputs)
 
         return render_template('depoutput.html',
                                deployment=dep,
