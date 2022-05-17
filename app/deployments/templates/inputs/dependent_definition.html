@@ -1,5 +1,5 @@
 <div class="dependent_definition" id="{{key}}" data-input-name="{{key}}" data-child-id="[]" data-parent-id="{{value.parent}}" data-input-ref="{{value.constraints}}">
-    <input type="hidden" id="{{key}}-type" name="{{key}}-type" value="">
+    <input type="hidden" id="{{key}}-ref" name="{{key}}-ref" value="">
 </div>
 
 
@@ -61,8 +61,8 @@ function prepareInput(parent){
          div.find('input').prop("disabled", false);
          div.find('select').prop("disabled", false);
 
-         //set type name
-         $('#' + iname + "-type").val(input.attr('data-type'));
+         //set ref name
+         $('#' + iname + "-ref").val(element['ref']);
       }
 
      });

@@ -649,6 +649,14 @@ def createdep():
     uuidgen_deployment = str(uuid_generator.uuid1());
 
     for key,value in stinputs.items():
+
+        # Manage special type 'dependent_definition' as first
+        if value["type"] == "dependent_definition":
+            # retrieve the real type from dedicated field
+            if inputs[key + "-ref"] in stinputs:
+                value = stinputs[inputs[key + "-ref"]]
+            del inputs[key + "-ref"]
+
         # Manage security groups
         if value["type"]=="map" and (value["entry_schema"]["type"]=="tosca.datatypes.network.PortSpec" or value["entry_schema"]["type"]=="tosca.datatypes.indigo.network.PortSpec"):
             if key in inputs:
@@ -708,12 +716,6 @@ def createdep():
                 else:
                     flash("Deployment request failed: no SSH key found. Please upload your key.", "danger")
                     doprocess = False
-
-        # Manage special type 'dependent_definition'
-        if value["type"] == "dependent_definition":
-            # retrieve the real type from dedicated field
-            value["type"] = inputs[key + "-type"]
-            del inputs[key + "-type"]
 
         # Manage Swift-related fields
         if value["type"] == "swift_autouuid":
@@ -816,8 +818,9 @@ def createdep():
                 doprocess = False
 
         if value["type"] == "userinfo":
-            if value["attribute"] == "sub":
-                inputs[key] = session['userid']
+            if key in inputs:
+                if value["attribute"] == "sub":
+                    inputs[key] = session['userid']
 
 
     if swift and swift_map:
