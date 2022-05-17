@@ -33,6 +33,14 @@ def to_pretty_json(value):
                       indent=4, separators=(',', ': '))
 
 
+def python_eval(obj):
+    if isinstance(obj, str):
+        try:
+            return eval(obj)
+        except Exception as e:
+            app.logger.warn("Error calling python_eval(): {}".format(e))
+    return obj
+
 
 def gencolors(hue, n):
     rand_color = randomcolor.RandomColor(42)

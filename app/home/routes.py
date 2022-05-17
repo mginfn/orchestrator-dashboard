@@ -30,6 +30,7 @@ if not issuer.endswith('/'):
 app.jinja_env.filters['tojson_pretty'] = utils.to_pretty_json
 app.jinja_env.filters['extract_netinterface_ips'] = utils.extract_netinterface_ips
 app.jinja_env.filters['intersect'] = utils.intersect
+app.jinja_env.filters['python_eval'] = utils.python_eval
 
 toscaInfo = tosca.tosca_info
 

@@ -101,6 +101,13 @@
       {% include 'inputs/dependent_select.html' %}
     <!-- end select type -->
 
+    {% elif value.type == "multiselect" %}
+     <select class="js-example-basic-multiple form-control" id="{{key}}" name="{{key}}" multiple="multiple" {{mode}}>
+       {% for opt in value.options | python_eval %}
+        <option value="{{opt}}">{{opt}}</option>
+       {% endfor %}
+     </select>
+
     <!-- radio type -->
     {% elif value.type == "radio" %}
       {% for constraint in value.constraints %}
@@ -224,6 +231,12 @@
    let fileName = $(this).val().split('\\').pop();
    $(this).next('.custom-file-label').addClass("selected").html(fileName);
 
+});
+
+$(document).ready(function() {
+    $('.js-example-basic-multiple').select2({
+      width: '100%' // https://github.com/select2/select2/issues/4220
+    });
 });
 
 </script>
