@@ -104,7 +104,7 @@
     {% elif value.type == "multiselect" %}
      <select class="js-example-basic-multiple form-control" id="{{key}}" name="{{key}}" multiple="multiple" {{mode}}>
        {% for opt in value.options | python_eval %}
-        <option value="{{opt}}">{{opt}}</option>
+        <option value="{{opt}}" style="margin: 2px;">{{opt}}</option>
        {% endfor %}
      </select>
 
