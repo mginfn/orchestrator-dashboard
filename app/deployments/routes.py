@@ -822,6 +822,21 @@ def createdep():
                 if value["attribute"] == "sub":
                     inputs[key] = session['userid']
 
+        if value["type"] == "multiselect":
+            if key in inputs:
+                try:
+                    lval = request.form.getlist(key)
+                    if 'format' in value and value['format']['type'] == 'string':
+                        inputs[key] = value['format']['delimiter'].join(lval)
+                    else:
+                        inputs[key] = lval
+                except Exception as e:
+                    app.logger.error("Error processing input {}: {}".format(key,e))
+                    flash(
+                        " The deployment submission failed with: {}. Please try later or contact the admin(s): {}".format(
+                            e, app.config.get('SUPPORT_EMAIL')), 'danger')
+                    doprocess = False
+
 
     if swift and swift_map:
         for k, v in swift_map.items():
