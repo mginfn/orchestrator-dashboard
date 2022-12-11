@@ -141,19 +141,11 @@ def home():
 
         session['userrole'] = user.role  # role
 
-        # templates_info = {}
-        # tg = False
-        #
-        # if tosca.tosca_gmetadata:
-        #     templates_info = {k: v for (k, v) in tosca.tosca_gmetadata.items() if
-        #              check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
-        #     tg = True
-        # else:
-        #     templates_info = {k: v for (k, v) in toscaInfo.items() if
-        #      check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
+        services = dbhelpers.get_services(visibility='public')
+        services.extend(dbhelpers.get_services(visibility='private', groups=[session['active_usergroup']]))
         templates_info, enable_template_groups = check_template_access(user_groups, session['active_usergroup'])
 
-        return render_template(app.config.get('PORTFOLIO_TEMPLATE'), templates_info=templates_info,
+        return render_template(app.config.get('PORTFOLIO_TEMPLATE'), services=services, templates_info=templates_info,
                                enable_template_groups=enable_template_groups)
 
 

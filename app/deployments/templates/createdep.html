@@ -220,7 +220,6 @@ function validatePorts(input){
     //console.log("ok");
     port.removeClass("is-invalid");
   }
-
 }
 
 function validateCidr(input){
@@ -235,7 +234,20 @@ function validateCidr(input){
     //console.log("ok");
     cidr.removeClass("is-invalid");
   }
+}
 
+function validateHostname(input){
+  var hostname = $(input)
+  //console.log("val: \"" + hostname.val() + "\"");
+  let val = hostname.val();
+  let re = /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/;
+  if (!re.test(val)){
+    hostname.addClass("is-invalid");
+  }
+  else {
+    //console.log("ok");
+    hostname.removeClass("is-invalid");
+  }
 }
 
 function __attachValidationHandler(input) {

@@ -71,6 +71,12 @@
       <input type="hidden" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" >
     <!-- end hidden types -->
 
+    <!-- hostname type -->
+    {% elif value.type == "hostname" %}
+      <input type="text" class="form-control" onblur="validateHostname(this)" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
+      <div class="invalid-feedback">Please provide a valid hostname</div>
+    <!-- end hostname type -->
+
     <!-- email type -->
     {% elif value.type == "email" %}
       <input type="email" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{ session['useremail'] }}" {% if value.required %}required{%endif%} {{mode}} >

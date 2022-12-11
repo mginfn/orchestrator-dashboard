@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import enum
 import json
 import requests
 import linecache
@@ -32,6 +33,12 @@ def to_pretty_json(value):
     return json.dumps(value, sort_keys=True,
                       indent=4, separators=(',', ': '))
 
+
+def enum_to_string(obj):
+    if isinstance(obj, enum.Enum):
+        return obj.name
+    # For all other types, let Jinja use default behavior
+    return obj
 
 def python_eval(obj):
     if isinstance(obj, str):

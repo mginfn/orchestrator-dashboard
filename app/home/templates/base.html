@@ -28,6 +28,9 @@
     <!-- Toggle -->
     <link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.4.0/css/bootstrap4-toggle.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.4.0/js/bootstrap4-toggle.min.js"></script>
+    <!-- include summernote css/js -->
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs4.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs4.min.js"></script>
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://unpkg.com/bootstrap-show-password@1.2.1/dist/bootstrap-show-password.min.js"></script>
     <!-- FontAwesome-->
@@ -95,7 +98,7 @@
                 <ul class="navbar-nav mr-auto">
                     {% if session['username'] %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Deployments</a>
+                        <a id="depMenuItem" class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Deployments</a>
                         <div class="dropdown-menu">
                             <a class="dropdown-item" href="{{ url_for("deployments_bp.showdeploymentsoverview") }}">Overview</a>
                             <a class="dropdown-item" href="{{ url_for("deployments_bp.showdeployments") }}">List</a>
@@ -124,14 +127,20 @@
                     </li>
 		            {% endif %}
                     {% if session['userrole'] == 'admin' %}
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('users_bp.show_users') }}">Users</a></li>
+                    <li class="nav-item dropdown">
+			            <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Admin</a>
+                        <div class="dropdown-menu">
+			                <a class="dropdown-item" href="{{ url_for('users_bp.show_users') }}">Users</a>
+                            <a class="dropdown-item" href="{{ url_for('services_bp.list_as_admin') }}">Services</a>
+                        </div>
+                    </li>
                     {% endif %}
                     {% endif %}
                 </ul>
                 {% if session['username'] %}
                 <ul class="navbar-nav ml-auto">
                     {% if session['active_usergroup'] != None and 'gets3creds' not in request.path and 'overview' not in request.path %}
-                    <li class="nav-item dropdown">
+                    <li id="groupMenuItem" class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">
                             {{ session['active_usergroup'] }}<span class="caret"></span>
                         </a>

@@ -85,7 +85,10 @@ def inject_settings():
             'FEATURE_PORTS_REQUEST') else "no",
         enable_s3creds=app.config.get('FEATURE_S3CREDS_MENU') if app.config.get(
             'FEATURE_S3CREDS_MENU') else "no",
-        s3_allowed_groups=app.config.get("S3_IAM_GROUPS") if app.config.get("S3_IAM_GROUPS") else []
+        s3_allowed_groups=app.config.get("S3_IAM_GROUPS") if app.config.get("S3_IAM_GROUPS") else [],
+        enable_access_request=app.config.get("FEATURE_ACCESS_REQUEST") if app.config.get(
+            'FEATURE_ACCESS_REQUEST') else "no",
+        access_request_tag=app.config.get("ACCESS_REQUEST_TAG")
     )
 
 
@@ -133,6 +136,9 @@ app.register_blueprint(providers_bp, url_prefix="/providers")
 
 from app.swift.routes import swift_bp
 app.register_blueprint(swift_bp, url_prefix="/swift")
+
+from app.services.routes import services_bp
+app.register_blueprint(services_bp, url_prefix="/services")
 
 if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
     from app.vault.routes import vault_bp

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-2" id="cardsContainer" xmlns="http://www.w3.org/1999/html">
+    <div class="text-right">
+        {% if session['userrole'] == 'admin' and 'admin' in request.path %}
+        <button type=button class='btn btn-primary mb-4' onclick='location.href="{{ url_for('services_bp.add') }}"'><span class='fas fa-plus mr-2'></span>Add service</button>
+        {% endif %}
+        <button type=button class="btn btn-small btn-outline-secondary mb-4" onclick="history.back()"><span class="fas fa-arrow-left mr-2"></span> Back</button>
+    </div>
+    {% if services|length > 0 %}
+    <div class="row">
+        <div class="col-md-12">
+        {% include 'managed_services.html' %}
+        </div>
+    </div>
+    {% else %}
+    <div class="jumbotron jumbotron-fluid">
+      <div class="container">
+        <h1 class="display-5">Empty list</h1>
+        <p class="lead">No service has been found</p>
+      </div>
+    </div>
+    {% endif %}
+<script src="/static/js/catalogue.js"></script>
+<link rel="stylesheet" href="/static/css/catalogue.css">
+{% endblock %}

@@ -18,6 +18,7 @@ import requests
 from dateutil import parser
 from app.models.Deployment import Deployment
 from app.models.User import User
+from app.models.Service import Service, UsersGroup
 from flask import json
 import datetime
 
@@ -236,3 +237,62 @@ def cvdeployment(d):
                             elastic=d.elastic,
                             updatable=d.updatable)
     return deployment
+
+
+def get_services(visibility, groups=[]):
+    services = []
+    if visibility == "public":
+        services = Service.query.filter_by(visibility='public').all()
+    if visibility == "private":
+        services = []
+        ss = Service.query.all()
+        for s in ss:
+            s_groups = [g.name for g in s.groups]
+            if not set(s_groups).isdisjoint(groups):
+                services.append(s)
+    if visibility == "all":
+        services = Service.query.all()
+
+    return services
+
+
+def get_service(id):
+    return Service.query.get(id)
+
+
+def __update_service(s, data):
+    s.name = data.get('name')
+    s.description = data.get('description')
+    s.url = data.get('url')
+    if data.get('icon'):
+        s.icon = data.get('icon')
+    s.visibility = data.get('visibility')
+    s.groups = []
+
+    if s.visibility == 'private':
+        for g in data.get('groups'):
+            group = UsersGroup.query.filter_by(name=g).first()
+            if not group:
+                group = UsersGroup()
+                group.name = g
+            s.groups.append(group)
+
+
+def update_service(id, data):
+    s = Service.query.filter_by(id=id).first()
+    __update_service(s, data)
+    db.session.add(s)
+    db.session.commit()
+
+
+def delete_service(id):
+    service = Service.query.filter_by(id=id).first()
+    db.session.delete(service)
+    db.session.commit()
+
+
+def add_service(data):
+    s = Service()
+    __update_service(s, data)
+    db.session.add(s)
+    db.session.commit()

@@ -1,0 +1,57 @@
+<p class="font-weight-bold" style="font-size:20px;font-variant:small-caps">Centralised Services: </p>
+{% for service in services %}
+{% if loop.index % 3 == 1 %}
+<!-- open card deck -->
+<div id="card-deck" class="card-deck">
+{% endif %}
+    <div class="card mb-4" style="max-width: 20rem; max-height: 25rem;">
+        <div class="card-body">
+            <h5 class="card-title text-center">
+                <strong>{{ service.name }}</strong>
+            </h5>
+        </div>
+        <div class="wrapper">
+            {% if service.icon != "" %}
+            <img class="card-img-bottom img-fluid" src="{{ url_for('services_bp.showimg', filename=service.icon) }}" alt="Card image cap">
+            {% else %}
+            <img class="card-img-bottom img-fluid" src="{{ url_for('services_bp.static', filename='images/default_service.png') }}" alt="Card image cap">
+            {% endif %}
+        </div>
+        <div class="card-img-overlay text-center" style="z-index: 1;">
+            <h5>
+                <strong>{{ service.name }}</strong>
+            </h5>
+            <div id="toscaDescription" class="card-text service-descr">
+                <small>{{ service.description | safe}}</small>
+            </div>
+            <div class="row justify-content-center mt-4">
+                <div class="col">
+                    <a class="badge badge-pill badge-info text-left read_more" tabindex="0" data-toggle="popover" title="Full description" data-trigger="focus" data-html="true" data-content="{{ service.description }}">Read More</a>
+                </div>
+                {% if session['userrole'] == 'admin' and 'admin' in request.path %}
+                <div class="col">
+                    <a href="{{ url_for('services_bp.edit', id=service.id) }}" class="badge badge-pill badge-warning">Edit</a>
+                </div>
+                <div class="col">
+                    <form action="{{ url_for('services_bp.delete', id=service.id) }}" method="post">
+                        <button type="submit" class="badge badge-pill badge-danger" style="border-width:0 !important;">Delete</button>
+                    </form>
+                </div>
+                {% endif %}
+                <div class="col">
+                    <a href="{{ service.url }}" target="_blank" class="badge badge-pill badge-primary">Go to service</a>
+                </div>
+            </div>
+        </div>
+        {% if service.visibility | enum2str == 'private' %}
+        <div class="card-footer" style="height: 40px;">
+            <small class="text-muted">Scope: {{ service.get_groups_list() | join(', ') }}</small>
+        </div> {% endif %}
+    </div>
+{% if loop.index % 3 == 0 %} <!-- close card deck if it contains 3 cards -->
+</div>
+{% endif %}
+{% endfor %}
+{% if services|count % 3 != 0 %} <!-- close card deck if last row contains less then 3 cards -->
+</div>
+{% endif %}

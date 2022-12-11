@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block content %}
+<br>
+<div class="container">
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h4 class="font-weight-bold text-primary">
+            Edit service
+            </h4>
+        </div>
+
+        <div class="card-body">
+            <form id="serviceSubmit" action="" method="post" autocomplete="off" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="service_name">Name</label>
+                    <input type="text" class="form-control" id="service_name" name="name" value="{{ service.name }}" maxlength="128" required>
+                </div>
+                <div class="form-group">
+                    <label for="service_description">Description (max 2048 chars)</label>
+                    <!--input type="text" class="form-control" id="service_description" name="description" value="{{ service.description }}" maxlength="128" required -->
+                    <textarea class="form-control" id="service_description" name="description" rows="3" required>{{ service.description }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="service_url">URL</label>
+                    <input type="url" class="form-control" id="service_url" name="url" value="{{ service.url }}" placeholder="https://example.com" maxlength="128" required>
+                </div>
+                <div class="form-group">
+                    <label for="service_icon">Icon (max 100 KB)</label>
+                    <div class="custom-file">
+                        <input type="file" accept=".jpg,.gif,.png,.jpeg" class="custom-file-input" id="service_icon" name="icon">
+                        <label class="custom-file-label" for="service_icon">{{ service.icon }}</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="is_public"
+                               name="is_public" {% if service.visibility | enum2str == 'public' %} checked="checked" {% endif %}
+                               onchange="showgroups()" >
+                        <label class="custom-control-label" for="is_public">Public</label>
+                    </div>
+                </div>
+                <div id="selectgroups" class="form-group">
+                    <label for="mySelect2">Groups</label>
+                    <select class="js-example-basic-multiple form-control" id="mySelect2" name="groups" multiple="multiple">
+                    {% if service.groups %}
+                    {% for opt in service.groups %}
+                      {% if opt != '' %}
+                      <option value="{{opt}}" selected="selected">{{opt}}</option>
+                      {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                    {% for opt in groups %}
+                      {% if opt != '' %}
+                      <option value="{{opt}}">{{opt}}</option>
+                      {% endif %}
+                    {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success submitBtn">Submit</button>
+                <button id="cancelBtn" type=button class="btn btn-small btn-primary" onclick="location.href='{{ url_for('services_bp.list_as_admin') }}'">
+                <span class="fas fa-ban mr-2"></span>Cancel</button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+
+<script>
+{% if session['userrole'] == 'admin' %}
+var enableCustomInput = true
+{% else %}
+var enableCustomInput = false
+{% endif %}
+
+$(document).ready(function() {
+    $('.js-example-basic-multiple').select2({
+      width: '100%', // https://github.com/select2/select2/issues/4220
+      tags: enableCustomInput
+    });
+    $('#service_description').summernote({
+        toolbar: [
+            ['style', ['bold', 'italic', 'underline', 'clear']],
+            ['font', ['strikethrough', 'superscript', 'subscript']],
+            ['color', ['color']],
+            ['insert', ['hr', 'link']],
+            ['para', ['ul', 'ol', 'paragraph']],
+            ['height', ['height']],
+            ['view', ['fullscreen', 'codeview']],
+        ],
+        blockquoteBreakingLevel: 1,
+        maxTextLength: 2048
+    });
+
+    showgroups();
+});
+
+function showgroups() {
+    var div = $("#selectgroups")
+    if ($('#is_public').is(':checked')){
+      div.hide();
+    }
+    else {
+      div.show();
+    }
+}
+
+</script>
+
+<script>
+
+$(document).ready(function () {
+    $("#serviceSubmit").submit(function () {
+        //disable button on click
+        $(".submitBtn").attr("disabled", true);
+        // add spinner to button
+        $(".submitBtn").html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...` );
+        //disable cancel too
+        $("#cancelBtn").attr("disabled", true);
+        $("#cancelBtn").attr("onclick", "#");
+    });
+});
+
+</script>
+
+<script>
+$('.custom-file-input').on('change', function() {
+   let fileName = $(this).val().split('\\').pop();
+   $(this).next('.custom-file-label').addClass("selected").html(fileName);
+});
+</script>
+
+{% endblock %}
