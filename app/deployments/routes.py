@@ -22,6 +22,7 @@ from app.models.Deployment import Deployment
 from app.providers import sla
 from app.lib import ToscaInfo as tosca_helpers
 from app.lib import openstack as keystone
+from app.lib.orchestrator import Orchestrator
 from app.lib import s3 as s3
 from werkzeug.exceptions import Forbidden
 from werkzeug.utils import secure_filename
@@ -29,13 +30,10 @@ from app.swift.swift import Swift
 from packaging import version
 from urllib.parse import urlparse
 import uuid as uuid_generator
-import requests
 import yaml
 import io
 import os
 import re
-
-
 
 deployments_bp = Blueprint('deployments_bp', __name__,
                            template_folder='templates',
@@ -48,6 +46,9 @@ iam_client_secret = settings.iamClientSecret
 issuer = settings.iamUrl
 if not issuer.endswith('/'):
     issuer += '/'
+
+orchestrator = Orchestrator(settings.orchestratorUrl)
+
 
 @deployments_bp.route('/depls')
 @auth.authorized_with_valid_token
@@ -62,20 +63,17 @@ def showdeploymentsingroup():
 def showdeployments():
     access_token = iam_blueprint.session.token['access_token']
 
-    headers = {'Authorization': 'bearer %s' % access_token}
-    params = "createdBy=me&page={}&size={}".format(0, 999999)
-
+    group = None
     if 'active_usergroup' in session and session['active_usergroup'] is not None:
-        params = params + "&userGroup={}".format(session['active_usergroup'])
+        group = session['active_usergroup']
 
-    url = settings.orchestratorUrl + "/deployments?{}".format(params)
-    response = requests.get(url, headers=headers)
+    deployments = []
+    try:
+        deployments = orchestrator.get_deployments(access_token, created_by="me", user_group=group)
+    except Exception as e:
+        flash("Error retrieving deployment list: \n" + str(e), 'warning')
 
-    deployments = {}
-    if not response.ok:
-        flash("Error retrieving deployment list: \n" + response.text, 'warning')
-    else:
-        deployments = response.json()["content"]
+    if deployments:
         result = dbhelpers.updatedeploymentsstatus(deployments, session['userid'])
         deployments = result['deployments']
         app.logger.debug("Deployments: " + str(deployments))
@@ -95,38 +93,34 @@ def update_deployments():
 
     # retrieve deployments from orchestrator
     access_token = iam_blueprint.session.token['access_token']
+    deployments_from_orchestrator = []
+    try:
+        deployments_from_orchestrator = orchestrator.get_deployments(access_token, created_by="{}@{}".format(subject, issuer))
+    except Exception as e:
+        flash("Error retrieving deployment list: \n" + str(e), 'warning')
 
-    headers = {'Authorization': 'bearer %s' % access_token}
+    if deployments_from_orchestrator:
+        iids = dbhelpers.updatedeploymentsstatus(deployments_from_orchestrator, subject)['iids']
 
-    url = settings.orchestratorUrl + "/deployments?createdBy={}&page={}&size={}".format(
-        '{}@{}'.format(subject, issuer), 0, 999999)
-    response = requests.get(url, headers=headers)
+        # retrieve deployments from DB
+        deployments = dbhelpers.cvdeployments(dbhelpers.get_user_deployments(subject))
+        for dep in deployments:
+            newremote = dep.remote
+            if dep.uuid not in iids:
+                if dep.remote == 1:
+                    newremote = 0
+            else:
+                if dep.remote == 0:
+                    newremote = 1
+            if dep.remote != newremote:
+                dbhelpers.update_deployment(dep.uuid, dict(remote=newremote))
 
-    iids = []
-    if response.ok:
-        deporch = response.json()["content"]
-        iids = dbhelpers.updatedeploymentsstatus(deporch, subject)['iids']
-
-    #
-    # retrieve deployments from DB
-    deployments = dbhelpers.cvdeployments(dbhelpers.get_user_deployments(subject))
-    for dep in deployments:
-        newremote = dep.remote
-        if dep.uuid not in iids:
-            if dep.remote == 1:
-                newremote = 0
-        else:
-            if dep.remote == 0:
-                newremote = 1
-        if dep.remote != newremote:
-            dbhelpers.update_deployment(dep.uuid, dict(remote=newremote))
 
 @deployments_bp.route('/overview')
 @auth.authorized_with_valid_token
 def showdeploymentsoverview():
-
     # refresh deployment list
-    update_deployments();
+    update_deployments()
 
     deps = dbhelpers.get_user_deployments(session["userid"])
     statuses = {}
@@ -151,16 +145,13 @@ def showdeploymentsoverview():
 @auth.authorized_with_valid_token
 def deptemplate(depid=None):
     access_token = iam_blueprint.session.token['access_token']
-    headers = {'Authorization': 'bearer %s' % access_token}
 
-    url = settings.orchestratorUrl + "/deployments/" + depid + "/template"
-    response = requests.get(url, headers=headers)
-
-    if not response.ok:
-        flash("Error getting template: " + response.text, 'danger')
+    try:
+        template = orchestrator.get_template(access_token, depid)
+    except Exception as e:
+        flash("Error getting template: ".format(str(e)), 'danger')
         return redirect(url_for('home_bp.home'))
 
-    template = response.text
     return render_template('deptemplate.html', template=template)
 
 
@@ -183,12 +174,14 @@ def unlockdeployment(depid=None):
         dbhelpers.add_object(dep)
     return redirect(url_for('deployments_bp.showdeployments'))
 
+
 @deployments_bp.route('/edit', methods=['POST'])
 @auth.authorized_with_valid_token
 def editdeployment():
     form_data = request.form.to_dict()
-    dbhelpers.update_deployment(form_data["deployment_uuid"],dict(description=form_data["description"]))
+    dbhelpers.update_deployment(form_data["deployment_uuid"], dict(description=form_data["description"]))
     return redirect(url_for('deployments_bp.showdeployments'))
+
 
 def preprocess_outputs(browser, outputs, stoutputs, inputs):
     # note: inputs parameter is made available in this function 
@@ -207,9 +200,9 @@ def preprocess_outputs(browser, outputs, stoutputs, inputs):
                         app.logger.debug('Error creating short url: {}'.format(str(e)))
                         pass
 
-                if origin_url.scheme == 'http' and browser['name'] == "chrome" and browser['version'] >= 86:
-                    message = stoutputs[key]['warning'] if 'warning' in stoutputs[key] else ""
-                    stoutputs[key]['warning'] = "{}<br>{}".format("The download will be blocked by Chrome. Please, use Firefox for a full user experience.", message)
+                    if origin_url.scheme == 'http' and browser['name'] == "chrome" and browser['version'] >= 86:
+                        message = stoutputs[key]['warning'] if 'warning' in stoutputs[key] else ""
+                        stoutputs[key]['warning'] = "{}<br>{}".format("The download will be blocked by Chrome. Please, use Firefox for a full user experience.", message)
 
         if 'condition' in value:
             try:
@@ -217,9 +210,7 @@ def preprocess_outputs(browser, outputs, stoutputs, inputs):
                     if key in outputs:
                         del outputs[key]
             except Exception as ex:
-                app.logger.warning("Error evaluating condition for output {}: {}".format(key,ex))
-
-
+                app.logger.warning("Error evaluating condition for output {}: {}".format(key, ex))
 
 
 @deployments_bp.route('/<depid>/details')
@@ -243,7 +234,6 @@ def depoutput(depid=None):
             if ((stinputs[k]['printable'] if 'printable' in stinputs[k] else True) if k in stinputs else True):
                 inputs[k] = v
 
-
         additional_outputs = getadditionaloutputs(dep, iam_blueprint.session.token['access_token'])
 
         outputs = {**outputs, **additional_outputs}
@@ -251,13 +241,14 @@ def depoutput(depid=None):
         browser = request.user_agent.browser
         version = request.user_agent.version and int(request.user_agent.version.split('.')[0])
 
-        preprocess_outputs(dict(name = browser, version = version), outputs, stoutputs, inputs)
+        preprocess_outputs(dict(name=browser, version=version), outputs, stoutputs, inputs)
 
         return render_template('depoutput.html',
                                deployment=dep,
                                inputs=inputs,
                                outputs=outputs,
                                stoutputs=stoutputs)
+
 
 def getadditionaloutputs(dep, access_token):
     uuid = dep.uuid
@@ -270,7 +261,7 @@ def getadditionaloutputs(dep, access_token):
         # try to get kubeconfig file from log
         try:
             kubeconfig = extract_info_from_deplog(access_token, uuid, 'kubeconfig')
-            additional_outputs = { "kubeconfig": kubeconfig }
+            additional_outputs = {"kubeconfig": kubeconfig}
             update = True
         except:
             app.logger.debug("Error while extracting kubeconfig file from log for deployment {}".format(dep.uuid))
@@ -282,17 +273,10 @@ def getadditionaloutputs(dep, access_token):
     return additional_outputs
 
 
-
 def extract_info_from_deplog(access_token, uuid, info_type):
-    headers = {'Authorization': 'bearer %s' % access_token}
-
-    url = settings.orchestratorUrl + "/deployments/" + uuid + "/log"
-    response = requests.get(url, headers=headers)
-
     info = ""
-
-    if response.ok:
-        log = response.text
+    try:
+        log = orchestrator.get_log(access_token, uuid)
         lines = log.split('\n\n')
 
         if info_type == "kubeconfig":
@@ -302,14 +286,16 @@ def extract_info_from_deplog(access_token, uuid, info_type):
                 match = re.search('^.*KUBECONFIG file.*\n.*\n.*\n.*\n.*\n.*\"(apiVersion.*)\"\n.*\n.*$', line)
                 if match is not None:
                     info = match.group(1)
+    except Exception as e:
+        app.logger.warning("Error extracting info from deployment log: {}".format(str(e)))
 
     return info
+
 
 @deployments_bp.route('/<depid>/templatedb')
 def deptemplatedb(depid):
     if not iam_blueprint.session.authorized:
         return redirect(url_for('home_bp.login'))
-
     # retrieve deployment from DB
     dep = dbhelpers.get_deployment(depid)
     if dep is None:
@@ -323,60 +309,66 @@ def deptemplatedb(depid):
 @auth.authorized_with_valid_token
 def deplog(depid=None):
     access_token = iam_blueprint.session.token['access_token']
-    headers = {'Authorization': 'bearer %s' % access_token}
-
-    # app.logger.debug("Configuration: " + json.dumps(settings.orchestratorConf))
     dep = dbhelpers.get_deployment(depid)
 
     log = "Not available"
-
     if dep is not None:
-        url = settings.orchestratorUrl + "/deployments/" + depid + "/log"
-        response = requests.get(url, headers=headers)
-        log = "Not available" if not response.ok else response.text
-
+        try:
+            log = orchestrator.get_log(access_token, depid)
+        except Exception:
+            pass
     return render_template('deplog.html', log=log)
 
 
 @deployments_bp.route('/<depid>/infradetails')
 @auth.authorized_with_valid_token
-def depinfradetails(depid=None, path=None):
+def depinfradetails(depid=None):
     access_token = iam_blueprint.session.token['access_token']
-    headers = {'Authorization': 'bearer %s' % access_token}
 
-    # app.logger.debug("Configuration: " + json.dumps(settings.orchestratorConf))
     dep = dbhelpers.get_deployment(depid)
     if dep is not None and dep.physicalId is not None:
-        url = settings.orchestratorUrl + "/deployments/" + depid + "/extrainfo"
+        try:
+            resources = orchestrator.get_resources(access_token, depid)
+        except Exception as e:
+            flash(str(e), 'warning')
+            return redirect(url_for('deployments_bp.showdeployments'))
 
-        response = requests.get(url, headers=headers)
-        vminfos = json.loads(response.text)
-        app.logger.debug("VMs details: {}".format(response.text))
         details = []
-        for vm_details in vminfos:
-             vminfo = utils.format_json_radl(vm_details["vmProperties"])
-             details.append(vminfo)
+        for resource in resources:
+            if "VirtualMachineInfo" in resource["metadata"]:
+                 vminfo = json.loads(resource["metadata"]["VirtualMachineInfo"])
+                 vmprop = utils.format_json_radl(vminfo["vmProperties"])
+                 vmprop['state'] = resource['state']
+                 vmprop['resId'] = resource['uuid']
+                 vmprop['depId'] = depid
+                 details.append(vmprop)
 
         return render_template('depinfradetails.html', vmsdetails=details)
-    return redirect(url_for('deployments_bp.showdeployments'))
+
+
+@deployments_bp.route('/<depid>/actions', methods=['POST'])
+@auth.authorized_with_valid_token
+def depaction(depid):
+    access_token = iam_blueprint.session.token['access_token']
+    dep = dbhelpers.get_deployment(depid)
+    if dep is not None and dep.physicalId is not None:
+        try:
+            orchestrator.post_action(access_token, depid, request.args['vmid'], request.args['action'])
+        except Exception as e:
+            flash(str(e), 'warning')
+    return redirect(url_for('deployments_bp.depinfradetails', depid=depid))
 
 @deployments_bp.route('/<depid>/qcgdetails')
 @auth.authorized_with_valid_token
-def depqcgdetails(depid=None, path=None):
+def depqcgdetails(depid=None):
     access_token = iam_blueprint.session.token['access_token']
-    headers = {'Authorization': 'bearer %s' % access_token}
 
-    # app.logger.debug("Configuration: " + json.dumps(settings.orchestratorConf))
     dep = dbhelpers.get_deployment(depid)
     if dep is not None and dep.physicalId is not None and dep.deployment_type == "QCG":
-        url = settings.orchestratorUrl + "/deployments/" + depid + "/extrainfo"
-
-        response = requests.get(url, headers=headers)
-        app.logger.debug("Job details: {}".format(response.text))
         try:
-            job = json.loads(response.text)
-        except:
-            app.logger.warning("Error decoding Job details response: {}".format(response.text))
+            job = json.loads(orchestrator.get_extra_info(access_token, depid))
+        except Exception as e:
+            app.logger.warning("Error decoding Job details response: {}".format(str(e)))
             job = None
 
         return render_template('depqcgdetails.html', job=(job[0] if job else None))
@@ -387,17 +379,16 @@ def depqcgdetails(depid=None, path=None):
 @auth.authorized_with_valid_token
 def depdel(depid=None):
     access_token = iam_blueprint.session.token['access_token']
-    headers = {'Authorization': 'bearer %s' % access_token}
-    url = settings.orchestratorUrl + "/deployments/" + depid
-    response = requests.delete(url, headers=headers)
 
-    if not response.ok:
-        flash("Error deleting deployment: " + response.text, 'danger')
-    else:
-        dep = dbhelpers.get_deployment(depid)
-        if dep is not None and dep.storage_encryption == 1:
-            secret_path = session['userid'] + "/" + dep.vault_secret_uuid
-            delete_secret_from_vault(access_token, secret_path)
+    dep = dbhelpers.get_deployment(depid)
+    if dep is not None and dep.storage_encryption == 1:
+        secret_path = session['userid'] + "/" + dep.vault_secret_uuid
+        delete_secret_from_vault(access_token, secret_path)
+
+    try:
+        orchestrator.delete(access_token, depid)
+    except Exception as e:
+        flash(str(e), 'danger')
 
     return redirect(url_for('deployments_bp.showdeployments'))
 
@@ -428,7 +419,6 @@ def depupdate(depid=None):
                                 settings.orchestratorConf['cmdb_url'], dep.deployment_type)
             ssh_pub_key = dbhelpers.get_ssh_pub_key(session['userid'])
 
-
             return render_template('updatedep.html',
                                    template=tosca_info,
                                    template_description=tosca_info['description'],
@@ -457,21 +447,11 @@ def updatedep():
     app.logger.debug("Form data: " + json.dumps(form_data))
 
     depid = form_data['_depid']
+
     if depid is not None:
         dep = dbhelpers.get_deployment(depid)
 
         template = yaml.full_load(io.StringIO(dep.template))
-        params = {}
-
-        keep_last_attempt = 1 if 'extra_opts.keepLastAttempt' in form_data \
-            else dep.keep_last_attempt
-        feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else dep.feedback_required
-        params['keepLastAttempt'] = 'true' if keep_last_attempt == 1 else 'false'
-        params['providerTimeoutMins'] = form_data[
-            'extra_opts.providerTimeout'] if 'extra_opts.providerTimeoutSet' in form_data else app.config[
-            'PROVIDER_TIMEOUT']
-        params['timeoutMins'] = app.config['OVERALL_TIMEOUT']
-        params['callback'] = app.config['CALLBACK_URL']
 
         if form_data['extra_opts.schedtype'].lower() == "man":
             template = add_sla_to_template(template, form_data['extra_opts.selectedSLA'])
@@ -479,8 +459,6 @@ def updatedep():
             remove_sla_from_template(template)
 
         inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.") and not k == '_depid'}
-        #oldinputs = json.loads(dep.inputs.strip('\"')) if dep.inputs else {}
-        #inputs = {**oldinputs, **inputs}
 
         additionaldescription = form_data['additional_description']
 
@@ -490,29 +468,33 @@ def updatedep():
         app.logger.debug("Parameters: " + json.dumps(inputs))
 
         template_text = yaml.dump(template, default_flow_style=False, sort_keys=False)
-        payload = {"template": template_text, "parameters": inputs}
-        payload.update(params)
 
         app.logger.debug("[Deployment Update] inputs: {}".format(json.dumps(inputs)))
         app.logger.debug("[Deployment Update] Template: {}".format(template_text))
 
-        url = settings.orchestratorUrl + "/deployments/" + depid
-        headers = {'Content-Type': 'application/json', 'Authorization': 'bearer %s' % access_token}
-        response = requests.put(url, json=payload, headers=headers)
+        keep_last_attempt = 1 if 'extra_opts.keepLastAttempt' in form_data \
+            else dep.keep_last_attempt
+        feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else dep.feedback_required
+        provider_timeout_mins = form_data[
+            'extra_opts.providerTimeout'] if 'extra_opts.providerTimeoutSet' in form_data else app.config[
+            'PROVIDER_TIMEOUT']
 
-        if not response.ok:
-            flash("Error updating deployment: \n" + response.text, 'danger')
-        else:
+        try:
+            orchestrator.update(access_token, depid, template_text, inputs,
+                                keep_last_attempt, provider_timeout_mins,
+                                app.config['OVERALL_TIMEOUT'], app.config['CALLBACK_URL'])
             # store data into database
             dep.keep_last_attempt = keep_last_attempt
             dep.feedback_required = feedback_required
             dep.description = additionaldescription
             dep.template = template_text
-            #dep.inputs = json.dumps(inputs),
             oldinputs = json.loads(dep.inputs.strip('\"')) if dep.inputs else {}
             updatedinputs = {**oldinputs, **inputs}
             dep.inputs = json.dumps(updatedinputs),
             dbhelpers.add_object(dep)
+
+        except Exception as e:
+            flash(str(e), 'danger')
 
     return redirect(url_for('deployments_bp.showdeployments'))
 
@@ -530,9 +512,6 @@ def configure():
     if 'selected_tosca' in request.args:
         selected_tosca = request.args['selected_tosca']
 
-    #if 'active_user_group' in request.args:
-    #    session['active_usergroup'] = request.args['active_user_group']
-
     if 'selected_group' in request.args:
         templates = tosca.tosca_gmetadata[request.args['selected_group']]['templates']
         if len(templates) == 1:
@@ -544,7 +523,7 @@ def configure():
 
         template = copy.deepcopy(tosca.tosca_info[selected_tosca])
         # Manage eventual overrides
-        for k,v in template['inputs'].items():
+        for k, v in template['inputs'].items():
             if 'group_overrides' in v and session['active_usergroup'] in v['group_overrides']:
                 overrides = v['group_overrides'][session['active_usergroup']]
                 template['inputs'][k] = {**v, **overrides}
@@ -608,7 +587,6 @@ def createdep():
 
     app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
 
-
     with io.open(os.path.join(settings.toscaDir, selected_template)) as stream:
         template = yaml.full_load(stream)
         # rewind file
@@ -618,17 +596,6 @@ def createdep():
     form_data = request.form.to_dict()
 
     params = {}
-
-    keep_last_attempt = 1 if 'extra_opts.keepLastAttempt' in form_data else 0
-    params['keepLastAttempt'] = 'true' if 'extra_opts.keepLastAttempt' in form_data else 'false'
-    feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else 0
-    params['providerTimeoutMins'] = form_data[
-        'extra_opts.providerTimeout'] if 'extra_opts.providerTimeoutSet' in form_data else app.config[
-        'PROVIDER_TIMEOUT']
-    params['timeoutMins'] = app.config['OVERALL_TIMEOUT']
-    params['callback'] = app.config['CALLBACK_URL']
-    if 'active_usergroup' in session and session['active_usergroup'] is not None:
-        params['userGroup'] = session['active_usergroup']
 
     if form_data['extra_opts.schedtype'].lower() == "man":
         template = add_sla_to_template(template, form_data['extra_opts.selectedSLA'])
@@ -646,9 +613,9 @@ def createdep():
     swift_filename = []
     swift_map = {}
 
-    uuidgen_deployment = str(uuid_generator.uuid1());
+    uuidgen_deployment = str(uuid_generator.uuid1())
 
-    for key,value in stinputs.items():
+    for key, value in stinputs.items():
 
         # Manage special type 'dependent_definition' as first
         if value["type"] == "dependent_definition":
@@ -667,7 +634,7 @@ def createdep():
                           v['source_range'] = json.loads(v.pop('source', None))
                 except:
                     del inputs[key]
-                    inputs[key] = { "ssh": { "protocol": "tcp", "source": 22 } }
+                    inputs[key] = {"ssh": {"protocol": "tcp", "source": 22}}
 
                 if "required_ports" in value:
                     inputs[key] = {**value["required_ports"], **inputs[key]}
@@ -680,7 +647,7 @@ def createdep():
                 try:
                     inputs[key] = {}
                     map = json.loads(form_data[key])
-                    for k,v in map.items():
+                    for k, v in map.items():
                         inputs[key][v['key']] = v['value']
                 except:
                     del inputs[key]
@@ -694,15 +661,6 @@ def createdep():
                         for el in json_data:
                             array.append({el['key']: el['value']})
                         inputs[key] = array
-                    # elif value["entry_schema"]["type"]=="tosca.datatypes.indigo.User":
-                    #     if app.config.get('FEATURE_REQUIRE_USER_SSH_PUBKEY')=='yes':
-                    #         if dbhelpers.get_ssh_pub_key(session['userid']):
-                    #             inputs[key] = [ { "os_user_name": session['preferred_username'], "os_user_add_to_sudoers": True, "os_user_ssh_public_key": dbhelpers.get_ssh_pub_key(session['userid'])  } ]
-                    #         else:
-                    #             flash("Deployment request failed: no SSH key found. Please upload your key.", "danger")
-                    #             doprocess = False
-                    #     else:
-                    #         inputs[key] = json_data
                     else:
                         inputs[key] = json_data
                 except:
@@ -712,7 +670,7 @@ def createdep():
             app.logger.info("Add ssh user")
             if app.config.get('FEATURE_REQUIRE_USER_SSH_PUBKEY')=='yes':
                 if dbhelpers.get_ssh_pub_key(session['userid']):
-                    inputs[key] = [ { "os_user_name": session['preferred_username'], "os_user_add_to_sudoers": True, "os_user_ssh_public_key": dbhelpers.get_ssh_pub_key(session['userid'])  } ]
+                    inputs[key] = [{"os_user_name": session['preferred_username'], "os_user_add_to_sudoers": True, "os_user_ssh_public_key": dbhelpers.get_ssh_pub_key(session['userid'])}]
                 else:
                     flash("Deployment request failed: no SSH key found. Please upload your key.", "danger")
                     doprocess = False
@@ -866,12 +824,11 @@ def createdep():
             if f not in inputs:
                 inputs[f] = file.filename
 
-            containername = basecontainername = swift.basecontainername
+            basecontainername = swift.basecontainername
             containers = swift.getownedcontainers()
             basecontainer = next(filter(lambda x: x['name'] == basecontainername, containers), None)
             if basecontainer is None:
                 swift.createcontainer(basecontainername)
-
 
             containername = basecontainername + "/" + swift_uuid
 
@@ -893,78 +850,78 @@ def createdep():
             doprocess = False
             flash("Missing file object!", 'danger')
 
-
-
     if doprocess:
 
         storage_encryption, vault_secret_uuid, vault_secret_key = add_storage_encryption(access_token, inputs)
 
         app.logger.debug("Parameters: " + json.dumps(inputs))
 
-        payload = {"template": yaml.dump(template, default_flow_style=False, sort_keys=False),
-                   "parameters": inputs}
-        # set additional params
-        payload.update(params)
+        keep_last_attempt = 1 if 'extra_opts.keepLastAttempt' in form_data else 0
+        feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else 0
+        provider_timeout_mins = form_data[
+            'extra_opts.providerTimeout'] if 'extra_opts.providerTimeoutSet' in form_data else app.config[
+            'PROVIDER_TIMEOUT']
+
+        user_group = session['active_usergroup'] if 'active_usergroup' in session \
+                                                and session['active_usergroup'] is not None else None
 
         elastic = tosca_helpers.eleasticdeployment(template)
         updatable = source_template['updatable']
 
-        url = settings.orchestratorUrl + "/deployments/"
-        headers = {'Content-Type': 'application/json', 'Authorization': 'bearer %s' % access_token}
-        response = requests.post(url, json=payload, headers=headers)
+        try:
+            rs_json = orchestrator.create(access_token, user_group, yaml.dump(template, default_flow_style=False, sort_keys=False), inputs,
+                                keep_last_attempt, provider_timeout_mins,
+                                app.config['OVERALL_TIMEOUT'], app.config['CALLBACK_URL'])
+        except Exception as e:
+            flash(str(e), 'danger')
+            if swiftprocess is True:
+                swift.removeobject(containername, filename)
+            return redirect(url_for('deployments_bp.showdeployments'))
 
-        if not response.ok:
-            flash("Error submitting deployment: \n" + response.text, 'danger')
-            doprocess = False
+        # store data into database
+        uuid = rs_json['uuid']
+        deployment = dbhelpers.get_deployment(uuid)
+        if deployment is None:
+
+            vphid = rs_json['physicalId'] if 'physicalId' in rs_json else ''
+            providername = rs_json['cloudProviderName'] if 'cloudProviderName' in rs_json else ''
+
+            deployment = Deployment(uuid=uuid,
+                                    creation_time=rs_json['creationTime'],
+                                    update_time=rs_json['updateTime'],
+                                    physicalId=vphid,
+                                    description=additionaldescription,
+                                    status=rs_json['status'],
+                                    outputs=json.dumps(rs_json['outputs']),
+                                    stoutputs=json.dumps(source_template['outputs']),
+                                    task=rs_json['task'],
+                                    links=json.dumps(rs_json['links']),
+                                    sub=rs_json['createdBy']['subject'],
+                                    template=template_text,
+                                    template_metadata=source_template['metadata_file'],
+                                    template_parameters=source_template['parameters_file'],
+                                    selected_template=selected_template,
+                                    inputs=json.dumps(inputs),
+                                    stinputs=json.dumps(stinputs),
+                                    params=json.dumps(params),
+                                    deployment_type=source_template['deployment_type'],
+                                    template_type=source_template['metadata']['template_type'],
+                                    provider_name=providername,
+                                    user_group=rs_json['userGroup'],
+                                    endpoint='',
+                                    feedback_required=feedback_required,
+                                    keep_last_attempt=keep_last_attempt,
+                                    remote=1,
+                                    issuer=rs_json['createdBy']['issuer'],
+                                    storage_encryption=storage_encryption,
+                                    vault_secret_uuid=vault_secret_uuid,
+                                    vault_secret_key=vault_secret_key,
+                                    elastic=elastic,
+                                    updatable=updatable)
+            dbhelpers.add_object(deployment)
+
         else:
-            # store data into database
-            rs_json = json.loads(response.text)
-            uuid = rs_json['uuid']
-            deployment = dbhelpers.get_deployment(uuid)
-            if deployment is None:
-
-                vphid = rs_json['physicalId'] if 'physicalId' in rs_json else ''
-                providername = rs_json['cloudProviderName'] if 'cloudProviderName' in rs_json else ''
-
-                deployment = Deployment(uuid=uuid,
-                                        creation_time=rs_json['creationTime'],
-                                        update_time=rs_json['updateTime'],
-                                        physicalId=vphid,
-                                        description=additionaldescription,
-                                        status=rs_json['status'],
-                                        outputs=json.dumps(rs_json['outputs']),
-                                        stoutputs=json.dumps(source_template['outputs']),
-                                        task=rs_json['task'],
-                                        links=json.dumps(rs_json['links']),
-                                        sub=rs_json['createdBy']['subject'],
-                                        template=template_text,
-                                        template_metadata=source_template['metadata_file'],
-                                        template_parameters=source_template['parameters_file'],
-                                        selected_template=selected_template,
-                                        inputs=json.dumps(inputs),
-                                        stinputs=json.dumps(stinputs),
-                                        params=json.dumps(params),
-                                        deployment_type=source_template['deployment_type'],
-                                        template_type=source_template['metadata']['template_type'],
-                                        provider_name=providername,
-                                        user_group=rs_json['userGroup'],
-                                        endpoint='',
-                                        feedback_required=feedback_required,
-                                        keep_last_attempt=keep_last_attempt,
-                                        remote=1,
-                                        issuer=rs_json['createdBy']['issuer'],
-                                        storage_encryption=storage_encryption,
-                                        vault_secret_uuid=vault_secret_uuid,
-                                        vault_secret_key=vault_secret_key,
-                                        elastic=elastic,
-                                        updatable=updatable)
-                dbhelpers.add_object(deployment)
-
-            else:
-                flash("Deployment with uuid:{} is already in the database!".format(uuid), 'warning')
-
-    if doprocess is False and swiftprocess is True:
-        swift.removeobject(containername, filename)
+            flash("Deployment with uuid:{} is already in the database!".format(uuid), 'warning')
 
     return redirect(url_for('deployments_bp.showdeployments'))
 
