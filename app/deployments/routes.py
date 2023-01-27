@@ -355,7 +355,9 @@ def depaction(depid):
         try:
             orchestrator.post_action(access_token, depid, request.args['vmid'], request.args['action'])
         except Exception as e:
+            app.logger.error('Action on deployment {} failed: {}'.format(depid, str(e)))
             flash(str(e), 'warning')
+        flash('Action successfully triggered.', 'success')
     return redirect(url_for('deployments_bp.depinfradetails', depid=depid))
 
 @deployments_bp.route('/<depid>/qcgdetails')
