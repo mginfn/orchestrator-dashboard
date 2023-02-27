@@ -98,9 +98,9 @@
                           <span class="fas fa-ticket-alt mr-2 grey-text"></span>Request Ports</a>
                      {% endif %}
                   {% endif %}
-                  {% if deployment.deployment_type == "CLOUD" and session['userrole'] == 'admin' %}
+                  {% if deployment.deployment_type == "CLOUD" %}
                       <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.depinfradetails', depid=deployment.uuid) }}">
-                          <span class="fas fa-bars mr-2 grey-text"></span>VM details</a>
+                          <span class="fas fa-desktop mr-2 grey-text"></span>Manage VMs</a>
                   {% endif %}
                   {% if deployment.deployment_type == "QCG" %}
                       <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.depqcgdetails', depid=deployment.uuid) }}">
