@@ -190,8 +190,11 @@ def delete_ssh_key(subject):
 def update_ssh_key(subject):
 
     sshkey = request.form['sshkey']
-    if sshkey == "" or str(sshkeyhelpers.check_ssh_key(sshkey.encode())) != "0":
-        flash("Invaild SSH public key. Please insert a correct one.", 'warning')
+
+    try:
+        sshkeyhelpers.check_ssh_key(sshkey)
+    except Exception as e:
+        flash("Invalid SSH public key: {}".format(str(e)), 'warning')
         return redirect(url_for('vault_bp.ssh_keys'))
 
     dbhelpers.update_user(subject, dict(sshkey=sshkey))
