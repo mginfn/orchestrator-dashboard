@@ -15,7 +15,7 @@
 from app import app
 from flask import make_response
 
-__version__ = '2.0.0'
+__version__ = '3.1.0'
 
 
 @app.route('/info')
