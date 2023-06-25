@@ -4,7 +4,12 @@
 {% else %}
  {% set mode = "" %}
 {% endif %}
-<div class="form-group" id="form-group-{{key}}">
+{% if value.hidden == True %}
+  {% set hidden = "hidden" %}
+{% else %}
+ {% set hidden = "" %}
+{% endif %}
+<div class="form-group" id="form-group-{{key}}" {{ hidden }}>
   {% if (value.type is not defined or (value.type != "hidden" and value.type != "swift_token" and value.type != "swift_autouuid" and value.type != "random_password" and value.type != "openstack_ec2credentials" and value.type != "uuidgen" and value.type != "ldap_user" and value.type != "ssh_user" and value.type != "userinfo"))
           and (update == False or value.updatable is not defined or value.updatable == True)%}
   <label for="{{key}}">
@@ -31,7 +36,7 @@
 
       <!-- boolean type -->
     {% elif value.type == "boolean" %}
-      <select class="js-example-basic-single js-states form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" {{mode}}>
+      <select class="js-example-basic-single js-states form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" {{mode}} {{ value.function }} {{ value.function_params }}>
         <option value="true" {% if value.default|lower =="true" %}selected="selected"{% endif %}>true</option>
         <option value="false" {% if value.default|lower =="false" %}selected="selected"{% endif %}>false</option>
       </select>
@@ -217,7 +222,7 @@
       <!-- select type if constraints are defined -->
 	  {% set constraints = value.constraints | selectattr('valid_values') | map(attribute='valid_values') | list  %}
 	  {% if constraints %}
-	  <select class="js-example-basic-single js-states form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" {{mode}}>
+	  <select class="js-example-basic-single js-states form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" {{mode}} {{ value.function }} {{ value.function_params }}>
           {% for val in constraints[0] %}
              <option value="{{val}}" {% if val==value.default %}selected="selected"{% endif %}>{{val}}</option>
           {% endfor %}
@@ -229,6 +234,9 @@
     {% endif %}  <!-- end tag type existence if -->
 
   <span id="help{{key}}" class="text-muted">{{value.description}}</span>
+  {% endif %}
+  {% if value.warning %}
+  <div class="alert alert-warning" role="alert">{{ value.warning | safe }}</div>
   {% endif %}
 </div>
 
@@ -244,7 +252,6 @@ $(document).ready(function() {
       width: '100%' // https://github.com/select2/select2/issues/4220
     });
 });
-
 </script>
-
+<script src="/deployments/static/js/script.js"></script>
 
