@@ -6,7 +6,7 @@ WORKDIR /app/
 ENV PYTHONPATH=/app
 
 RUN apt-get update && \
-apt-get -y install --no-install-recommends libsasl2-dev python-dev libldap2-dev libssl-dev && \
+apt-get -y install --no-install-recommends libsasl2-dev python3-dev libldap2-dev libssl-dev && \
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 

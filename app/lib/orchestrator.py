@@ -39,17 +39,21 @@ class Orchestrator():
 
     def get_deployments(self, access_token, created_by=None, user_group=None):
         headers = {'Authorization': 'Bearer %s' % access_token}
-        params = {}
+        params = []
         if created_by:
-            params.update({"createdBy": created_by})
+            params.append("createdBy={}".format(created_by))
         if user_group:
-            params.update({"userGroup": user_group})
+            params.append("userGroup={}".format(user_group))
+
+        str_params = ""
+        if params:
+            str_params = "?{}".format("&".join(params))
 
         deployments = []
-        url = self.orchestrator_url + "/deployments"
+        url = self.orchestrator_url + "/deployments" + str_params
 
         try:
-          get_all_results(url, headers=headers, params=params, timeout=self.timeout, results=deployments)
+          get_all_results(url, headers=headers, timeout=self.timeout, results=deployments)
         except Exception as e:
             raise Exception("Error retrieving deployment list: {}".format(str(e)))
         return deployments
