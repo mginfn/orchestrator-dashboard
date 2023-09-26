@@ -9,6 +9,11 @@
 {% else %}
  {% set hidden = "" %}
 {% endif %}
+
+{% if value.show_separator %}
+<div style="border-top: 1px dashed gray;margin: 20px 0px 10px 0px;"></div>
+{% endif %}
+
 <div class="form-group" id="form-group-{{key}}" {{ hidden }}>
   {% if (value.type is not defined or (value.type != "hidden" and value.type != "swift_token" and value.type != "swift_autouuid" and value.type != "random_password" and value.type != "openstack_ec2credentials" and value.type != "uuidgen" and value.type != "ldap_user" and value.type != "ssh_user" and value.type != "userinfo"))
           and (update == False or value.updatable is not defined or value.updatable == True)%}
@@ -235,8 +240,15 @@
 
   <span id="help{{key}}" class="text-muted">{{value.description}}</span>
   {% endif %}
+  {% if value.info_box %}
+  <div class="alert alert-info" style="padding: 5px; margin: 5px 0" role="info">
+    <strong>Info:&nbsp;</strong>{{ value.info_box | safe }}
+  </div>
+  {% endif %}
   {% if value.warning %}
-  <div class="alert alert-warning" role="alert">{{ value.warning | safe }}</div>
+  <div class="alert alert-warning" style="padding: 5px; margin: 5px 0" role="alert">
+    <strong>Warn:&nbsp;</strong>{{ value.warning | safe }}
+  </div>
   {% endif %}
 </div>
 
