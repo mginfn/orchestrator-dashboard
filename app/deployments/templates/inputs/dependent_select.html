@@ -1,4 +1,4 @@
-<select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}" data-parent-id="{{value.parent}}">
+<select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}" data-parent-id="{{value.parent}}" {{mode}}>
   {% for constraint in value.constraints %}
     <option data-parent-value="{{constraint['parent_value']}}" value="{{constraint['value']}}" {% if constraint['value'] in value.default %}selected="selected"{% endif %}>{{constraint['label']}}</option>
   {% endfor %}

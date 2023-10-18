@@ -1,4 +1,4 @@
-<select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}" data-action="removeOnSubmit" onchange="setfields(this)" required>
+<select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}" data-action="removeOnSubmit" onchange="setfields(this)" {{mode}} required>
     <option value="" disabled selected>--Select--</option>
   {% for constraint in value.constraints %}
     <option value="{{constraint['value']}}" data-values="{{constraint['set']}}">{{constraint['label']}}</option>

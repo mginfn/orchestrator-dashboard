@@ -12,30 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .. import app, iam_blueprint, tosca
+from .. import app, iam_blueprint, tosca, redis_client
 from app.lib import utils, auth, settings, dbhelpers, openstack
 from app.models.User import User
+from datetime import datetime
 from markupsafe import Markup
 from flask import Blueprint, json, render_template, request, redirect, url_for, session, make_response, flash
 import json
-
-iam_base_url = settings.iamUrl
-iam_client_id = settings.iamClientID
-iam_client_secret = settings.iamClientSecret
-
-issuer = settings.iamUrl
-if not issuer.endswith('/'):
-    issuer += '/'
 
 app.jinja_env.filters['tojson_pretty'] = utils.to_pretty_json
 app.jinja_env.filters['extract_netinterface_ips'] = utils.extract_netinterface_ips
 app.jinja_env.filters['intersect'] = utils.intersect
 app.jinja_env.filters['python_eval'] = utils.python_eval
-
-toscaInfo = tosca.tosca_info
-
-app.logger.debug("TOSCA INFO: " + json.dumps(toscaInfo))
-app.logger.debug("TOSCA DIR: " + tosca.tosca_dir)
 
 home_bp = Blueprint('home_bp', __name__, template_folder='templates', static_folder='static')
 
@@ -43,11 +31,85 @@ home_bp = Blueprint('home_bp', __name__, template_folder='templates', static_fol
 @home_bp.route('/settings')
 @auth.authorized_with_valid_token
 def show_settings():
+    dashboard_last_conf = redis_client.get('last_configuration_info')
+    last_settings = json.loads(dashboard_last_conf) if dashboard_last_conf else {}
     return render_template('settings.html',
                            iam_url=settings.iamUrl,
                            orchestrator_url=settings.orchestratorUrl,
                            orchestrator_conf=settings.orchestratorConf,
-                           vault_url=app.config.get('VAULT_URL'))
+                           vault_url=app.config.get('VAULT_URL'),
+                           tosca_settings=last_settings)
+
+
+@home_bp.route('/setsettings', methods=['POST'])
+@auth.authorized_with_valid_token
+def submit_settings():
+    if request.method == 'POST' and session['userrole'].lower() == 'admin':
+
+        message1 = ''
+        message2 = ''
+
+        repo_url = request.form.get('tosca_templates_url')
+        tag_or_branch = request.form.get('tosca_templates_tag_or_branch')
+
+        private = request.form.get('tosca_templates_private') == 'on'
+        username = request.form.get('tosca_templates_username')
+        deploy_token = request.form.get('tosca_templates_token')
+
+        serialised_value = redis_client.get("last_configuration_info")
+        dashboard_configuration_info = json.loads(serialised_value) if serialised_value else {}
+
+        if repo_url:
+            app.logger.debug("Cloning TOSCA templates")
+            ret, message1 = utils.download_git_repo(repo_url, settings.toscaDir, tag_or_branch,
+                                                    private, username, deploy_token)
+            flash(message1, "success" if ret else "danger")
+
+            if ret:
+                if repo_url: dashboard_configuration_info['tosca_templates_url'] = repo_url
+                if tag_or_branch: dashboard_configuration_info['tosca_templates_tag_or_branch'] = tag_or_branch
+
+        repo_url = request.form.get('dashboard_configuration_url')
+        tag_or_branch = request.form.get('dashboard_configuration_tag_or_branch')
+
+        private = request.form.get('dashboard_configuration_private') == 'on'
+        username = request.form.get('dashboard_configuration_username')
+        deploy_token = request.form.get('dashboard_configuration_token')
+
+        if repo_url:
+            app.logger.debug("Cloning dashboard configuration")
+            ret, message2 = utils.download_git_repo(repo_url, settings.settingsDir, tag_or_branch,
+                                                    private, username, deploy_token)
+            flash(message2, "success" if ret else "danger")
+            if ret:
+                if repo_url: dashboard_configuration_info['dashboard_configuration_url'] = repo_url
+                if tag_or_branch: dashboard_configuration_info['dashboard_configuration_tag_or_branch'] = tag_or_branch
+
+        tosca.reload()
+        app.logger.debug("Configuration reloaded")
+
+        now = datetime.now()
+        dashboard_configuration_info['updated_at'] = now.strftime("%d/%m/%Y %H:%M:%S")
+        redis_client.set('last_configuration_info', json.dumps(dashboard_configuration_info))
+
+        if message1 or message2:
+            comment = request.form.get('message')
+            message = Markup(
+                "{} has requested the update of the dashboard configuration: "
+                "<br><br>{} <br>{} <br><br>Comment: {}".format(session['username'], message1, message2, comment))
+
+            recipients = []
+            if request.form.get('notify_admins'):
+                recipients = dbhelpers.get_admins_email()
+            recipients.extend(request.form.getlist('notify_email'))
+
+            if recipients:
+                utils.send_email("Dashboard Configuration update",
+                                 sender=app.config.get('MAIL_SENDER'),
+                                 recipients=recipients,
+                                 html_body=message)
+
+    return redirect(url_for('home_bp.show_settings'))
 
 
 @home_bp.route('/login')
@@ -63,77 +125,61 @@ def is_template_locked(allowed_groups, user_groups):
     else:
         return True
 
+
 def set_template_access(tosca, user_groups, active_group):
     info = {}
     for k, v in tosca.items():
         allowed_groups = v.get("metadata").get("allowed_groups")
         if not allowed_groups:
-          app.logger.error("Null - {}".format(k))
+            app.logger.error("Null - {}".format(k))
         access_locked = is_template_locked(allowed_groups, user_groups)
-        if (access_locked and ("visibility" not in v.get("metadata") or v["metadata"]["visibility"] == "public")) or (not access_locked and (active_group in allowed_groups.split(',') or allowed_groups == "*")):
+        if (access_locked and ("visibility" not in v.get("metadata") or v["metadata"]["visibility"] == "public")) or (
+                not access_locked and (active_group in allowed_groups.split(',') or allowed_groups == "*")):
             v["metadata"]["access_locked"] = access_locked
-            info[k]=v
+            info[k] = v
     return info
 
 
 def check_template_access(user_groups, active_group):
-    if tosca.tosca_gmetadata:
-        templates_info = set_template_access(tosca.tosca_gmetadata, user_groups, active_group)
+    tosca_info, tosca_templates, tosca_gmetadata = tosca.get()
+    if tosca_gmetadata:
+        templates_info = set_template_access(tosca_gmetadata, user_groups, active_group)
         enable_template_groups = True
     else:
-        templates_info = set_template_access(toscaInfo, user_groups, active_group)
+        templates_info = set_template_access(tosca_info, user_groups, active_group)
         enable_template_groups = False
     return templates_info, enable_template_groups
+
 
 @app.route('/')
 @home_bp.route('/')
 def home():
     if not iam_blueprint.session.authorized:
         return redirect(url_for('home_bp.login'))
+    if not session.get('userid'):
+        auth.set_user_info()
+    return redirect(url_for('home_bp.portfolio'))
 
-    account_info = iam_blueprint.session.get("/userinfo")
+@app.route('/portfolio')
+@home_bp.route('/portfolio')
+def portfolio():
 
-    if account_info.ok:
-        account_info_json = account_info.json()
-        user_groups = account_info_json['groups']
-        user_id = account_info_json['sub']
-
-        supported_groups = []
-        if settings.iamGroups:
-            supported_groups = list(set(settings.iamGroups) & set(user_groups))
-            if len(supported_groups) == 0:
-                app.logger.warning("The user {} does not belong to any supported user group".format(user_id))
-
-        session['userid'] = user_id
-        session['username'] = account_info_json['name']
-        session['preferred_username'] = account_info_json['preferred_username']
-        session['useremail'] = account_info_json['email']
-        session['userrole'] = 'user'
-        session['gravatar'] = utils.avatar(account_info_json['email'], 26)
-        session['organisation_name'] = account_info_json['organisation_name']
-        session['usergroups'] = user_groups
-        session['supported_usergroups'] = supported_groups
-        if 'active_usergroup' not in session:
-            session['active_usergroup'] = next(iter(supported_groups), None)
-        # access_token = iam_blueprint.session.token['access_token']
-
+    if session.get('userid'):
         # check database
         # if user not found, insert
-        #
-        app.logger.info(dir(User))
-        user = dbhelpers.get_user(account_info_json['sub'])
+        user = dbhelpers.get_user(session['userid'])
         if user is None:
-            email = account_info_json['email']
+            email = session['useremail']
             admins = json.dumps(app.config['ADMINS'])
             role = 'admin' if email in admins else 'user'
 
-            user = User(sub=user_id,
-                        name=account_info_json['name'],
-                        username=account_info_json['preferred_username'],
-                        given_name=account_info_json['given_name'],
-                        family_name=account_info_json['family_name'],
+            user = User(sub=session['userid'],
+                        name=session['username'],
+                        username=session['preferred_username'],
+                        given_name=session['given_name'],
+                        family_name=session['family_name'],
                         email=email,
-                        organisation_name=account_info_json['organisation_name'],
+                        organisation_name=session['organisation_name'],
                         picture=utils.avatar(email, 26),
                         role=role,
                         active=1)
@@ -143,10 +189,12 @@ def home():
 
         services = dbhelpers.get_services(visibility='public')
         services.extend(dbhelpers.get_services(visibility='private', groups=[session['active_usergroup']]))
-        templates_info, enable_template_groups = check_template_access(user_groups, session['active_usergroup'])
+        templates_info, enable_template_groups = check_template_access(session['usergroups'], session['active_usergroup'])
 
         return render_template(app.config.get('PORTFOLIO_TEMPLATE'), services=services, templates_info=templates_info,
                                enable_template_groups=enable_template_groups)
+
+    return redirect(url_for('home_bp.login'))
 
 
 @home_bp.route('/set_active')
@@ -177,7 +225,7 @@ def callback():
     rf = 0
 
     user = dbhelpers.get_user(payload['createdBy']['subject'])
-    user_email = user.email  # email
+    user_email = user.email
 
     dep = dbhelpers.get_deployment(uuid)
 
@@ -257,10 +305,12 @@ def sendaccessrequest():
     form_data = request.form.to_dict()
 
     try:
-        utils.send_authorization_request_email(form_data['service_type'], email=form_data['email'], message=form_data['message'])
+        utils.send_authorization_request_email(form_data['service_type'], email=form_data['email'],
+                                               message=form_data['message'])
 
         flash(
-            "Your request has been sent to the support team. You will receive soon a notification email about your request. Thank you!",
+            "Your request has been sent to the support team. You will receive soon a notification email about your "
+            "request. Thank you!",
             "success")
 
     except Exception as error:
@@ -280,9 +330,9 @@ def contact():
         message = Markup(
             "Name: {}<br>Email: {}<br>Message: {}".format(form_data['name'], form_data['email'], form_data['message']))
         utils.send_email("New contact",
-                   sender=app.config.get('MAIL_SENDER'),
-                   recipients=[app.config.get('SUPPORT_EMAIL')],
-                   html_body=message)
+                         sender=app.config.get('MAIL_SENDER'),
+                         recipients=[app.config.get('SUPPORT_EMAIL')],
+                         html_body=message)
 
     except Exception as error:
         utils.logexception("sending email:".format(error))

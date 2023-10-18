@@ -10,54 +10,214 @@
             <h4 class="font-weight-bold text-primary">Settings</h4>
         </div>
         <div class="card-body">
+            <ul class="nav nav-tabs">
+                <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#conf_endpoints">Configured endpoints</a></li>
+                {% if session['userrole'] == 'admin' %}
+                <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#dash_conf">Dashboard Configuration</a></li>
+                {% endif %}
+            </ul>
 
-    <div class="table-responsive">
-        <table id="tableServices" class="table table-bordered table-striped" width="100%" cellspacing="0">
-            <thead>
-                <tr>
-                    <!-- <th>id</th>-->
-                    <th>Service</th>
-                    <th>Endpoint</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Identity and Access Management (IAM)</td>
-                    <td>{{ iam_url }}</td>
-                </tr>
-                <tr>
-                    <td>PaaS Orchestrator</td>
-                    <td>{{ orchestrator_url }}</td>
-                </tr>
-		        <tr>
-		            <td>Infrastructure Manager (IM)</td>
-                    <td>{{ orchestrator_conf['im_url'] }}</td>
-                </tr>
-		        <tr>
-                    <td>SLA Manager (SLAM)</td>
-                    <td>{{ orchestrator_conf['slam_url'] }}</td>
-                </tr>
-		        <tr>
-                    <td>Configuration Management DB (CMDB)</td>
-                    <td>{{ orchestrator_conf['cmdb_url'] }}</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-    </div>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id=conf_endpoints>
+                    <br>
+                    <div class="table-responsive">
+                        <table id="tableServices" class="table table-bordered table-striped" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <!-- <th>id</th>-->
+                                    <th>Service</th>
+                                    <th>Endpoint</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Identity and Access Management (IAM)</td>
+                                    <td>{{ iam_url }}</td>
+                                </tr>
+                                <tr>
+                                    <td>PaaS Orchestrator</td>
+                                    <td>{{ orchestrator_url }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Infrastructure Manager (IM)</td>
+                                    <td>{{ orchestrator_conf['im_url'] }}</td>
+                                </tr>
+                                <tr>
+                                    <td>SLA Manager (SLAM)</td>
+                                    <td>{{ orchestrator_conf['slam_url'] }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Configuration Management DB (CMDB)</td>
+                                    <td>{{ orchestrator_conf['cmdb_url'] }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% if session['userrole'] == 'admin' %}
+                <div class="tab-pane fade show" id=dash_conf>
+                    <br>
+                    <p class="text-success">Last update at: {{ tosca_settings.updated_at }}</p>
+                    <form id="settingsform" action="{{ url_for('home_bp.submit_settings')}}" method="post">
+                        <fieldset class="border p-2 mb-2">
+                            <div class="text-info font-weight-bold"><h5>TOSCA templates</h5></div>
+                            <p class="text-success">Current settings:
+                            {% if tosca_settings.tosca_templates_url %}
+                                    {{ tosca_settings.tosca_templates_url }} (branch/tag: {{ tosca_settings.tosca_templates_tag_or_branch }})
+                                {% else %} Not Available{% endif %}</p>
+                            <div class="form-row">
+                                <div class="form-group col">
+                                    <label for="tosca_templates_url">Repository URL</label>
+                                    <input type="url" class="form-control" id="tosca_templates_url" name="tosca_templates_url">
+                                </div>
+
+                                <div class="form-group col">
+                                    <label for="tosca_templates_tag_or_branch">Tag/Branch (optional)</label>
+                                    <input type="text" class="form-control" id="tosca_templates_tag_or_branch" name="tosca_templates_tag_or_branch">
+                                </div>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="tosca_templates_private" name="tosca_templates_private">
+                                <label class="form-check-label" for="tosca_templates_private">Private Repository</label>
+                            </div>
+                            <div class="form-row" id="privateRepoFields1" style="display: none;">
+                                <div class="form-group col">
+                                    <label for="tosca_templates_username">Username</label>
+                                    <input type="text" class="form-control" id="tosca_templates_username" name="tosca_templates_username">
+                                </div>
+                                <div class="form group col">
+                                    <label for="tosca_templates_token">Token</label>
+                                    <input type="password" class="form-control" id="tosca_templates_token" name="tosca_templates_token">
+                                </div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="border p-2 mb-2">
+                            <div class="text-info font-weight-bold"><h5>Dashboard configuration</h5></div>
+                            <p class="text-muted">the repo containing the folders "tosca-parameters" and "tosca-metadata"</p>
+                            <p class="text-success">Current settings:
+                                {% if tosca_settings.dashboard_configuration_url %}
+                                    {{ tosca_settings.dashboard_configuration_url }} (branch/tag: {{ tosca_settings.dashboard_configuration_tag_or_branch }})
+                                {% else %} Not Available{% endif %}</p>
+                            <div class="form-row">
+                                <div class="form-group col">
+                                    <label for="dashboard_configuration_url">Repository URL</label>
+                                    <input type="url" class="form-control" id="dashboard_configuration_url" name="dashboard_configuration_url">
+                                </div>
+
+                                <div class="form-group col">
+                                    <label for="dashboard_configuration_tag_or_branch">Tag/Branch (optional)</label>
+                                    <input type="text" class="form-control" id="dashboard_configuration_tag_or_branch" name="dashboard_configuration_tag_or_branch">
+                                </div>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="dashboard_configuration_private" name="dashboard_configuration_private">
+                                <label class="form-check-label" for="dashboard_configuration_private">Private Repository</label>
+                            </div>
+                            <div class="form-row" id="privateRepoFields2" style="display: none;">
+                                <div class="form-group col">
+                                    <label for="dashboard_configuration_username">Username</label>
+                                    <input type="text" class="form-control" id="dashboard_configuration_username" name="dashboard_configuration_username">
+                                </div>
+                                <div class="form group col">
+                                    <label for="dashboard_configuration_token">Token</label>
+                                    <input type="password" class="form-control" id="dashboard_configuration_token" name="dashboard_configuration_token">
+                                </div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="border p-2 mb-2">
+                            <div class="text-info font-weight-bold"><h5>Notifications</h5></div>
+                            <div class="form-row">
+                                <div class="form-check m-2">
+                                    <input type="checkbox" class="form-check-input" id="notify_admins" name="notify_admins" checked="checked">
+                                    <label class="form-check-label" for="notify_admins">Notify admins</label>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col">
+                                    <label for="notify_email">CC to (optional)</label>
+                                    <select class="js-example-basic-multiple js-example-tags form-control" id="notify_email" name="notify_email" multiple="multiple"></select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="message">Comment (optional)</label>
+                                <textarea class="form-control" name="message" id="message" placeholder="Motivation for updating the dashboard settings." rows="3"></textarea>
+                            </div>
+                        </fieldset>
+
+                        <button type="submit" class="btn btn-success submitBtn">Reload</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- Loading modal -->
+<div class="modal" id="loadingModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="text-center">
+          <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+          </div>
+        </div>
+        <p class="text-center mt-2">Loading...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-    $('#tableServices').dataTable( {
-        "responsive": true,
-        "order": [],
-        "columnDefs": [ {
-          "targets"  : 'no-sort',
-          "orderable": false,
-        }],
-        "order": [[ 1, "asc" ]]
+$(document).ready(function() {
+  $("#tosca_templates_private").change(function() {
+    $("#privateRepoFields1").toggle(this.checked);
+  });
+  $("#dashboard_configuration_private").change(function() {
+    $("#privateRepoFields2").toggle(this.checked);
+  });
+
+  $("#settingsform").submit(function(event) {
+    event.preventDefault();
+
+    // Show loading modal
+    $("#loadingModal").modal({ backdrop: "static", keyboard: false });
+
+    var actionUrl = "{{ url_for('home_bp.submit_settings')}}";
+    // Perform asynchronous form submission
+    $.post(actionUrl, $(this).serialize(), function(response) {
+      // Hide loading modal
+      $("#loadingModal").modal("hide");
+
+      // Replace the entire content of the current page with the response
+      document.open();
+      document.write(response);
+      document.close();
     });
+  });
+});
+
+$('#tableServices').dataTable( {
+    "responsive": true,
+    "order": [],
+    "columnDefs": [ {
+      "targets"  : 'no-sort',
+      "orderable": false,
+    }],
+    "order": [[ 1, "asc" ]]
+});
+
+$(document).ready(function() {
+    $('.js-example-basic-multiple').select2({
+      width: '100%' // https://github.com/select2/select2/issues/4220
+    });
+    $(".js-example-tags").select2({
+      tags: true,
+      tokenSeparators: [' '],
+      width: '100%'
+    });
+});
 </script>
 
 {% endblock %}

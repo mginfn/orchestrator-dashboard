@@ -43,7 +43,7 @@
 
     <!-- list text type -->
     {% elif value.type == "list" and value.entry_schema.type|lower == "string" %}
-      <fieldset class="border p-2">
+      <fieldset class="border p-2" {{mode}}>
         <!--legend class="w-auto">{{key}}</legend-->
       {% include 'inputs/list.html' %}
       </fieldset>
@@ -51,7 +51,7 @@
 
     <!-- list text type -->
     {% elif value.type == "list" and value.entry_schema.type|lower == "map" %}
-      <fieldset class="border p-2">
+      <fieldset class="border p-2" {{mode}}>
         <!--legend class="w-auto">{{key}}</legend-->
       {% include 'inputs/list_map_string.html' %}
       </fieldset>
@@ -177,7 +177,7 @@
 
     <!-- List of map of strings -->
     {% elif value.type == "map" and value.entry_schema.type == "string" %}
-      <fieldset class="border p-2">
+      <fieldset class="border p-2" {{mode}}>
       {% include 'inputs/map_string.html' %}
       </fieldset>
     <!-- end Port field -->
@@ -185,7 +185,7 @@
     <!-- Port field -->
     {% elif value.type == "map" and (value.entry_schema.type == "tosca.datatypes.network.PortSpec" or value.entry_schema.type == "tosca.datatypes.indigo.network.PortSpec") %}
     {% set ports_type = "indigo" if 'indigo' in value.entry_schema.type else "" %}
-      <fieldset class="border p-2">
+      <fieldset class="border p-2" {{mode}}>
       {% include 'inputs/ports.html' %}
       </fieldset>
     <!-- end Port field -->

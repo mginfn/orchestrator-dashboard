@@ -14,6 +14,10 @@
 
 import enum
 import json
+import os
+import shutil
+import subprocess
+
 import requests
 import linecache
 import sys
@@ -203,3 +207,76 @@ def send_email(subject, sender, recipients, html_body):
 def send_async_email(app, msg):
     with app.app_context():
         mail.send(msg)
+
+
+def has_write_permission(directory):
+    parent_directory = os.path.dirname(os.path.normpath(directory))
+    try:
+        test_file = os.path.join(parent_directory, '.test_file')
+        with open(test_file, 'w') as f:
+            f.write('test')
+        os.remove(test_file)
+        return True
+    except Exception:
+        return False
+
+
+def backup_directory(directory):
+    try:
+        backup_path = f"{os.path.normpath(directory)}.bak"
+        if os.path.exists(backup_path):
+            shutil.rmtree(backup_path)
+        shutil.copytree(directory, backup_path)
+        return backup_path
+    except Exception as e:
+        app.logger.error(f"Error creating backup: {e}")
+        return None
+
+
+def restore_directory(backup_path, target_directory):
+    try:
+        if os.path.exists(target_directory):
+            shutil.rmtree(target_directory)
+        shutil.copytree(backup_path, target_directory)
+        return True
+    except Exception as e:
+        app.logger.error(f"Error restoring directory: {e}")
+        return False
+
+
+def download_git_repo(repo_url, target_directory, tag_or_branch=None, private=False, username=None, deploy_token=None):
+    try:
+        if not has_write_permission(target_directory):
+            return False, "No permission for creating the directory {}".format(target_directory)
+
+        backup_path = backup_directory(target_directory)
+
+        try:
+            # Check if the target directory is not empty
+            if os.path.exists(target_directory) and os.listdir(target_directory):
+                app.logger.warn(f"Warning: Target directory '{target_directory}' is not empty. Removing existing contents.")
+                shutil.rmtree(target_directory)
+
+            # Clone the repository
+            if private and username and deploy_token:
+                git_url = repo_url.replace("https://", f"https://{username}:{deploy_token}@")
+                subprocess.run(['git', 'clone', git_url, target_directory], check=True, capture_output=True)
+            else:
+                subprocess.run(['git', 'clone', repo_url, target_directory], check=True, capture_output=True)
+
+            # Change directory to the cloned repository
+            cwd = target_directory
+            if tag_or_branch:
+                subprocess.run(['git', 'checkout', tag_or_branch], cwd=cwd, check=True, capture_output=True)
+                app.logger.info(f"Switched to tag/branch '{tag_or_branch}'.")
+
+            app.logger.info(f"Repository '{repo_url}' (branch: '{tag_or_branch}') downloaded to '{target_directory}'.")
+            return True, f"Repository '{repo_url}' (branch: '{tag_or_branch}') downloaded to '{target_directory}'."
+        except subprocess.CalledProcessError as e:
+            sanitized_error_message = f"{e} {e.stderr.decode('utf-8')}".replace(username + ':' + deploy_token, '[SENSITIVE DATA]')
+            restore_directory(backup_path, target_directory)
+            app.logger.error(f"Error: {sanitized_error_message}")
+            return False, f"Error: {sanitized_error_message}"
+    except Exception as e:
+        app.logger.error(f"An error occurred: {e}")
+        return False, f"An error occurred: {e}"

@@ -15,6 +15,8 @@
 import requests
 from flask import session
 
+from app import cache
+
 
 def get_sla_extra_info(access_token, service_id, cmdb_url):
     headers = {'Authorization': 'bearer %s' % access_token}
@@ -51,6 +53,23 @@ def is_enabling_services(deployment_type, service_type):
         return True
 
 
+def make_key(*args, **kwargs):
+    # create the key in the form slas:<group>
+    argument = args[2] # group
+    return f'slas:{argument}'
+
+
+@cache.cached(timeout=30*60, make_cache_key=make_key)
+def get_cached_slas(slam_url, headers, group):
+    url = slam_url + "/preferences/" + group
+
+    response = requests.get(url, headers=headers, timeout=20, verify=False)
+
+    response.raise_for_status()
+    slas = response.json()['sla']
+    return slas
+
+
 def get_slas(access_token, slam_url, cmdb_url, deployment_type=""):
     headers = {'Authorization': 'Bearer %s' % access_token}
 
@@ -59,12 +78,7 @@ def get_slas(access_token, slam_url, cmdb_url, deployment_type=""):
     else:
         group = session['organisation_name']
 
-    url = slam_url + "/preferences/" + group
-
-    response = requests.get(url, headers=headers, timeout=20, verify=False)
-
-    response.raise_for_status()
-    slas = response.json()['sla']
+    slas = get_cached_slas(slam_url, headers, group)
 
     filtered_slas = []
     for i in range(len(slas)):

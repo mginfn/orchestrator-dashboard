@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import json
 import sys
 import socket
 
@@ -24,6 +24,8 @@ from flask_dance.consumer import OAuth2ConsumerBlueprint
 from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate, upgrade
+from flask_caching import Cache
+from flask_redis import FlaskRedis
 from app.lib.ToscaInfo import ToscaInfo
 from app.lib.Vault import Vault
 
@@ -38,9 +40,6 @@ migrate: Migrate = Migrate()
 # Intialize Alembic
 alembic: Alembic = Alembic()
 
-# initialize ToscaInfo
-tosca: ToscaInfo = ToscaInfo()
-
 # initialize Vault
 vaultservice: Vault = Vault()
 
@@ -48,13 +47,13 @@ app = Flask(__name__, instance_relative_config=True)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 app.secret_key = "30bb7cf2-1fef-4d26-83f0-8096b6dcc7a3"
 app.config.from_object('config.default')
-app.config.from_json('config.json')
+app.config.from_file('config.json', json.load)
 
 if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
-    app.config.from_json('vault-config.json')
+    app.config.from_file('vault-config.json', json.load)
 
 if app.config.get("FEATURE_S3CREDS_MENU") == "yes":
-    app.config.from_json('s3-config.json')
+    app.config.from_file('s3-config.json', json.load)
 
 profile = app.config.get('CONFIGURATION_PROFILE')
 if profile is not None and profile != 'default':
@@ -95,12 +94,20 @@ def inject_settings():
 db.init_app(app)
 migrate.init_app(app, db)
 alembic.init_app(app, run_mkdir=False)
-tosca.init_app(app)
+
+app.config['CACHE_TYPE'] = 'RedisCache'
+app.config['CACHE_REDIS_URL'] = app.config.get('REDIS_URL')
+redis_client = FlaskRedis(app)
+cache = Cache(app)
 
 if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
     vaultservice.init_app(app)
 
 mail = Mail(app)
+
+# initialize ToscaInfo
+tosca: ToscaInfo = ToscaInfo(redis_client, app.config.get("TOSCA_TEMPLATES_DIR"),
+                             app.config.get("SETTINGS_DIR"))
 
 from app.errors.routes import errors_bp
 app.register_blueprint(errors_bp)
@@ -151,8 +158,6 @@ if not isinstance(numeric_level, int):
     raise ValueError('Invalid log level: %s' % loglevel)
 
 logging.basicConfig(level=numeric_level)
-
-from app import models
 
 # check if database exists
 engine = db.get_engine(app)

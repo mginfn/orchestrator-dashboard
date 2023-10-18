@@ -150,7 +150,7 @@ def deptemplate(depid=None):
         template = orchestrator.get_template(access_token, depid)
     except Exception as e:
         flash("Error getting template: ".format(str(e)), 'danger')
-        return redirect(url_for('home_bp.home'))
+        return redirect(url_for('deployments_bp.showdeployments'))
 
     return render_template('deptemplate.html', template=template)
 
@@ -223,7 +223,7 @@ def depoutput(depid=None):
     # retrieve deployment from DB
     dep = dbhelpers.get_deployment(depid)
     if dep is None:
-        return redirect(url_for('home_bp.home'))
+        return redirect(url_for('deployments_bp.showdeployments'))
     else:
         i = json.loads(dep.inputs.strip('\"')) if dep.inputs else {}
         stinputs = json.loads(dep.stinputs.strip('\"')) if dep.stinputs else {}
@@ -299,7 +299,7 @@ def deptemplatedb(depid):
     # retrieve deployment from DB
     dep = dbhelpers.get_deployment(depid)
     if dep is None:
-        return redirect(url_for('home_bp.home'))
+        return redirect(url_for('deployments_bp.showdeployments'))
     else:
         template = dep.template
         return render_template('deptemplate.html', template=template)
@@ -460,12 +460,9 @@ def updatedep():
         else:
             remove_sla_from_template(template)
 
-        inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.") and not k == '_depid'}
-
-        additionaldescription = form_data['additional_description']
-
-        if additionaldescription is not None:
-            inputs['additional_description'] = additionaldescription
+        stinputs = json.loads(dep.stinputs.strip('\"')) if dep.stinputs else {}
+        inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.") and not k == '_depid' and (
+            k in stinputs and 'updatable' in stinputs[k] and stinputs[k]['updatable'] == True)}
 
         app.logger.debug("Parameters: " + json.dumps(inputs))
 
@@ -488,7 +485,6 @@ def updatedep():
             # store data into database
             dep.keep_last_attempt = keep_last_attempt
             dep.feedback_required = feedback_required
-            dep.description = additionaldescription
             dep.template = template_text
             oldinputs = json.loads(dep.inputs.strip('\"')) if dep.inputs else {}
             updatedinputs = {**oldinputs, **inputs}
@@ -506,6 +502,8 @@ def updatedep():
 def configure():
     access_token = iam_blueprint.session.token['access_token']
 
+    tosca_info, tosca_templates, tosca_gmetadata = tosca.get()
+
     selected_tosca = None
 
     if request.method == 'POST':
@@ -515,7 +513,7 @@ def configure():
         selected_tosca = request.args['selected_tosca']
 
     if 'selected_group' in request.args:
-        templates = tosca.tosca_gmetadata[request.args['selected_group']]['templates']
+        templates = tosca_gmetadata[request.args['selected_group']]['templates']
         if len(templates) == 1:
             selected_tosca = templates[0]['name']
         else:
@@ -523,7 +521,7 @@ def configure():
 
     if selected_tosca:
 
-        template = copy.deepcopy(tosca.tosca_info[selected_tosca])
+        template = copy.deepcopy(tosca_info[selected_tosca])
         # Manage eventual overrides
         for k, v in template['inputs'].items():
             if 'group_overrides' in v and session['active_usergroup'] in v['group_overrides']:
@@ -583,9 +581,11 @@ def add_sla_to_template(template, sla_id):
 @deployments_bp.route('/submit', methods=['POST'])
 @auth.authorized_with_valid_token
 def createdep():
+    tosca_info, tosca_templates, tosca_gmetadata = tosca.get()
+
     access_token = iam_blueprint.session.token['access_token']
     selected_template = request.args.get('template')
-    source_template = tosca.tosca_info[selected_template]
+    source_template = tosca_info[selected_template]
 
     app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
 

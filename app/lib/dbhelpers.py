@@ -42,6 +42,10 @@ def update_user(subject, data):
     db.session.commit()
 
 
+def get_admins_email():
+    admins = User.query.filter_by(role='admin').all()
+    return [user.email for user in admins ]
+
 def get_ssh_pub_key(subject):
     user = User.query.get(subject)
     return user.sshkey
