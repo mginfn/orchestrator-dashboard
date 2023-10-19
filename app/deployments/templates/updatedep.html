@@ -12,7 +12,7 @@
         </div>
 
         <div class="card-body">
-            <form id="depSubmit" action="{{ url_for('deployments_bp.updatedep', template=template) }}" method="post" enctype="multipart/form-data">
+            <form id="depSubmit" action="{{ url_for('deployments_bp.updatedep') }}" method="post" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="additional_description">Deployment description</label>
                     <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="description" value="{{instance_description}}" disabled required>
