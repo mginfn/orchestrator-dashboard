@@ -26,20 +26,22 @@
     <br>
 
     <div class="card shadow mb-4">
-        <div class="card-header py-3">
-          <div class="row">
-            <div class="col-md-6">
-              <!-- Title -->
-              <h4 class="font-weight-bold text-primary">Deployments for:&nbsp;{{user.name}}</h4>
-            </div>
-            <div class="col-md-6 text-right">
-              <!-- Button -->
-              <button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for('users_bp.show_deployments', subject=user.sub) }}'"><span class="fas fa-sync"></span> Refresh</button>
-              <button type=button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for('users_bp.show_users') }}'"><span class="fas fa-arrow-left mr-2"></span> Back</button>
-            </div>
-          </div> <!-- / .row -->
-        </div>
         <div class="card-body">
+
+          <div class="dashboard-template-header">
+              <div class="dashboard-template-image">
+                <i class="fas fa-server"></i>
+              </div>
+          
+              <div class="dashboard-template-title">
+                Deployments for:&nbsp;{{user.name}}
+              </div>
+          
+              <div class="dashboard-template-header-buttons">
+                <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="location.href='{{ url_for('users_bp.show_users') }}'"><i class="fas fa-arrow-left"></i>&nbsp;Back</button>
+                <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick="location.href='{{ url_for('users_bp.show_deployments', subject=user.sub) }}'"><i class="fas fa-sync-alt"></i>&nbsp;Refresh</button>
+              </div>
+          </div>
 
 <!--Table-->
 <div class="table-responsive">

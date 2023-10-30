@@ -162,6 +162,7 @@ hr.style-seven:before { /* Not really supposed to work, but does */
 }
 
 /*-- Navbar settings --*/
+
 .navbar {
   transition: all 0.5s ease-out;
 }
@@ -236,7 +237,7 @@ hr.style-seven:before { /* Not really supposed to work, but does */
   width: 100px;
   margin: 20px 0;
   border-radius: 100%;
-  //border: 6px solid #eee;
+  /* border: 6px solid #eee; */
   background: #eee;
   -moz-box-shadow:    0px 0px 20px #ccc;
   -webkit-box-shadow: 0px 0px 20px #ccc;

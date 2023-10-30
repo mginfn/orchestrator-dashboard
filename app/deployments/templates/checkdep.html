@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+    <br>
+
+    <div class="card shadow mb-4">
+
+        <div class="card-body">
+            <div class="dashboard-template-header">
+                <div class="dashboard-template-image">
+                    <img src="{{template['metadata']['icon']}}" alt="{% if template['metadata']['display_name'] is defined %}{{template['metadata']['display_name']}}{% else %}{{selectedTemplate}}{% endif %} Image">
+                </div>
+            
+                <div class="dashboard-template-title">
+                  {% if template['metadata']['display_name'] is defined %}{{template['metadata']['display_name']}}{% else %}{{selectedTemplate}}{% endif %}
+                </div>
+            
+                <div class="dashboard-template-step">
+                  Step {{ steps['current'] }}/{{ steps['total'] }}
+                </div>
+            </div>
+
+            <div class="dashboard-title" style="margin-top: 0;">
+                <i class="fas fa-check-circle"></i>&nbsp;Check Data
+            </div>
+
+            <form id="depSubmit" action="{{ url_for('deployments_bp.createdep', template=selectedTemplate) }}" method="post" autocomplete="off" enctype="multipart/form-data">
+                {% set dict = {} %}
+                {% for element in data %}
+                
+                    
+                    {% for key, value in template['inputs'].items() %}
+
+                        {% if key in element %}
+
+                            <!-- MAP -->
+                            {% if value['type'] == 'map' %}
+                                {{ key, element, data[element] }}<br>
+
+                                {% set key_parts = element.split('[') %}
+                                {% set main_key = key_parts[0] %}
+                                {% if key_parts|length > 1 %}
+                                    {% set sub_key = key_parts[1].split(']')[0] %}
+                                    {% set value = data[element] %}
+
+                                    {% if dict[main_key] is not defined %}
+                                        {% set _ = dict.update({main_key: {sub_key: value}}) %}
+                                    {% else %}
+                                        {% if dict[main_key][sub_key] is not defined %}
+                                            {% set _ = dict[main_key].update({sub_key: value}) %}
+                                        {% else %}
+                                            {% set _ = dict[main_key].update({sub_key: dict[main_key][sub_key] ~ ', ' ~ value}) %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+
+                                {% if key == element %}
+
+                                {% endif %}
+
+                        
+                            <!-- COMBINED -->
+                            {% elif value['type'] == 'combined' %}
+                                {% for test in value['constraints'] %}
+                                    const: {{ value['constraints'], test }}<br>
+                                {% endfor %}
+                            {% endif %}
+
+                            {% if key == element %}
+                                test:
+                                {{ key, value }}<br>
+                            {% endif %}
+
+                        {% endif %}
+
+                    {% endfor %}
+                        dict: {{ dict }}<br>
+
+
+                    <div class="form-group" style="margin-bottom: 4px;">
+                        <label>{{ element }}:</label>&nbsp;{{ data[element] }}
+                    </div>
+                {% endfor %}
+                <hr>
+                {{ data }}
+                <hr>
+                {{ template['inputs'].items() }}
+                <br>
+                <div class="dashboard-template-buttons-container">
+                  <button id="cancelBtn" type=button class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Cancel" onclick="location.href='{{ url_for('home_bp.portfolio') }}'">
+                  Cancel&nbsp;<i class="fas fa-ban"></i></button>
+
+                    <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="history.back()" style="margin-left: auto; margin-right: 4px;"><i class="fas fa-arrow-left"></i>&nbsp;Back</button>
+                    <button type="submit" class="dashboard-button dashboard-button-lg dashboard-button-primary" title="Submit">Submit&nbsp;<i class="fas fa-share"></i></button>
+                </div>
+          </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

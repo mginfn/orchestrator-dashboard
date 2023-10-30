@@ -1,12 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
+<br>
 <div class="container mt-2" id="cardsContainer" xmlns="http://www.w3.org/1999/html">
-    <div class="text-right">
-        {% if session['userrole'] == 'admin' and 'admin' in request.path %}
-        <button type=button class='btn btn-primary mb-4' onclick='location.href="{{ url_for('services_bp.add') }}"'><span class='fas fa-plus mr-2'></span>Add service</button>
-        {% endif %}
-        <button type=button class="btn btn-small btn-outline-secondary mb-4" onclick="history.back()"><span class="fas fa-arrow-left mr-2"></span> Back</button>
-    </div>
+      <div class="dashboard-template-header">
+          <div class="dashboard-template-image">
+            <i class="fas fa-cogs"></i>
+          </div>
+      
+          <div class="dashboard-template-title">
+            Centralised Services
+          </div>
+      
+          <div class="dashboard-template-header-buttons">
+            <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="history.back()"><i class="fas fa-arrow-left"></i>&nbsp;Back</button>
+            {% if session['userrole'] == 'admin' and 'admin' in request.path %}
+              <button type="button" class="dashboard-button dashboard-button-primary" title="Add service" onclick='location.href="{{ url_for('services_bp.add') }}"'><i class="fas fa-plus"></i>&nbsp;Add service</button>
+            {% endif %}
+          </div>
+      </div>
     {% if services|length > 0 %}
     <div class="row">
         <div class="col-md-12">

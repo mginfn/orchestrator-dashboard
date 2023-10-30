@@ -20,126 +20,129 @@
 {% set ar = namespace(found=false) %}
   <br>
     <div class="card shadow mb-4">
-        <div class="card-header py-3">
-          <div class="row">
-            <div class="col-md-6">
-              <!-- Title -->
-              <h4 class="font-weight-bold text-primary">My deployments</h4>
-            </div>
-            <div class="col-md-6 text-right">
-              <!-- Button -->
-              <button type=button class='btn btn-outline-secondary' onclick='location.href="{{ url_for('deployments_bp.showdeployments') }}"'><span class='fas fa-sync mr-2'></span>Refresh</button>
-              <button type=button class='btn btn-primary' onclick='location.href="{{ url_for('home') }}"'><span class='fas fa-plus mr-2'></span>New deployment</button>
-            </div>
-          </div> <!-- / .row -->
-        </div>
         <div class="card-body">
+            <div class="dashboard-template-header">
+                <div class="dashboard-template-image">
+                    <i class="fas fa-list-ul"></i>
+                </div>
+            
+                <div class="dashboard-template-title">
+                    My deployments
+                </div>
+            
+                <div class="dashboard-template-header-buttons">
+                  <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick='location.href="{{ url_for('deployments_bp.showdeployments') }}"'><i class="fas fa-sync-alt"></i>&nbsp;Refresh</button>
+                  <button type="button" class="dashboard-button dashboard-button-primary" title="New deployment" onclick='location.href="{{ url_for('home') }}"'><i class="fas fa-plus"></i>&nbsp;New deployment</button>
+                </div>
+            </div>
 
     <div class="table-responsive" style="overflow:inherit;">
-    <table class="table table-striped table-hover" id="tableUserDeployments" width="100%" cellspacing="0">
-    <!--Table head-->
-      <thead>
-        <tr>
-	      <th>Description</th>
-          <th>Deployment identifier</th>
-          <th>Status</th>
-          <th>Creation time</th>
-          <th>Update time</th>
-          <th>Endpoint</th>
-          <th>Deployed at</th>
-          <th>Physical Id</th>
-          <th>Actions</th>
-         </tr>
-      </thead>
-      <!--Table head-->
-      <!--Table body-->
-      <tbody>
-        {% for deployment in deployments %}
-        {% if "IN_PROGRESS" in deployment.status %}
-             {% set ar.found = true %}
-        {% endif %}
-        <tr>
-            <td><strong>{{deployment.description}}</strong></td>
-            <td><a href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}">{{deployment.uuid}}</a></td>
-            <td>
-                {% if "COMPLETE" in deployment.status %}
-                <span class="badge badge-success"/>
-                {% elif "FAIL" in deployment.status %}
-                <span class="badge badge-danger"/>
-                {% else %}
-                <span class="badge badge-warning text-white"><span class="spinner-grow spinner-grow-sm"/></span>
+        <table class="table table-bordered table-striped" id="tableUserDeployments" width="100%" cellspacing="0">
+            <!--Table head-->
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Deployment identifier</th>
+                    <th>Status</th>
+                    <th>Creation time</th>
+                    <th>Update time</th>
+                    <th>Endpoint</th>
+                    <th>Deployed at</th>
+                    <th>Physical Id</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <!--Table head-->
+        <!--Table body-->
+            <tbody>
+                {% for deployment in deployments %}
+                {% if "IN_PROGRESS" in deployment.status %}
+                    {% set ar.found = true %}
                 {% endif %}
-                {{deployment.status}}
-            </td>
-            <td>{{deployment.creation_time}}</td>
-            <td>{{deployment.update_time}}</td>
-            <td>{{deployment.endpoint}}</td>
-            <td>{{deployment.provider_name}}</td>
-            <td>{{deployment.physicalId}}</td>
-            <td>
-              <div class="btn-group">
-                <!-- DETAILS -->
-               <a class="btn btn-info btn-sm" href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}"><span class="fas fa-bars mr-2 grey-text"></span>Details</a>
-                <button type="button" class="btn btn-info dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
-                  <span class="sr-only">Toggle Dropdown</span>
-                </button>
-                <div class="dropdown-menu">
-                    <a class="dropdown-item" data-toggle="modal" data-target="#editDeployment" data-id="{{ deployment.uuid }}" data-description="{{ deployment.description }}" data-action="{{ url_for('deployments_bp.editdeployment') }}">
-                        <span class="fas fa-edit mr-2 grey-text"></span>Edit</a>
-                    <a class="dropdown-item" href="{{ url_for('deployments_bp.deptemplate', depid=deployment.uuid) }}"><span class="fas fa-search mr-2 grey-text"></span>Show template</a>
-                  {% if enable_update_deployment == "yes" and deployment.updatable == 1 %}
-                    <a class="dropdown-item" href="{{ url_for('deployments_bp.depupdate', depid=deployment.uuid) }}"><span class="fas fa-plus mr-2 grey-text"></span>Update</a>
-                  {% endif %}
-                  {% if deployment.deployment_type == "CLOUD" %}
-                      <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.deplog', depid=deployment.uuid) }}">
-                          <span class="fas fa-file-alt mr-2 grey-text"></span>Log</a>
-                      {% if enable_ports_request == "yes" %}
-                      <a class="dropdown-item" data-toggle="modal" data-target="#requestPorts" data-id="{{ deployment.uuid }}" data-action="{{ url_for('deployments_bp.sendportsrequest') }}" >
-                          <span class="fas fa-ticket-alt mr-2 grey-text"></span>Request Ports</a>
-                     {% endif %}
-                  {% endif %}
-                  {% if deployment.deployment_type == "CLOUD" %}
-                      <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.depinfradetails', depid=deployment.uuid) }}">
-                          <span class="fas fa-desktop mr-2 grey-text"></span>Manage VMs</a>
-                  {% endif %}
-                  {% if deployment.deployment_type == "QCG" %}
-                      <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.depqcgdetails', depid=deployment.uuid) }}">
-                          <span class="fas fa-bars mr-2 grey-text"></span>Job details</a>
-                  {% endif %}
-                  {% if deployment.locked == 0 %}
-                    <a class="dropdown-item" href="{{ url_for('deployments_bp.lockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock mr-2"></span>Lock</a>
-                    <a class="dropdown-item" style="color: red;" href="#delete_confirm_{{deployment.uuid}}" data-toggle="modal" data-backdrop="static" data-keyboard="false"
-                       data-target="#delete_confirm_{{deployment.uuid}}"><span class="fas fa-trash-alt mr-2"></span>Delete</a>
-                  {% else %}
-                    <a class="dropdown-item" href="{{ url_for('deployments_bp.unlockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock-open mr-2"></span>Unlock</a>
-                  {% endif %}
+                <tr>
+                    <td><strong>{{deployment.description}}</strong></td>
+                    <td><a href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}">{{deployment.uuid}}</a></td>
+                    <td>
+                        {% if "COMPLETE" in deployment.status %}
+                        <span class="badge badge-success"/>
+                        {% elif "FAIL" in deployment.status %}
+                        <span class="badge badge-danger"/>
+                        {% else %}
+                        <span class="badge badge-warning text-white"><span class="spinner-grow spinner-grow-sm"/></span>
+                        {% endif %}
+                        {{deployment.status}}
+                    </td>
+                    <td>{{deployment.creation_time}}</td>
+                    <td>{{deployment.update_time}}</td>
+                    <td>{{deployment.endpoint}}</td>
+                    <td>{{deployment.provider_name}}</td>
+                    <td>{{deployment.physicalId}}</td>
+                    <td>
+                    <div class="btn-group">
+                        <!-- DETAILS -->
+                    <a class="btn btn-info btn-sm" href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}"><span class="fas fa-bars mr-2 grey-text"></span>Details</a>
+                        <button type="button" class="btn btn-info dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
+                        <span class="sr-only">Toggle Dropdown</span>
+                        </button>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item" data-toggle="modal" data-target="#editDeployment" data-id="{{ deployment.uuid }}" data-description="{{ deployment.description }}" data-action="{{ url_for('deployments_bp.editdeployment') }}">
+                                <span class="fas fa-edit mr-2 grey-text"></span>Edit</a>
+                            <a class="dropdown-item" href="{{ url_for('deployments_bp.deptemplate', depid=deployment.uuid) }}"><span class="fas fa-search mr-2 grey-text"></span>Show template</a>
+                        {% if enable_update_deployment == "yes" and deployment.updatable == 1 %}
+                            <a class="dropdown-item" href="{{ url_for('deployments_bp.depupdate', depid=deployment.uuid) }}"><span class="fas fa-plus mr-2 grey-text"></span>Update</a>
+                        {% endif %}
+                        {% if deployment.deployment_type == "CLOUD" %}
+                            <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.deplog', depid=deployment.uuid) }}">
+                                <span class="fas fa-file-alt mr-2 grey-text"></span>Log</a>
+                            {% if enable_ports_request == "yes" %}
+                            <a class="dropdown-item" data-toggle="modal" data-target="#requestPorts" data-id="{{ deployment.uuid }}" data-action="{{ url_for('deployments_bp.sendportsrequest') }}" >
+                                <span class="fas fa-ticket-alt mr-2 grey-text"></span>Request Ports</a>
+                            {% endif %}
+                        {% endif %}
+                        {% if deployment.deployment_type == "CLOUD" %}
+                            <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.depinfradetails', depid=deployment.uuid) }}">
+                                <span class="fas fa-desktop mr-2 grey-text"></span>Manage VMs</a>
+                        {% endif %}
+                        {% if deployment.deployment_type == "QCG" %}
+                            <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.depqcgdetails', depid=deployment.uuid) }}">
+                                <span class="fas fa-bars mr-2 grey-text"></span>Job details</a>
+                        {% endif %}
+                        {% if deployment.locked == 0 %}
+                            <a class="dropdown-item" href="{{ url_for('deployments_bp.lockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock mr-2"></span>Lock</a>
+                            <a class="dropdown-item" style="color: red;" href="#delete_confirm_{{deployment.uuid}}" data-toggle="modal" data-backdrop="static" data-keyboard="false"
+                            data-target="#delete_confirm_{{deployment.uuid}}"><span class="fas fa-trash-alt mr-2"></span>Delete</a>
+                        {% else %}
+                            <a class="dropdown-item" href="{{ url_for('deployments_bp.unlockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock-open mr-2"></span>Unlock</a>
+                        {% endif %}
 
+                        </div>
+                    </div>
+                    </td>
+                </tr>
+                <!-- Modal DELETE -->
+                <div class="modal fade" id="delete_confirm_{{deployment.uuid}}" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="delete_confirm_label_{{deployment.uuid}}">Confirm deployment deletion</h5>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Do you really want to delete the deployment {{deployment.uuid}} ?</p>
+
+                        <br>
+                        <div class="dashboard-template-buttons-container">
+                            <button data-dismiss="modal" class="dashboard-button dashboard-button-lg dashboard-button-primary-outline" title="Close modal">No, go back</button>
+                            <button role="button" href="{{ url_for("deployments_bp.depdel", depid=deployment.uuid) }}" type=button class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Delete deployment"><i class="fas fa-trash-alt"></i>&nbsp;Yes, delete</button>
+                        </div>
+                    </div>
+                    </div>
                 </div>
-              </div>
-            </td>
-        </tr>
-        <!-- Modal DELETE -->
-        <div class="modal fade" id="delete_confirm_{{deployment.uuid}}" role="dialog">
-          <div class="modal-dialog" role="document">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="delete_confirm_label_{{deployment.uuid}}">Confirm deployment deletion</h5>
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-              </div>
-              <div class="modal-body">
-                Do you really want to delete the deployment {{deployment.uuid}} ?
-              </div>
-              <div class="modal-footer">
-                <a class="btn btn-primary cancelBtn" role="button" data-dismiss="modal">Cancel</a>
-                <a class="btn btn-danger deleteBtn" role="button" href="{{ url_for("deployments_bp.depdel", depid=deployment.uuid) }}">Delete deployment</a>
-              </div>
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-      </tbody>
-      <!--Table body-->
-    </table>
+                </div>
+                {% endfor %}
+            </tbody>
+            <!--Table body-->
+        </table>
     </div>
     </div>
     </div>
@@ -148,7 +151,7 @@
     <div class="modal fade" id="requestPorts" tabindex="-1" role="dialog" aria-labelledby="requestPorts" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
-                <div class="modal-header px-lg-5">
+                <div class="modal-header">
                     <h5 class="modal-title" id="listingModalLabel">Request Ports</h5>
                     <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
                 </div>
@@ -156,30 +159,25 @@
                     <form id="requestform" action="#" method="post">
                         <div class="form-group">
                             <label for="username"><strong>User</strong></label>
-                            <div>
-                                <input type="text" class="form-control" name="username" id="username" value="{{ session['username'] }}" disabled>
-                            </div>
+                            <input type="text" class="form-control" name="username" id="username" value="{{ session['username'] }}" disabled>
                         </div>
                         <div class="form-group">
                             <label for="email"><strong>Mail</strong></label>
-                            <div>
-                                <input type="email" class="form-control" name="email" id="email" value="{{ session['useremail'] }}" data-toggle="email">
-                            </div>
+                            <input type="email" class="form-control" name="email" id="email" value="{{ session['useremail'] }}" data-toggle="email">
                         </div>
                         <div class="form-group">
                             <label for="message">Message</label>
                             <textarea required class="form-control" name="message" id="message" placeholder="Please, provide the list of ports to be opened." rows="3"></textarea>
                         </div>
                         <input type="hidden" name="deployment_uuid" value="">
-                        <div class="form-group">
-                            <div>
-                                <button type="submit" class="btn btn-success">Submit</button>
-                            </div>
+
+                        <br>
+                        <div class="dashboard-template-buttons-container">
+                            <button data-dismiss="modal" type=button class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Cancel">Cancel&nbsp;<i class="fas fa-ban"></i></button>
+        
+                            <button type="submit" class="dashboard-button dashboard-button-lg dashboard-button-primary" title="Submit">Submit&nbsp;<i class="fas fa-share"></i></button>
                         </div>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -188,7 +186,7 @@
     <div class="modal fade" id="editDeployment" tabindex="-1" role="dialog" aria-labelledby="editDeployment" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
-                <div class="modal-header px-lg-5">
+                <div class="modal-header">
                     <h5 class="modal-title">Edit</h5>
                     <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
                 </div>
@@ -196,20 +194,16 @@
                     <form id="editform" action="#" method="post">
                         <div class="form-group">
                             <label for="description"><strong>Description</strong></label>
-                            <div>
-                                <input type="text" class="form-control" maxlength="50" name="description" id="description" value="">
-                            </div>
+                            <input type="text" class="form-control" maxlength="50" name="description" id="description" value="">
                         </div>
                         <input type="hidden" name="deployment_uuid" value="">
-                        <div class="form-group">
-                            <div>
-                                <button type="submit" class="btn btn-success">Submit</button>
-                            </div>
+                        <br>
+                        <div class="dashboard-template-buttons-container">
+                            <button data-dismiss="modal" type=button class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Cancel">Cancel&nbsp;<i class="fas fa-ban"></i></button>
+        
+                            <button type="submit" class="dashboard-button dashboard-button-lg dashboard-button-primary" title="Save">Save&nbsp;<i class="fas fa-save"></i></button>
                         </div>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal">Cancel</button>
                 </div>
             </div>
         </div>
@@ -221,25 +215,22 @@
 {% endif %}
 
 <script>
-$(document).ready(function () {
-
     $('#tableUserDeployments').dataTable( {
         "responsive": true,
-         "columnDefs": [
-             {
+        "columnDefs": [
+            {
                 "targets"  : 'no-sort',
                 "orderable": false,
-             },
-             {% if hidden_deployment_columns != '' %}
-             {
+            },
+            {% if hidden_deployment_columns != '' %}
+            {
                 "targets": [{{hidden_deployment_columns}}],
                 "visible": false,
-             },
-             {% endif %}
-         ],
+            },
+            {% endif %}
+        ],
         "order": [[ 3, "desc" ]]
     });
-});
 </script>
 
 <script>

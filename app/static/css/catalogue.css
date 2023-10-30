@@ -48,8 +48,8 @@
 /* Default ribbon is green. */
  .ribbon {
      position: absolute;
-     right: 0px;
-     bottom: 0px;
+     right: -6px;
+     bottom: -6px;
      z-index: 1;
      overflow: visible;
      width: 75px;

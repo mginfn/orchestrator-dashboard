@@ -1,6 +1,6 @@
-<div class="mt-2">
+<div>
     <div id="{{key}}-container"></div>
-    <button type="button" class="btn btn-sm btn-outline-info" id="add-new-item" class="add-new" data-tag-name="{{key}}" onclick="addItem(this)">Add</button>
+    <button type="button" class="dashboard-button dashboard-button-primary-outline" id="add-new-item" class="add-new" data-tag-name="{{key}}" onclick="addItem(this)"><i class="fas fa-plus"></i>&nbsp;Add</button>
     <input id="id-{{key}}" type="hidden" data-output-type="json" name="{{key}}" value=""/>
 </div>
 
@@ -26,7 +26,7 @@ function addItem(elem) {
           </div>
           <div class="form-group">
             <label style="visibility: hidden;display: block;">Remove</label>
-            <button type=button class='btn btn-sm btn-danger' href="" onclick="javascript:removeItem('${tagname}'+ '-' + ${i} + '' ); return false;"><i class="fas fa-trash-alt"></i></button>
+            <button type=button class='dashboard-button dashboard-button-danger-outline' href="" onclick="javascript:removeItem('${tagname}'+ '-' + ${i} + '' ); return false;"><i class="fas fa-trash-alt"></i>&nbsp;Remove</button>
           </div>
         </div>`;
 
@@ -46,10 +46,6 @@ function addItem(elem) {
 label {
   margin-bottom: 0;
   margin-left: 5px;
-}
-
-.form-group {
-    margin-left: 15px;
 }
 
 </style>

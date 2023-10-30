@@ -26,14 +26,21 @@
 <div class="container-fluid" >
 
     <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h4 class="m-0 font-weight-bold text-primary">Users</h4>
-        </div>
         <div class="card-body">
+
+          <div class="dashboard-template-header">
+            <div class="dashboard-template-image">
+                <i class="fas fa-users"></i>
+            </div>
+        
+            <div class="dashboard-template-title">
+                Users
+            </div>
+        </div>
 
 <!--Table-->
 <div class="table-responsive">
-<table id="tableUsers" class="table table-striped table-hover" width="100%" cellspacing="0">
+<table id="tableUsers" class="table table-bordered table-striped" width="100%" cellspacing="0">
 <!--Table head-->
   <thead>
     <tr>
@@ -53,7 +60,7 @@
   <tbody>
     {% for user in users%}
     <tr>
-        <th scope="row">{{user.sub}}</th>
+        <td scope="row">{{user.sub}}</td>
         <td>{{user.username}}</td>
         <td>{{user.given_name}}</td>
         <td>{{user.family_name}}</td>

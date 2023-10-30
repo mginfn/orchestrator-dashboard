@@ -500,6 +500,12 @@ def updatedep():
 @deployments_bp.route('/configure', methods=['GET', 'POST'])
 @auth.authorized_with_valid_token
 def configure():
+    check_data = 0
+    steps = {
+        'current': 1,
+        'total': 2
+    }
+
     access_token = iam_blueprint.session.token['access_token']
 
     tosca_info, tosca_templates, tosca_gmetadata = tosca.get()
@@ -508,6 +514,19 @@ def configure():
 
     if request.method == 'POST':
         selected_tosca = request.form.get('selected_tosca')
+
+        if 'check_data' in request.args:
+            check_data = int(request.args['check_data'])
+
+        if check_data == 1:         # from choose
+            steps['total'] = 3
+            steps['current'] = 2
+        elif check_data == 2:       # from create no choose
+            steps['total'] = 2
+            steps['current'] = 2
+        elif check_data == 3:       # from create with choose
+            steps['total'] = 3
+            steps['current'] = 3
 
     if 'selected_tosca' in request.args:
         selected_tosca = request.args['selected_tosca']
@@ -538,7 +557,9 @@ def configure():
         if not ssh_pub_key and app.config.get('FEATURE_REQUIRE_USER_SSH_PUBKEY') == 'yes':
             flash('Warning! You will not be able to deploy your service as no Public SSH key has been uploaded.', "danger")
 
-        return render_template('createdep.html',
+        if steps['current'] == steps['total']:
+            return render_template('checkdep.html',
+                               data=request.form,
                                template=template,
                                feedback_required=True,
                                keep_last_attempt=False,
@@ -546,6 +567,19 @@ def configure():
                                selectedTemplate=selected_tosca,
                                ssh_pub_key=ssh_pub_key,
                                slas=slas,
+                               steps=steps,
+                               sla_id=sla_id,
+                               update=False)
+        else:
+            return render_template('createdep.html',
+                               template=template,
+                               feedback_required=True,
+                               keep_last_attempt=False,
+                               provider_timeout=app.config['PROVIDER_TIMEOUT'],
+                               selectedTemplate=selected_tosca,
+                               ssh_pub_key=ssh_pub_key,
+                               slas=slas,
+                               steps=steps,
                                sla_id=sla_id,
                                update=False)
 

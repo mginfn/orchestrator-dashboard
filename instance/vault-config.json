@@ -1,0 +1,15 @@
+{
+    "VAULT_URL": "https://vault-dev.cloud.infn.it:8200",
+    "VAULT_BOUND_AUDIENCE": "e9ac91b2-6287-43a7-8404-42d0ad7b7c03",
+    "VAULT_SECRETS_PATH": "secrets",
+    "WRAPPING_TOKEN_TIME_DURATION": "1h",
+    "READ_POLICY": "laniakea_read_only",
+    "READ_TOKEN_TIME_DURATION": "12h",
+    "READ_TOKEN_RENEWAL_TIME_DURATION": "12h",
+    "WRITE_POLICY": "laniakea_write_only",
+    "WRITE_TOKEN_TIME_DURATION": "12h",
+    "WRITE_TOKEN_RENEWAL_TIME_DURATION": "12h",
+    "DELETE_POLICY": "laniakea_delete_only",
+    "DELETE_TOKEN_TIME_DURATION": "12h",
+    "DELETE_TOKEN_RENEWAL_TIME_DURATION": "12h"
+}
