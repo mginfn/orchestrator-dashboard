@@ -186,7 +186,7 @@
                     {% endif %}
                     
                     <!-- USER -->
-                    {% set s3_groups = ( s3_allowed_groups | intersect(session['supported_usergroups'])) %}
+                    {# <!-- {% set s3_groups = ( s3_allowed_groups | intersect(session['supported_usergroups'])) %}
                     {% if enable_vault_integration or ( enable_s3creds == "yes" and (session['userrole']=='user:s3' or (s3_allowed_groups|length==0 or s3_groups|length >= 1)) )%}
                         <div class="navbar-left-dropdown">
                             <div class="navbar-left-dropdown-parent">
@@ -217,7 +217,7 @@
                                 </div>
                             </div>
                         </div>    
-                    {% endif %}
+                    {% endif %} --> #}
                 </div>
             </div>
 
@@ -231,7 +231,7 @@
                         </a>
                     </div>
                     <div class="navbar-left-settings-item">
-                        <a class="navbar-left-dropdown-children-item navbar-left-link" href="" title="Help & Support">
+                        <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ help_page_url }}" title="Help & Support">
                             <i class="fas fa-life-ring"></i>
                             Help
                         </a>
@@ -242,12 +242,16 @@
                 <div class="navbar-left-user">
                     <div class="navbar-left-user-container">
                         <div class="navbar-left-user-image">
-                            <img src="{{ session['gravatar'] }}" width="42"/>
+                            <a href="{{ url_for('home_bp.show_user_profile') }}">
+                                <img src="{{ session['gravatar'] }}" width="42"/>
+                            </a>
                         </div>
                         <div class="navbar-left-user-profile-container">
-                            <div class="navbar-left-user-profile-name">
-                                {{ session['username'] }}
-                            </div>
+                            <a href="{{ url_for('home_bp.show_user_profile') }}">
+                                <div class="navbar-left-user-profile-name">
+                                    {{ session['username'] }}
+                                </div>
+                            </a>
 
                             <!-- ROLE -->
                             {% if session['active_usergroup'] != None and 'gets3creds' not in request.path and 'overview' not in request.path %}   
@@ -313,10 +317,16 @@
     </div>
 </div>
 
+<div class="dashboard-alert-message" id="dashboard_alert_message">
+    <div class="alert alert-primary" role="alert"></div>
+</div>
+
 </body>
 
 <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.min.js'></script>
 <script src="/home/static/js/script-v2.js"></script>
+
+
 
 </html>
 

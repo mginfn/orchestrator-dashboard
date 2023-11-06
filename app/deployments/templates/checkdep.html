@@ -19,7 +19,7 @@
                 </div>
             
                 <div class="dashboard-template-step">
-                  Step {{ steps['current'] }}/{{ steps['total'] }}
+                  Step&nbsp;{{ steps['current'] }}/{{ steps['total'] }}
                 </div>
             </div>
 
@@ -28,66 +28,159 @@
             </div>
 
             <form id="depSubmit" action="{{ url_for('deployments_bp.createdep', template=selectedTemplate) }}" method="post" autocomplete="off" enctype="multipart/form-data">
-                {% set dict = {} %}
-                {% for element in data %}
-                
-                    
-                    {% for key, value in template['inputs'].items() %}
+                {% set map = {} %}
+                {% set list = {} %}
 
+                {% for elements in data.lists() %}
+                    {% set element = elements[0] %}
+                    {% set dataList = elements[1] %}
+                    {% for key, value in template['inputs'].items() %}
                         {% if key in element %}
 
                             <!-- MAP -->
                             {% if value['type'] == 'map' %}
-                                {{ key, element, data[element] }}<br>
-
                                 {% set key_parts = element.split('[') %}
                                 {% set main_key = key_parts[0] %}
                                 {% if key_parts|length > 1 %}
                                     {% set sub_key = key_parts[1].split(']')[0] %}
                                     {% set value = data[element] %}
 
-                                    {% if dict[main_key] is not defined %}
-                                        {% set _ = dict.update({main_key: {sub_key: value}}) %}
+                                    {% if map[main_key] is not defined %}
+                                        {% set _ = map.update({main_key: {sub_key: value}}) %}
                                     {% else %}
-                                        {% if dict[main_key][sub_key] is not defined %}
-                                            {% set _ = dict[main_key].update({sub_key: value}) %}
+                                        {% if map[main_key][sub_key] is not defined %}
+                                            {% set _ = map[main_key].update({sub_key: value}) %}
                                         {% else %}
-                                            {% set _ = dict[main_key].update({sub_key: dict[main_key][sub_key] ~ ', ' ~ value}) %}
+                                            {% set _ = map[main_key].update({sub_key: map[main_key][sub_key] ~ ', ' ~ value}) %}
                                         {% endif %}
                                     {% endif %}
                                 {% endif %}
 
-                                {% if key == element %}
+                                {% if key == element and map|length > 0 %}
 
+                                    <div class="form-group" style="margin-bottom: 4px;">
+                                        <label>{{ element }} {{ map_val }}:</label><br>
+                                        <ul>
+                                    {% for map_val in map[element+'_tmp'] %}
+                                            <li>{{ map[element+'_tmp'][map_val] }}</li>
+                                    {% endfor %}
+                                        </ul>
+                                    </div>
+
+                                    {% set map = {} %}
                                 {% endif %}
-
                         
                             <!-- COMBINED -->
                             {% elif value['type'] == 'combined' %}
-                                {% for test in value['constraints'] %}
-                                    const: {{ value['constraints'], test }}<br>
+                                {% for option in value['constraints'] %}
+                                    {% if option['value']|string == data[element]|string %}
+                                        <div class="form-group" style="margin-bottom: 4px;">
+                                            <label>{{ element }}:</label>&nbsp;{{ option['label'] }}
+                                        </div>
+                                    {% endif %}
                                 {% endfor %}
-                            {% endif %}
+                        
+                            <!-- MULTISELECT -->
+                            {% elif value['type'] == 'multiselect' %}
 
-                            {% if key == element %}
-                                test:
-                                {{ key, value }}<br>
+                                <div class="form-group" style="margin-bottom: 4px;">
+                                    <label>{{ element }}:</label><br>
+                                    <ul>
+                                {% for multi in dataList %}
+                                        <li>{{ multi }}</li>
+                                {% endfor %}
+                                    </ul>
+                                </div>
+                        
+                            <!-- LIST -->
+                            {% elif value['type'] == 'list' %}
+                                {% set key_parts = element.split('[]') %}
+                                {% set main_key = key_parts[0] %}
+                                {% if key_parts|length > 1 %}
+                                    {% set sub_key = key_parts[1] %}
+                                    {% set value = dataList %}
+
+                                    {% if list[main_key] is not defined %}
+                                        {% set _ = list.update({main_key: {sub_key: value}}) %}
+                                    {% else %}
+                                        {% if list[main_key][sub_key] is not defined %}
+                                            {% set _ = list[main_key].update({sub_key: value}) %}
+                                        {% else %}
+                                            {% set _ = list[main_key].update({sub_key: list[main_key][sub_key] ~ ', ' ~ value}) %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+                                
+                                {% if key == element %}
+                                    {% if list[element+'_tmp'] is defined %}
+                                        {% set list_data = {} %}
+                                            
+                                        {% for key in list[element+'_tmp'] %}
+                                            {% set values = list[element+'_tmp'][key] %}
+
+                                            {% for i in range(values|length) %}
+                                                {% if list_data[i] is not defined %}
+                                                    {% set _ = list_data.update({i: values[i]}) %}
+                                                {% else %}
+                                                    {% set _ = list_data.update({i: list_data[i] +', '+ values[i] }) %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endfor %}
+                                        
+                                        {% set keys = list[element+'_tmp']['[key]'] %}
+                                        {% set values = list[element+'_tmp']['[value]'] %}
+
+                                        <div class="form-group" style="margin-bottom: 4px;">
+                                            <label>{{ element }}:</label><br>
+                                            <ul>
+                                        {% for key in list_data %}
+                                                <li>{{ list_data[key] }}</li>
+                                        {% endfor %}
+                                            </ul>
+                                        </div>
+                                    
+                                    {% endif %}
+                                    {% set list = {} %}
+                                {% endif %}
+                            
+                            <!-- OTHERS -->
+                            {% elif key == element and data[element] != '' %}
+                                <div class="form-group" style="margin-bottom: 4px;">
+                                    <label>{{ element }}:</label>&nbsp;{{ data[element] }}
+                                </div>
                             {% endif %}
 
                         {% endif %}
-
                     {% endfor %}
-                        dict: {{ dict }}<br>
 
-
-                    <div class="form-group" style="margin-bottom: 4px;">
-                        <label>{{ element }}:</label>&nbsp;{{ data[element] }}
-                    </div>
+                    <!-- EXTRA OPTIONS -->
+                    {% if element.split('.')[0] == 'extra_opts' %}
+                        <div class="form-group" style="margin-bottom: 4px;">
+                            <label>{{ element.split('.')[1] }}:</label>&nbsp;{{ data[element] }}
+                        </div>
+                    
+                    <!-- DESCRIPTION -->
+                    {% elif element == 'additional_description' %}
+                        <div class="form-group" style="margin-bottom: 4px;">
+                            <label>DEPLOYMENT DESCRIPTION:</label>&nbsp;{{ data[element] }}
+                        </div>
+                    {% endif %}
+                    
                 {% endfor %}
-                <hr>
-                {{ data }}
-                <hr>
-                {{ template['inputs'].items() }}
+
+                {% for key, values in data.lists() %}
+                    {% for value in values %}
+                        <input type="hidden" name="{{key}}" value="{{value}}">
+                    {% endfor %}
+                {% endfor %}
+
+                {#
+                    <!-- <hr>
+                    {{ data }}
+                    <hr>
+                    {{ template['inputs'].items() }} -->
+                #}
+
                 <br>
                 <div class="dashboard-template-buttons-container">
                   <button id="cancelBtn" type=button class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Cancel" onclick="location.href='{{ url_for('home_bp.portfolio') }}'">
@@ -100,5 +193,60 @@
         </div>
     </div>
 </div>
+
+<script>
+    
+    $(document).ready(function () {
+        $("#depSubmit").submit(function () {
+            set_loading(true);
+
+            //disable button on click
+            $(".submitBtn").attr("disabled", true);
+            // add spinner to button
+            $(".submitBtn").html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...` );
+            //disable cancel too
+            $("#cancelBtn").attr("disabled", true);
+            $("#cancelBtn").attr("onclick", "#");
+    
+            // Process complex types, like list and map
+            var data_json = $('#depSubmit').serializeJSON();
+            var tmpElems = $("input[data-output-type='json']");
+    
+            for (j = 0; j < tmpElems.length; j++) {
+              let jname = tmpElems[j].name;
+    
+              if ( data_json[jname + "_tmp"] == undefined)
+              {
+                 document.getElementById('id-' + jname).disabled = true;
+    
+              }
+              else
+              {
+                //console.log(data_json[jname + "_tmp"]);
+    
+                var el = document.getElementById('id-' + jname);
+                el.value =  JSON.stringify(data_json[jname + "_tmp"]);
+                // remove the "auxiliary" container
+                document.getElementById(jname + '-container').remove();
+              }
+            }
+    
+            $("select[data-action='removeOnSubmit']").remove();
+    
+            // fix scalar-unit.size combining value with units
+            var tmpElems = $("input[data-type='scalar-unit.size']");
+            for (j = 0; j < tmpElems.length; j++) {
+              let elem = tmpElems[j];
+              elem.type = "text";
+              elem.value = elem.value + " " + elem.getAttribute("data-units");
+            }
+    
+            return true;
+    
+        });
+    });
+    
+</script>
+
 {% endblock %}
 

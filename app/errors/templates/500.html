@@ -3,23 +3,19 @@
 {% block content %}
 
 <div class="container-fluid">
-
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-          <div class="row">
-            <div class="col-md-6">
-              <!-- Title -->
-              <h1 class="font-weight-bold text-primary">Oops!</h1>
-	      <h2>500 Internal Server Error</h2>
-            </div>
-          </div> <!-- / .row -->
-        </div>
-	<div class="card-body">
-          <div class="alert alert-danger">
-              Sorry, something went wrong..Please, try again. 
-	      Contact the support {%if support_email %}({{ support_email }}){%endif %} if the error persists.
-          </div>
-  	</div>
-    </div>
+  <br>
+  <div class="dashboard-error-container">
+    <div class="dashboard-error-code">500</div>
+    <div class="dashboard-error-title">Oops!</div>
+    <div class="dashboard-error-subtitle">Internal Server Error</div>
+    <br>
+    <p class="dashboard-text" style="text-align: center;">
+      Sorry, something went wrong... Please, try again.
+      <br>
+      Contact the support {%if support_email %}(<a href="mailto:{{ support_email }}">{{ support_email }}</a>){%endif %} if the error persists.
+    </p>
+    <br><br>   
+  </div>
 </div>
+
 {% endblock %}

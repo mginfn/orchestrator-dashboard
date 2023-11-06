@@ -195,6 +195,10 @@ form {
     background-color: var(--color-primary)!important;
 }
 
+.modal {
+    z-index: 1041;
+}
+
 .modal-header {
     border: none;
 }
@@ -281,6 +285,12 @@ table.table-bordered.dataTable tbody td {
 .pagination > li {
     background: transparent!important;
 }
+
+.jumbotron {
+    background-color: transparent;
+    color: var(--color-primary);
+}
+
 /* paginate_button page-item previous disabled */
 
 /* HOVER */ 
@@ -316,6 +326,54 @@ table.table-bordered.dataTable tbody td {
 
 /* 
 *
+* -- ERROR PAGE
+*
+*/
+
+.dashboard-error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.dashboard-error-code {
+    font-size: 15em;
+    font-weight: 900;
+    color: var(--color-primary-50);
+}
+
+.dashboard-error-title {
+    font-size: 5em;
+    color: var(--color-primary);
+}
+
+.dashboard-error-subtitle {
+    font-size: 1.5em;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: var(--color-primary);
+}
+
+
+/*
+*
+*   -- ALERT --
+*
+*/
+
+.dashboard-alert-message {
+    position: fixed;
+    bottom: 20;
+    right: -100;
+    opacity: 0;
+}
+
+.dashboard-alert-message > .alert > i {
+    margin-right: 8px;
+}
+
+/* 
+*
 *   -- LOADING --
 *
 */
@@ -326,7 +384,7 @@ table.table-bordered.dataTable tbody td {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 1021;
+    z-index: 1042;
     background-color: #000000cc;
     -webkit-backdrop-filter: blur(5px);
     backdrop-filter: blur(5px);
@@ -522,6 +580,7 @@ table.table-bordered.dataTable tbody td {
 
 .navbar-left-user-profile-name {
     font-size: 20px;
+    cursor: pointer;
     font-weight: bold;
 }
 
@@ -576,6 +635,10 @@ table.table-bordered.dataTable tbody td {
 
 .navbar-left-dropdown-parent:hover, .navbar-left-link:hover, .navbar-left-user-profile-role:hover {
     color: var(--color-secondary-hover);
+}
+
+.navbar-left-user-profile-name:hover {
+    text-decoration: underline;
 }
 
 
@@ -831,7 +894,7 @@ table.table-bordered.dataTable tbody td {
     margin-left: auto;
 }
 
-.dashboard-card-buttons > a {
+.dashboard-card-buttons > a, .dashboard-card-buttons > form {
     margin: 4px 0;
 }
 
@@ -943,6 +1006,53 @@ table.table-bordered.dataTable tbody td {
 
 /* 
 *
+*   -- USER --
+*
+*/
+
+.dashboard-user-container {
+    display: flex;
+    align-items: center;
+    color: var(--color-primary);
+}
+
+.dashboard-user-image {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-right: 24px;
+}
+
+.dashboard-user-image > img {
+    min-width: 100%;
+    min-height: 100%;
+}
+
+.dashboard-user-name {
+    font-size: 36px;
+    font-weight: 600;
+}
+
+.dashboard-user-role {
+    margin-top: -8px;
+}
+
+.dashboard-user-logout {
+    font-size: 36px;
+    margin-left: auto;
+    color: var(--color-primary);
+}
+
+/* HOVER */
+
+.dashboard-user-logout:hover {
+    color: var(--color-primary-hover);
+}
+
+
+/* 
+*
 *   -- TEMPLATES --
 *
 */
@@ -1000,12 +1110,13 @@ table.table-bordered.dataTable tbody td {
     align-items: center;
 }
 
-.dashboard-template-header-buttons {
+.dashboard-template-header-buttons, .dashboard-template-footer-buttons {
     display: flex;
     margin-left: auto;
+    width: fit-content;
 }
 
-.dashboard-template-header-buttons > button {
+.dashboard-template-header-buttons > button, .dashboard-template-footer-buttons > button {
     margin-left: 4px;
 }
 
@@ -1085,7 +1196,7 @@ table.table-bordered.dataTable tbody td {
 
 /* MEDIUM */
 
-@media(max-width: 768px) {
+@media(max-width: 900px) {
     main {
         width: 100%;
         margin: 0;
@@ -1118,9 +1229,18 @@ table.table-bordered.dataTable tbody td {
     .dashboard-bookmarks-container > a {
         width: 100%;
     }
+
+    .dashboard-template-buttons-container {
+        flex-direction: column-reverse;
+    }
+
+    .dashboard-template-buttons-container > .dashboard-button {
+        width: 100%;
+        margin-top: 8px;
+    }
 }
 
-@media(min-width: 769px) {
+@media(min-width: 901px) {
     .navbar-left-header-mobile-toggle > .fas.fa-bars, .navbar-left-header-mobile-toggle > .fas.fa-times {
         display: none!important;
     }

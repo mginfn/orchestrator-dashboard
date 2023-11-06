@@ -9,6 +9,7 @@ $( document ).ready(() => {
     add_service_info_details();
     add_cards_input_filter();
     add_max_length_counter();
+    add_max_file_length();
 });
 
 
@@ -270,6 +271,43 @@ function set_loading(state = true, title = false) {
 }
 
 
+/*
+*
+*   -- ALERT --
+*
+*/
+
+function alert_message(type = 'success', message = 'Success!', icon = '', time = 2000) {
+    if(icon == '') {
+        switch(type) {
+            case 'success':
+                icon = '<i class="far fa-check-circle"></i>';
+            break;
+            
+            case 'danger':
+                icon = '<i class="far fa-times-circle"></i>';
+            break;
+        }
+    }
+
+    $('#dashboard_alert_message > div').html(icon + message)
+    $('#dashboard_alert_message > div').removeClass()
+    $('#dashboard_alert_message > div').addClass('alert alert-'+ type)
+
+    $('#dashboard_alert_message').animate({
+        right: 40,
+        opacity: 1
+    });
+
+    setTimeout(() => {
+        $('#dashboard_alert_message').animate({
+            right: -100,
+            opacity: 0
+        });
+    }, time)
+}
+
+
 /* 
 *
 *   -- MAX LENGTH COUNTER --
@@ -292,6 +330,27 @@ function add_max_length_counter() {
             chars = input.val().length;
         
             label.text(text +' ('+ chars +'/'+ maxlength +')');
+        })
+    }
+}
+
+
+/* 
+*
+*   -- MAX SIZE --
+*
+*/
+
+function add_max_file_length() {
+    for(let i = 0; i < $('[maxsize]').length; i++) {
+        $($('[maxsize')[i]).on('change', (e) => {
+            if(e.currentTarget.files.length > 0) {
+                if(e.currentTarget.files[0].size > $($('[maxsize')[i]).attr('maxsize')) {
+                    $('[maxsize')[i].parentElement.lastElementChild.innerHTML = '';
+                    $('[maxsize')[i].value = '';
+                    alert_message('danger', 'The selected file exceeds the allowed size. Impossible to proceed.', '', 5000)
+                }
+            }
         })
     }
 }

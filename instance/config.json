@@ -29,5 +29,6 @@
     "VAULT_OIDC_AUDIENCE": "54161fea-e501-4063-b6bd-d4a8cd0b1eb2",
     "FEATURE_VAULT_INTEGRATION": "yes",
     "TOSCA_TEMPLATES_DIR": "/opt/tosca-templates",
-    "SETTINGS_DIR": "/opt/dashboard-configuration"
+    "SETTINGS_DIR": "/opt/dashboard-configuration",
+    "HELP_PAGE_URL": "/help"
 }

@@ -39,11 +39,14 @@
                                     <i class="fas fa-pencil-alt exclude-detail-opening"></i>
                                 </div>
                             </a>
-                            <a href="{{ url_for('services_bp.delete', id=service.id) }}">
-                                <div class="dashboard-button-round exclude-detail-opening" title="Delete {{ service.name }}" style="background: var(--color-danger); margin-right: 4px;">
-                                    <i class="fas fa-trash-alt exclude-detail-opening"></i>
-                                </div>
-                            </a>
+                            <form method="post" action="{{ url_for('services_bp.delete', id=service.id) }}">
+                                <input type="hidden" name="name" value="value" /> 
+                                <a onclick="this.parentNode.submit();">
+                                    <div class="dashboard-button-round exclude-detail-opening" title="Delete {{ service.name }}" style="background: var(--color-danger); margin-right: 4px;">
+                                        <i class="fas fa-trash-alt exclude-detail-opening"></i>
+                                    </div>
+                                </a>
+                            </form>
                         {% endif %}
                         <a href="{{ service.url }}">
                             <div class="dashboard-button dashboard-button-primary dashboard-button-lg exclude-detail-opening" title="Go to {{ service.name }}">
