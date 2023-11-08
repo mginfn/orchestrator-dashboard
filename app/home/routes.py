@@ -18,7 +18,7 @@ from app.models.User import User
 from datetime import datetime
 from markupsafe import Markup
 from flask import Blueprint, json, render_template, request, redirect, url_for, session, make_response, flash
-import json
+import re, json
 
 app.jinja_env.filters['tojson_pretty'] = utils.to_pretty_json
 app.jinja_env.filters['extract_netinterface_ips'] = utils.extract_netinterface_ips
@@ -93,7 +93,12 @@ def submit_settings():
                 if repo_url: dashboard_configuration_info['dashboard_configuration_url'] = repo_url
                 if tag_or_branch: dashboard_configuration_info['dashboard_configuration_tag_or_branch'] = tag_or_branch
 
-        tosca.reload()
+        try:
+            tosca.reload()
+        except Exception as error:
+            app.logger.error(f"Error reloading configuration: {error}")
+            flash(f"Error reloading configuration: { type(error).__name__ }. Please check the logs.", "danger")
+
         app.logger.debug("Configuration reloaded")
 
         now = datetime.now()
@@ -126,25 +131,27 @@ def login():
     return render_template(app.config.get('HOME_TEMPLATE'))
 
 
-def is_template_locked(allowed_groups, user_groups):
-    # check intersection of user groups with user membership
-    if (allowed_groups is None or set(allowed_groups.split(',')) & set(user_groups)) != set() or allowed_groups == '*':
-        return False
-    else:
-        return True
-
-
 def set_template_access(tosca, user_groups, active_group):
     info = {}
     for k, v in tosca.items():
-        allowed_groups = v.get("metadata").get("allowed_groups")
-        if not allowed_groups:
-            app.logger.error("Null - {}".format(k))
-        access_locked = is_template_locked(allowed_groups, user_groups)
-        if (access_locked and ("visibility" not in v.get("metadata") or v["metadata"]["visibility"] == "public")) or (
-                not access_locked and (active_group in allowed_groups.split(',') or allowed_groups == "*")):
-            v["metadata"]["access_locked"] = access_locked
-            info[k] = v
+        visibility = v.get("metadata").get("visibility") if "visibility" in v.get("metadata") else {"type": "public"}
+
+        if visibility.get("type") != "public":
+            
+            regex = False if "groups_regex" not in visibility else True
+
+            if regex:
+                access_locked = not re.match(visibility.get('groups_regex'), active_group)
+            else:
+                allowed_groups = visibility.get("groups")
+                access_locked = True if active_group not in allowed_groups else False
+
+            if (visibility.get("type") == "private" and not access_locked) or visibility.get("type") == "protected":
+                v["metadata"]["access_locked"] = access_locked
+                info[k] = v         
+        else:
+            info[k] = v        
+
     return info
 
 

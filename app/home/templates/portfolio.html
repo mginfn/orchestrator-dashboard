@@ -110,7 +110,7 @@
                     <!-- RIBBON -->
                     {% if tosca['metadata']['access_locked'] %}
                         <div class="ribbon red">
-                            <span>{{ access_request_tag }}</span>
+                            <span>{{ not_granted_access_tag }}</span>
                         </div>
                     {% else %}
                         {% if tosca['metadata']['tag'] is defined %}
@@ -185,7 +185,7 @@
                     <!-- RIBBON -->
                     {% if tosca['metadata']['access_locked'] %}
                         <div class="ribbon red">
-                            <span>{{ access_request_tag }}</span>
+                            <span>{{ not_granted_access_tag }}</span>
                         </div>
                     {% else %}
                         {% if tosca['metadata']['tag'] is defined %}
@@ -271,7 +271,7 @@
                         <img class="card-img-bottom img-fluid" src="{{tosca['metadata']['icon']}}" alt="Card image cap">
                         {% if tosca['metadata']['access_locked'] %}
                         <div class="ribbon red">
-                            <span>{{ access_request_tag }}</span>
+                            <span>{{ not_granted_access_tag }}</span>
                         </div>
                         {% else %}
                             {% if tosca['metadata']['tag'] is defined %}
