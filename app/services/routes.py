@@ -80,6 +80,13 @@ def add():
         filename = upload_file(file)
         service["icon"] = filename if filename else ""
         service["groups"] = request.form.getlist('groups')
+
+        service['name'] = service['name'].replace('<', '&lt;')
+        service['name'] = service['name'].replace('>', '&gt;')
+
+        service['description'] = service['description'].replace('<', '&lt;')
+        service['description'] = service['description'].replace('>', '&gt;')
+
         if 'is_public' in request.form:
             service["visibility"] = 'public'
             del service['is_public']
@@ -121,6 +128,12 @@ def edit(id=None):
         filename = upload_file(file)
         groups = request.form.getlist('groups')
         service['groups'] = groups
+
+        service['name'] = service['name'].replace('<', '&lt;')
+        service['name'] = service['name'].replace('>', '&gt;')
+
+        service['description'] = service['description'].replace('<', '&lt;')
+        service['description'] = service['description'].replace('>', '&gt;')
 
         if filename:
             service["icon"] = filename

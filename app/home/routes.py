@@ -28,6 +28,14 @@ app.jinja_env.filters['python_eval'] = utils.python_eval
 home_bp = Blueprint('home_bp', __name__, template_folder='templates', static_folder='static')
 
 
+@home_bp.route('/user')
+@auth.authorized_with_valid_token
+def show_user_profile():
+    sshkey = dbhelpers.get_ssh_pub_key(session['userid'])
+    
+    return render_template('user_profile.html', sshkey=sshkey)
+
+
 @home_bp.route('/settings')
 @auth.authorized_with_valid_token
 def show_settings():

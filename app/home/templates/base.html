@@ -4,6 +4,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Google fonts -->
     <link href='https://fonts.googleapis.com/css?family=Raleway:400,100' rel='stylesheet' type='text/css'>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
     <!-- BS4-->
     <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap-4.3.1/css/bootstrap.min.css') }}" />
     <script src="{{ url_for('static', filename='bootstrap-4.3.1/js/bootstrap.min.js') }}"></script>
@@ -39,6 +42,8 @@
     <!-- Cookie Consent -->
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='cookieconsent2/3.1.1/cookieconsent.min.css') }}" />
     <script src="{{ url_for('static', filename='cookieconsent2/3.1.1/cookieconsent.min.js') }}"></script>
+    <!-- CSS -->
+    <link rel="stylesheet" href="/home/static/css/style-v2.css">
     <script>
     let link = "{{ privacy_policy_url }}"
     window.addEventListener("load", function(){
@@ -59,123 +64,269 @@
         })
     });
     </script>
-    <style type="text/css">
-    body {
-      margin-bottom: 70px
-      font-family: 'Raleway', sans-serif !important;
-    }
-
-    h1,h2,h3,h4,h5,h6 {
-        font-family: 'Raleway', sans-serif !important;
-    }
-    p {
-        font-family: 'Raleway', sans-serif !important;
-    }
-    div {
-        font-family: 'Raleway', sans-serif !important;
-    }
-    </style>
-
 </head>
 
 <body>
 
 <div class="App">
+    
+    <!-- NAVBAR -->
+    {% if session['username'] %}
+        <nav class="navbar-left">
+            <div class="navbar-left-top">
+                <!-- NAVBAR BRAND -->
+                <div class="navbar-left-header">
+                    <a class="navbar-left-brand" href="{{ url_for('home_bp.home') }}" title="{{ navbar_brand_text }}">
+                        <img src="{{ navbar_brand_icon }}" width="80" alt="INFN Cloud logo">
+                        <div class="navbar-left-brand-text">
+                            {{ navbar_brand_text }}
+                        </div>
+                    </a>
+                    <div class="navbar-left-header-mobile-toggle">
+                        <i class="fas fa-bars"></i>
+                        <i class="fas fa-times"></i>
+                    </div>
+                </div>
+        
+                <!-- NAVBAR DROPDOWNS -->
+                <div class="navbar-left-dropdowns-container">
+                    
+                    <!-- DEPLOYMENTS -->
+                    <div class="navbar-left-dropdown">
+                        <div class="navbar-left-dropdown-parent">
+                            <div class="navbar-left-dropdown-parent-text" title="Deployments">Deployments</div>
+                            <div class="navbar-left-dropdown-parent-icon">
+                                <i class="fas fa-caret-down"></i>
+                            </div>
+                        </div>
+                        <div class="navbar-left-dropdown-children-container">
+                            <div class="navbar-left-dropdown-children">
+                                <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ url_for("deployments_bp.showdeploymentsoverview") }}" title="Overview">
+                                    <i class="fas fa-chart-pie"></i>
+                                    Overview
+                                </a>
+                                <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ url_for("deployments_bp.showdeployments") }}" title="List">
+                                    <i class="fas fa-list-ul"></i>
+                                    List
+                                </a>
+                            </div>
+                        </div>
+                    </div>
 
-    <nav class="navbar navbar-dark bg-dark navbar-expand-md sticky-top">
-        <div class="container-fluid">
-		<a class="navbar-brand" href="{{ url_for("home_bp.home") }}"><img src="{{ navbar_brand_icon }}" width="40" alt="" style="display:inline; margin-right: 10px;">{{ navbar_brand_text }}</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#myNavbar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-	        <div class="collapse navbar-collapse" id="myNavbar">
-                <ul class="navbar-nav mr-auto">
-                    {% if session['username'] %}
-                    <li class="nav-item dropdown">
-                        <a id="depMenuItem" class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Deployments</a>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item" href="{{ url_for("deployments_bp.showdeploymentsoverview") }}">Overview</a>
-                            <a class="dropdown-item" href="{{ url_for("deployments_bp.showdeployments") }}">List</a>
-                        </div>
-                    </li>
+                    <!-- ADVANCED -->
                     {% if enable_advanced_menu == "yes" or  session['userrole'] == 'admin' %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Advanced</a>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item" href="{{ url_for("providers_bp.getslas") }}">Resource Providers</a>
-                            {% if session['userrole'] == 'admin' %}
-                                <a class="dropdown-item" href="{{ url_for("swift_bp.createswifttoken") }}">Create Swift Token</a>
-                            {% endif %}
+                        <div class="navbar-left-dropdown">
+                            <div class="navbar-left-dropdown-parent">
+                                <div class="navbar-left-dropdown-parent-text" title="Advanced">Advanced</div>
+                                <div class="navbar-left-dropdown-parent-icon">
+                                    <i class="fas fa-caret-down"></i>
+                                </div>
+                            </div>
+                            <div class="navbar-left-dropdown-children-container">
+                                <div class="navbar-left-dropdown-children">
+                                    <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ url_for("providers_bp.getslas") }}" title="Resource Providers">
+                                        <i class="fas fa-network-wired"></i>
+                                        Resource Providers
+                                    </a>
+                                    {% if session['userrole'] == 'admin' %}
+                                        <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ url_for("swift_bp.createswifttoken") }}" title="Create Swift Token">
+                                            <i class="fas fa-coins"></i>
+                                            Create Swift Token
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
-                    </li>
                     {% endif %}
-		            {% if external_links|length > 0 %}
-		            <li class="nav-item dropdown">
-			            <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">External Links</a>
-                        <div class="dropdown-menu">
-			            {% for link in external_links %}
-			                <a class="dropdown-item" href="{{ link.url }}" target="blank">{{link.menu_item_name}}</a>
-			            {% endfor %}
+                    
+                    <!-- EXTERNAL LINKS -->
+                    {% if external_links|length > 0 %}
+                        <div class="navbar-left-dropdown">
+                            <div class="navbar-left-dropdown-parent">
+                                <div class="navbar-left-dropdown-parent-text" title="External Links">External Links</div>
+                                <div class="navbar-left-dropdown-parent-icon">
+                                    <i class="fas fa-caret-down"></i>
+                                </div>
+                            </div>
+                            <div class="navbar-left-dropdown-children-container">
+                                <div class="navbar-left-dropdown-children">
+                                    {% for link in external_links %}
+                                        <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ link.url }}" title="{{link.menu_item_name}}">
+                                            <i class="fas fa-link"></i>
+                                            {{link.menu_item_name}}
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
                         </div>
-                    </li>
-		            {% endif %}
+                    {% endif %}
+                    
+                    <!-- ADMIN -->
                     {% if session['userrole'] == 'admin' %}
-                    <li class="nav-item dropdown">
-			            <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Admin</a>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item" href="{{ url_for("home_bp.show_settings") }}">Settings</a>
-			                <a class="dropdown-item" href="{{ url_for('users_bp.show_users') }}">Users</a>
-                            <a class="dropdown-item" href="{{ url_for('services_bp.list_as_admin') }}">Services</a>
+                        <div class="navbar-left-dropdown">
+                            <div class="navbar-left-dropdown-parent">
+                                <div class="navbar-left-dropdown-parent-text" title="Admin">Admin</div>
+                                <div class="navbar-left-dropdown-parent-icon">
+                                    <i class="fas fa-caret-down"></i>
+                                </div>
+                            </div>
+                            <div class="navbar-left-dropdown-children-container">
+                                <div class="navbar-left-dropdown-children">
+                                    <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ url_for("users_bp.show_users") }}" title="Users">
+                                        <i class="fas fa-users"></i>
+                                        Users
+                                    </a>
+                                    <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ url_for("services_bp.list_as_admin") }}" title="Services">
+                                        <i class="fas fa-cogs"></i>
+                                        Services
+                                    </a>
+                                </div>
+                            </div>
                         </div>
-                    </li>
                     {% endif %}
-                    {% endif %}
-                </ul>
-                {% if session['username'] %}
-                <ul class="navbar-nav ml-auto">
-                    {% if session['active_usergroup'] != None and 'gets3creds' not in request.path and 'overview' not in request.path %}
-                    <li id="groupMenuItem" class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">
-                            {{ session['active_usergroup'] }}<span class="caret"></span>
-                        </a>
-                        <div class="dropdown-menu">
-                            {% for group in session['supported_usergroups'] %}
-                            {% if 'configure' in request.path or group==session['active_usergroup'] %}{% set prop='disabled' %}{% else %}{% set prop='' %}{% endif %}
-                            <a class="dropdown-item {{prop}}" href="{{ url_for('home_bp.set_active_usergroup', group=group) }}">{{group}}</a>
-                            {% endfor %}
-                        </div>
-                    </li>
-                    {% endif %}
-	                <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">
-                            <img class="rounded-circle" src="{{ session['gravatar'] }}"/> {{ session['username'] }}<span class="caret"></span>
-                        </a>
-                        <div class="dropdown-menu">
-                            {% if enable_vault_integration %}
-                            <a class="dropdown-item" href="{{ url_for('vault_bp.ssh_keys') }}">SSH keys</a>
-                            <a class="dropdown-item" href="{{ url_for("vault_bp.manage_service_creds") }}">Service Credentials</a>
-                            {% endif %}
-                            {% set s3_groups = ( s3_allowed_groups | intersect(session['supported_usergroups'])) %}
-                            {% if enable_s3creds == "yes" and (session['userrole']=='user:s3' or (s3_allowed_groups|length==0 or s3_groups|length >= 1)) %}
-                            <a class="dropdown-item" href="{{ url_for('swift_bp.gets3creds') }}">S3 credentials</a>
-                            {% endif %}
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="{{ url_for("home_bp.logout") }}">Logout</a>
-                        </div>
-	                </li>
-                </ul>
-	            {% endif %}
+                    
+                    <!-- USER -->
+                    {# <!-- {% set s3_groups = ( s3_allowed_groups | intersect(session['supported_usergroups'])) %}
+                    {% if enable_vault_integration or ( enable_s3creds == "yes" and (session['userrole']=='user:s3' or (s3_allowed_groups|length==0 or s3_groups|length >= 1)) )%}
+                        <div class="navbar-left-dropdown">
+                            <div class="navbar-left-dropdown-parent">
+                                <div class="navbar-left-dropdown-parent-text" title="User">User</div>
+                                <div class="navbar-left-dropdown-parent-icon">
+                                    <i class="fas fa-caret-down"></i>
+                                </div>
+                            </div>
+                            <div class="navbar-left-dropdown-children-container">
+                                <div class="navbar-left-dropdown-children">
+                                    {% if enable_vault_integration %}
+                                        <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ url_for("vault_bp.ssh_keys") }}" title="SSH keys">
+                                            <i class="fas fa-key"></i>
+                                            SSH keys
+                                        </a>
+                                        <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ url_for("vault_bp.manage_service_creds") }}" title="Service Credentials">
+                                            <i class="fas fa-asterisk"></i>
+                                            Service Credentials
+                                        </a>
+                                    {% endif %}
+                                    
+                                    {% if enable_s3creds == "yes" and (session['userrole']=='user:s3' or (s3_allowed_groups|length==0 or s3_groups|length >= 1)) %}
+                                        <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ url_for("vault_bp.manage_service_creds") }}" title="S3 credentials">
+                                            <i class="fas fa-asterisk"></i>
+                                            S3 credentials
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>    
+                    {% endif %} --> #}
+                </div>
             </div>
-        </div>
-    </nav>
+
+            <div class="navbar-left-bottom">
+                <!-- SETTINGS -->
+                <div class="navbar-left-settings">
+                    <div class="navbar-left-settings-item">
+                        <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ url_for('home_bp.show_settings') }}" title="Settings">
+                            <i class="fas fa-cog"></i>
+                            Settings
+                        </a>
+                    </div>
+                    <div class="navbar-left-settings-item">
+                        <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ help_page_url }}" title="Help & Support">
+                            <i class="fas fa-life-ring"></i>
+                            Help
+                        </a>
+                    </div>
+                </div>
+
+                <!-- USER -->
+                <div class="navbar-left-user">
+                    <div class="navbar-left-user-container">
+                        <div class="navbar-left-user-image">
+                            <a href="{{ url_for('home_bp.show_user_profile') }}">
+                                <img src="{{ session['gravatar'] }}" width="42"/>
+                            </a>
+                        </div>
+                        <div class="navbar-left-user-profile-container">
+                            <a href="{{ url_for('home_bp.show_user_profile') }}">
+                                <div class="navbar-left-user-profile-name">
+                                    {{ session['username'] }}
+                                </div>
+                            </a>
+
+                            <!-- ROLE -->
+                            {% if session['active_usergroup'] != None and 'gets3creds' not in request.path and 'overview' not in request.path %}   
+                                <div class="navbar-left-user-profile-role" title="Role">
+                                    <div class="navbar-left-dropdown-parent-text">{{ session['active_usergroup'] }}</div>
+                                    {% if session['supported_usergroups']|length > 1 %}
+                                        <div class="navbar-left-dropdown-parent-icon">
+                                            <i class="fas fa-caret-down"></i>
+                                        </div>
+
+                                        <div class="navbar-left-user-profile-role-dropdown-menu-container">
+                                            <div class="navbar-left-user-profile-role-dropdown-menu">
+                                                {% for group in session['supported_usergroups'] %}
+                                                    {% if group != session['active_usergroup'] %}
+                                                        {% if 'configure' in request.path %}
+                                                            <a class="navbar-left-user-profile-role-dropdown-item disabled"><i class="fas fa-ban"></i>&nbsp;{{group}}</a>
+                                                        {% else %}
+                                                            <a class="navbar-left-user-profile-role-dropdown-item" href="{{ url_for('home_bp.set_active_usergroup', group=group) }}" title="Change role to {{group}}">{{group}}</a>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div> 
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <a class="navbar-left-user-logout" href="{{ url_for('home_bp.logout') }}" title="Logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+    {% endif %}
+    
+    {% if session['username'] %}
+        <main>
+    {% else %}
+        <main style="margin-left: 0; width: 100%">
+    {% endif %}
     {% include 'flashed_messages.html' %}
-    <main>
     {% block content %}{% endblock %}
-    </main>
+        </main>
     {% include footer_template %}
 </div>
 
+<div class="dashboard-loading-container">
+    <div class="dashboard-loading">
+        <div class="dashboard-loading-image">
+            <img src="{{ navbar_brand_icon }}" width="250" alt="INFN Cloud logo">
+        </div>
+        <div class="dashboard-loading-bar"></div>
+        <div class="dashboard-loading-bar-text">
+            This may take few seconds
+        </div>
+        <div class="dashboard-loading-title">
+            Your request is being processed.
+            <br>
+            Wait on this page without reloading.
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-alert-message" id="dashboard_alert_message">
+    <div class="alert alert-primary" role="alert"></div>
+</div>
+
 </body>
+
+<script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.min.js'></script>
+<script src="/home/static/js/script-v2.js"></script>
+
+
 
 </html>
 

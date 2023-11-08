@@ -1,48 +1,270 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container mt-2" id="cardsContainer" xmlns="http://www.w3.org/1999/html">
-    <div class="input-group mb-4">
-        <div class="input-group-prepend">
-            <div class="input-group-text">
-                <i class="fa fa-search"></i>
+    <!-- AVAILABILITY -->
+    <div class="dashboard-title">
+        <i class="fas fa-user-check"></i>
+        Availability
+    </div>
+
+    <div class="dashboard-availabilities-container">
+        <div class="dashboard-availability" title="Services {{ services|length }}">
+            <div class="dashboard-availability-text">
+                Services
+            </div>
+            <div class="dashboard-availability-count">
+                {{ services|length }}
             </div>
         </div>
-        <input id="cardFilter" class="form-control py-2 border" type="text" onkeyup="cardFilter()" placeholder="Search...">
     </div>
+
+    <!-- BOOKMARKS -->
+    <div class="dashboard-title">
+        <i class="fas fa-bookmark"></i>
+        Bookmarks
+    </div>
+
+    <div class="dashboard-bookmarks-container">
+        {% for tosca_name, tosca in templates_info.items() %}
+            {% if loop.index == 1 or loop.index == 3 %}
+
+                {% if tosca['metadata']['access_locked'] %}
+                    {% if enable_access_request == "yes" %}
+                        {% set pre_tasks = tosca['metadata']['authorization_required'] %}
+                            {% if tosca['metadata']['display_name'] is defined %}
+                                {% set service_label = tosca['metadata']['display_name'] %}
+                            {% else %}
+                                {% set service_label = tosca_name %}
+                            {% endif %}
+                            <a data-id="{{ service_label }}" data-action="{{ url_for('home_bp.sendaccessrequest', service_type=service_label) }}" data-toggle="modal" data-target="#requestAccess">
+                    {% else %}
+                        <a class="disabled">
+                    {% endif %}
+                {% elif tosca['metadata']['tag'] is defined and tosca['metadata']['tag']|upper == 'MAINTENANCE'   %}
+                    <a class="disabled">
+                {% else %}
+                    {% if enable_template_groups %}
+                        <a href="{{ url_for('deployments_bp.configure', selected_group=tosca_name) }}">
+                    {% else %}
+                        <a href="{{ url_for('deployments_bp.configure', selected_tosca=tosca_name) }}">
+                    {% endif %}
+                {% endif %}
+                    <div class="dashboard-bookmark" title="{% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}">
+                        <div class="dashboard-bookmark-left">
+                            <div class="dashboard-bookmark-image">
+                                <img src="{{tosca['metadata']['icon']}}" alt="{% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} Image">
+                            </div>
+                            <div class="dashboard-bookmark-text">
+                                {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}
+                            </div>
+                        </div>
+                        <div class="dashboard-bookmark-right">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- SEARCH -->
+    <div class="dashboard-title">
+        <i class="fas fa-cloud"></i>
+        Services
+    </div>
+    <div class="input-search-container" title="Search services">
+        <!-- <input id="cardFilter" class="form-control py-2 border" type="text" onkeyup="cardFilter()" placeholder="Search..."> -->
+        <input id="inputCardFilter" class="input-search" type="text" name="search" placeholder="Search...">
+        <i class="fas fa-search"></i>
+    </div>
+
+    <!-- CENTRALISED SERVICES -->
     {% if services|length > 0 %}
-    <div class="row">
-        <div class="col-md-12">
+        <div class="dashboard-subtitle">
+            <i class="fas fa-cogs"></i>
+            Centralised Services
+        </div>
         {% include 'managed_services.html' %}
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-12">
-            <hr style="height:1px;border-width:0;background-color:Gainsboro">
-        </div>
-    </div>
     {% endif %}
-    <div class="row">
+    <!-- ON DEMAND SERVICES -->
+    <div class="dashboard-subtitle">
+        <i class="fas fa-server"></i>
+        On-demand Services
+    </div>
+
+    <div class="dashboard-cards-container">
+        <div class="dashboard-cards-no-result" id="dashboardCardsNoResult_2">
+            No On-demand Services found for the specified term.
+        </div>
+
+        {% for tosca_name, tosca in templates_info.items() %}
+            <!-- CARD -->
+            <div class="dashboard-card" title="Show details" id="dashboardCardOnDemand_{{ loop.index }}">
+                <div class="dashboard-card-container">
+
+                    <!-- CARD IMAGE -->
+                    <div class="dashboard-card-image">
+                        <img src="{{tosca['metadata']['icon']}}" alt="{% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} Image">
+                    </div>
+                    
+                    <!-- RIBBON -->
+                    {% if tosca['metadata']['access_locked'] %}
+                        <div class="ribbon red">
+                            <span>{{ not_granted_access_tag }}</span>
+                        </div>
+                    {% else %}
+                        {% if tosca['metadata']['tag'] is defined %}
+                            <div class="ribbon {{tosca['metadata']['tag_color']}}">
+                                <span>{{tosca['metadata']['tag']}}</span>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    <!-- CARD BODY -->
+                    <div class="dashboard-card-body">
+                        <div class="dashboard-card-body-top">
+                            <div class="dashboard-card-header">
+                                <div class="dashboard-card-title">{% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}</div>
+                                <div class="dashboard-card-bookmark exclude-detail-opening" title="Add {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} to bookmarks">
+                                    <i class="far fa-bookmark exclude-detail-opening"></i>
+                                </div>
+                            </div>
+                            <div class="dashboard-card-text">
+                                {{tosca['description'] | safe}}
+                            </div>
+                        </div>
+                        <div class="dashboard-card-body-bottom">
+                            <div class="dashboard-card-buttons">
+                                {% if tosca['metadata']['access_locked'] %}
+                                    {% if enable_access_request == "yes" %}
+                                        {% set pre_tasks = tosca['metadata']['authorization_required'] %}
+                                            {% if tosca['metadata']['display_name'] is defined %}
+                                                {% set service_label = tosca['metadata']['display_name'] %}
+                                            {% else %}
+                                                {% set service_label = tosca_name %}
+                                            {% endif %}
+                                            <a data-id="{{ service_label }}" data-action="{{ url_for('home_bp.sendaccessrequest', service_type=service_label) }}" data-toggle="modal" data-target="#requestAccess">
+                                                <div class="dashboard-button dashboard-button-primary dashboard-button-lg exclude-detail-opening" style="background: var(--color-danger);" title="Request Access {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}">
+                                                    Request Access
+                                                    <i class="fas fa-arrow-right exclude-detail-opening"></i>
+                                                </div>
+                                            </a>
+                                    {% endif %}
+                                {% elif tosca['metadata']['tag'] is defined and tosca['metadata']['tag']|upper == 'MAINTENANCE'   %}
+                                    <div class="dashboard-button dashboard-button-primary dashboard-button-lg exclude-detail-opening disabled" title="{% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} is under maintenance">
+                                        Maintenance
+                                        <i class="fas fa-tools exclude-detail-opening"></i>
+                                    </div>
+                                {% else %}
+                                    {% if enable_template_groups %}
+                                        <a href="{{ url_for('deployments_bp.configure', selected_group=tosca_name) }}">
+                                            <div class="dashboard-button dashboard-button-primary dashboard-button-lg exclude-detail-opening" title="Configure {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}">
+                                                Configure
+                                                <i class="fas fa-arrow-right exclude-detail-opening"></i>
+                                            </div>
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ url_for('deployments_bp.configure', selected_tosca=tosca_name) }}">
+                                            <div class="dashboard-button dashboard-button-primary dashboard-button-lg exclude-detail-opening" title="Configure {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}">
+                                                Configure
+                                                <i class="fas fa-arrow-right exclude-detail-opening"></i>
+                                            </div>
+                                        </a>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SERVICE INFO -->
+            <div class="dashboard-card-info-container" id="dashboardCardOnDemand_Info_{{ loop.index }}">
+                <div class="dashboard-card-info">
+
+                    <!-- RIBBON -->
+                    {% if tosca['metadata']['access_locked'] %}
+                        <div class="ribbon red">
+                            <span>{{ not_granted_access_tag }}</span>
+                        </div>
+                    {% else %}
+                        {% if tosca['metadata']['tag'] is defined %}
+                            <div class="ribbon {{tosca['metadata']['tag_color']}}">
+                                <span>{{tosca['metadata']['tag']}}</span>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    <div class="dashboard-card-info-close" id="dashboardCardOnDemand_Info_CloseButton_{{ loop.index }}" title="Close">
+                        <i class="fas fa-times"></i>
+                    </div>
+                    <div class="dashboard-card-image">
+                        <img src="{{tosca['metadata']['icon']}}" alt="{% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} Image">
+                    </div>
+                    <div class="dashboard-card-info-title">
+                        {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}
+                    </div>
+                    <div class="dashboard-card-info-description">
+                        {{tosca['description'] | safe}}
+                    </div>
+                    <div class="dashboard-card-info-buttons">
+                        <div class="dashboard-card-bookmark" title="Add {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} to bookmarks" style="margin-right: 4px;">
+                            <i class="far fa-bookmark"></i>
+                        </div>
+                        {% if tosca['metadata']['access_locked'] %}
+                            {% if enable_access_request == "yes" %}
+                                {% set pre_tasks = tosca['metadata']['authorization_required'] %}
+                                    {% if tosca['metadata']['display_name'] is defined %}
+                                        {% set service_label = tosca['metadata']['display_name'] %}
+                                    {% else %}
+                                        {% set service_label = tosca_name %}
+                                    {% endif %}
+                                    <a data-id="{{ service_label }}" data-action="{{ url_for('home_bp.sendaccessrequest', service_type=service_label) }}" data-toggle="modal" data-target="#requestAccess">
+                                        <div class="dashboard-button dashboard-button-primary dashboard-button-lg" style="background: var(--color-danger);" title="Request Access {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}">
+                                            Request Access
+                                            <i class="fas fa-arrow-right"></i>
+                                        </div>
+                                    </a>
+                            {% endif %}
+                        {% elif tosca['metadata']['tag'] is defined and tosca['metadata']['tag']|upper == 'MAINTENANCE'   %}
+                            <div class="dashboard-button dashboard-button-primary dashboard-button-lg disabled" title="{% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} is under maintenance">
+                                Maintenance
+                                <i class="fas fa-tools"></i>
+                            </div>
+                        {% else %}
+                            {% if enable_template_groups %}
+                                <a href="{{ url_for('deployments_bp.configure', selected_group=tosca_name) }}">
+                                    <div class="dashboard-button dashboard-button-primary dashboard-button-lg" title="Configure {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}">
+                                        Configure
+                                        <i class="fas fa-arrow-right"></i>
+                                    </div>
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('deployments_bp.configure', selected_tosca=tosca_name) }}">
+                                    <div class="dashboard-button dashboard-button-primary dashboard-button-lg" title="Configure {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}">
+                                        Configure
+                                        <i class="fas fa-arrow-right"></i>
+                                    </div>
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+
+    <!-- <div class="row">
         <div class="col-md-12">
-        <p class="font-weight-bold" style="font-size:20px;font-variant:small-caps">On-demand Services: </p>
-        {% if templates_info.items()|length == 0 %}    
-        <div class="jumbotron jumbotron-fluid">
-        <div class="container">
-            <h2 class="display-4">No Available Services for Deployment</h2>
-            <p class="lead">We're sorry, but no services are currently available for deployment.</p>
-            <p class="lead">This could be due to specific requirements or settings.</p>
-            <p class="lead">Please contact our support team for assistance."</p>
-        </div>
-        </div>
-        {% endif %}
         {% for tosca_name, tosca in templates_info.items() %}
             {% if loop.index % 3 == 1 %}
-            <!-- open card deck -->
             <div class="card-deck">
             {% endif %}
                 <div class="card mb-4" style="max-width: 20rem; max-height: 25rem;">
                     <div class="card-body">
                         <h5 class="card-title text-center">
-                            <strong> {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} </strong>
+                            <strong>{% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} </strong>
                         </h5>
                     </div>
                     <div class="wrapper">
@@ -83,7 +305,6 @@
                             </div>
                             {% endif %}
                             {% elif tosca['metadata']['tag'] is defined and tosca['metadata']['tag']|upper == 'MAINTENANCE'   %}
-                            <!-- maintenance: do not show configure button -->
                             {% else %}
                             <div class="col-4">
                                 {% if enable_template_groups %}
@@ -97,16 +318,15 @@
                     </div>
                 </div>
             {% if loop.index % 3 == 0 %}
-            <!-- close card deck -->
             </div>
             {% endif %}
         {% endfor %}
         {% if templates_info|count % 3 != 0 %}
-            <!-- close card deck -->
             </div>
         {% endif %}
-        </div> <!-- close col-12 -->
-    </div> <!-- close row -->
+        </div>
+    </div> -->
+
     <!-- Modal begin -->
     <div class="modal fade" id="requestAccess" tabindex="-1" role="dialog" aria-labelledby="requestAccess" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">

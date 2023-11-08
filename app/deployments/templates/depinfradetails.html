@@ -4,25 +4,17 @@
 <div class="container-fluid">
     <br>
     <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <div class="row">
-                <div class="col-md-6">
-                    <!-- Title -->
-                    <h4 class="font-weight-bold text-primary">Virtual Machines</h4>
-                </div>
-                <div class="col-md-6 text-right">
-                    <!-- Button -->
-                    <button type="button" class="btn btn-small btn-outline-secondary"
-                            onclick="location.href='{{ url_for('deployments_bp.showdeployments') }}'"><span
-                            class='fas fa-arrow-left mr-2'></span>Back
-                    </button>
-                    <button type=button class='btn btn-outline-secondary' onclick='location.reload()'><span
-                            class='fas fa-sync mr-2'></span>Refresh
-                    </button>
-                </div>
-            </div> <!-- / .row -->
-        </div>
         <div class="card-body">
+            <div class="dashboard-template-header">
+                <div class="dashboard-template-title">
+                  Virtual Machines
+                </div>
+            
+                <div class="dashboard-template-header-buttons">
+                  <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="location.href='{{ url_for('deployments_bp.showdeployments') }}'"><i class="fas fa-arrow-left"></i>&nbsp;Back</button>
+                  <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick='location.reload()'><i class="fas fa-sync-alt"></i>&nbsp;Refresh</button>
+                </div>
+            </div>
 
             <div class="table-responsive" style="overflow:inherit;">
                 <table class="table table-bordered table-striped table-hover" id="tableUserDeployments" width="100%"
@@ -133,18 +125,16 @@
 <script>setTimeout(function(){location.reload();},30000);</script>
 
 <script>
-$(document).ready(function () {
 
-    $('#tableUserDeployments').dataTable( {
-        "responsive": true,
-         "columnDefs": [
-             {
-                "targets"  : 'no-sort',
-                "orderable": false,
-             },
-         ],
-        "order": [[ 2, "desc" ]]
-    });
+$('#tableUserDeployments').dataTable( {
+    "responsive": true,
+        "columnDefs": [
+            {
+            "targets"  : 'no-sort',
+            "orderable": false,
+            },
+        ],
+    "order": [[ 2, "desc" ]]
 });
 
 </script>
