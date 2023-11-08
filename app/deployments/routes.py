@@ -533,6 +533,7 @@ def configure():
 
     if 'selected_group' in request.args:
         templates = tosca_gmetadata[request.args['selected_group']]['templates']
+
         if len(templates) == 1:
             selected_tosca = templates[0]['name']
         else:

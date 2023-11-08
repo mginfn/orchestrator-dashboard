@@ -276,6 +276,7 @@ table.table-bordered.dataTable tbody td {
 .page-item .page-link {
     border: none;
     color: var(--color-primary);
+    border-radius: 25px;
 }
 
 .pagination {
@@ -311,6 +312,11 @@ table.table-bordered.dataTable tbody td {
 
 .dashboard-button-round:hover {
     opacity: 0.75;
+}
+
+.page-link:hover {
+    background: transparent;
+    text-decoration: underline;
 }
 
 /* FOCUS */

@@ -8,39 +8,12 @@
     </div>
 
     <div class="dashboard-availabilities-container">
-        <div class="dashboard-availability" title="Deployments 0">
-            <div class="dashboard-availability-text">
-                Deployments
-            </div>
-            <div class="dashboard-availability-count">
-                0
-            </div>
-        </div>
-
-        <div class="dashboard-availability" title="Users 0">
-            <div class="dashboard-availability-text">
-                Users
-            </div>
-            <div class="dashboard-availability-count">
-                0
-            </div>
-        </div>
-    
-        <div class="dashboard-availability" title="Services 0">
+        <div class="dashboard-availability" title="Services {{ services|length }}">
             <div class="dashboard-availability-text">
                 Services
             </div>
             <div class="dashboard-availability-count">
-                0
-            </div>
-        </div>
-    
-        <div class="dashboard-availability" title="Services 0">
-            <div class="dashboard-availability-text">
-                Services
-            </div>
-            <div class="dashboard-availability-count">
-                0
+                {{ services|length }}
             </div>
         </div>
     </div>
@@ -53,7 +26,7 @@
 
     <div class="dashboard-bookmarks-container">
         {% for tosca_name, tosca in templates_info.items() %}
-            {% if loop.index == 1 or loop.index == 2 or loop.index == 3 %}
+            {% if loop.index == 1 or loop.index == 3 %}
 
                 {% if tosca['metadata']['access_locked'] %}
                     {% if enable_access_request == "yes" %}
