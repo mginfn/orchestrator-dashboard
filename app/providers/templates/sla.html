@@ -28,7 +28,7 @@
                     <th>Site</th>
                     <th>Service Type</th>
                     <th>Service endpoint</th>
-		    <th>Monitoring Info</th>
+		                <!-- <th>Monitoring Info</th> -->
                 </tr>
             </thead>
             <tbody>
@@ -38,8 +38,9 @@
 	            <td>{{sla.sitename}}</td>
 	            <td>{{sla.service_type}}</td>
 	            <td>{{sla.endpoint}}</td>
-		    <td>
+		          <!-- <td>
 	                <center><button type="button" id="getInfoBtn" data-id="{{sla.service_id}}" class="dashboard-button btn btn-small btn-info getInfoBtn" data-toggle="modal" data-target="#newModal" data-whatever="{{sla.sitename}}"><center>View data</button></center>
+              </td> -->
                 </tr>
                 {% endfor %}
             </tbody>
