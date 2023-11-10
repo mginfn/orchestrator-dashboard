@@ -1,4 +1,4 @@
-<div id="confScheduling" {% if enable_advanced_menu == "no" %}hidden{% endif %}>
+<div id="confScheduling" {% if not config['FEATURE_ADVANCED_MENU']|str2bool %}hidden{% endif %}>
    <div class="form-group">
        <p></p>
        <h5>Configure scheduling:</h5>

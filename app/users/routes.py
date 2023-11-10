@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from flask import Blueprint, session, render_template, flash, request
-from app.lib import auth, dbhelpers, settings
-from app.models.User import User
-from app import app, iam_blueprint
 import requests
+from flask import current_app as app, Blueprint, session, render_template, flash, request
+from app.lib import auth, dbhelpers
+from app.models.User import User
+from app.iam import iam
 
 
 users_bp = Blueprint('users_bp', __name__, template_folder='templates', static_folder='static')
@@ -59,7 +59,7 @@ def show_user(subject):
 @auth.only_for_admin
 def show_deployments(subject):
 
-    issuer = settings.iamUrl
+    issuer = app.settings.iam_url
     if not issuer.endswith('/'):
         issuer += '/'
 
@@ -68,11 +68,11 @@ def show_deployments(subject):
     if user is not None:
         #
         # retrieve deployments from orchestrator
-        access_token = iam_blueprint.session.token['access_token']
+        access_token = iam.token['access_token']
 
         headers = {'Authorization': 'bearer %s' % access_token}
 
-        url = settings.orchestratorUrl + "/deployments?createdBy={}&page={}&size={}".format(
+        url = app.settings.orchestrator_url + "/deployments?createdBy={}&page={}&size={}".format(
             '{}@{}'.format(subject, issuer), 0, 999999)
         response = requests.get(url, headers=headers)
 

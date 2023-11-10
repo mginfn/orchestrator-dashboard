@@ -12,21 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .. import app, iam_blueprint, tosca, redis_client
-from app.lib import utils, auth, settings, dbhelpers, openstack
-from app.models.User import User
+import re
+import json
 from datetime import datetime
 from markupsafe import Markup
-from flask import Blueprint, json, render_template, request, redirect, url_for, session, make_response, flash
-import re, json
+from flask import current_app as app, Blueprint, render_template, request
+from flask import redirect, url_for, session, make_response, flash
 
-app.jinja_env.filters['tojson_pretty'] = utils.to_pretty_json
-app.jinja_env.filters['extract_netinterface_ips'] = utils.extract_netinterface_ips
-app.jinja_env.filters['intersect'] = utils.intersect
-app.jinja_env.filters['python_eval'] = utils.python_eval
+from app.iam import iam
+from app.extensions import tosca, redis_client
+from app.lib import utils, auth, dbhelpers, openstack
+from app.models.User import User
 
-home_bp = Blueprint('home_bp', __name__, template_folder='templates', static_folder='static')
-
+home_bp = Blueprint('home_bp', __name__,
+                    template_folder='templates',
+                    static_folder='static',
+                    static_url_path='/static/home')
 
 @home_bp.route('/user')
 @auth.authorized_with_valid_token
@@ -42,9 +43,9 @@ def show_settings():
     dashboard_last_conf = redis_client.get('last_configuration_info')
     last_settings = json.loads(dashboard_last_conf) if dashboard_last_conf else {}
     return render_template('settings.html',
-                           iam_url=settings.iamUrl,
-                           orchestrator_url=settings.orchestratorUrl,
-                           orchestrator_conf=settings.orchestratorConf,
+                           iam_url=app.settings.iam_url,
+                           orchestrator_url=app.settings.orchestrator_url,
+                           orchestrator_conf=app.settings.orchestrator_conf,
                            vault_url=app.config.get('VAULT_URL'),
                            tosca_settings=last_settings)
 
@@ -69,7 +70,7 @@ def submit_settings():
 
         if repo_url:
             app.logger.debug("Cloning TOSCA templates")
-            ret, message1 = utils.download_git_repo(repo_url, settings.toscaDir, tag_or_branch,
+            ret, message1 = utils.download_git_repo(repo_url, app.settings.tosca_dir, tag_or_branch,
                                                     private, username, deploy_token)
             flash(message1, "success" if ret else "danger")
 
@@ -86,7 +87,7 @@ def submit_settings():
 
         if repo_url:
             app.logger.debug("Cloning dashboard configuration")
-            ret, message2 = utils.download_git_repo(repo_url, settings.settingsDir, tag_or_branch,
+            ret, message2 = utils.download_git_repo(repo_url, app.settings.settings_dir, tag_or_branch,
                                                     private, username, deploy_token)
             flash(message2, "success" if ret else "danger")
             if ret:
@@ -166,16 +167,14 @@ def check_template_access(user_groups, active_group):
     return templates_info, enable_template_groups
 
 
-@app.route('/')
 @home_bp.route('/')
 def home():
-    if not iam_blueprint.session.authorized:
+    if not iam.authorized:
         return redirect(url_for('home_bp.login'))
     if not session.get('userid'):
         auth.set_user_info()
     return redirect(url_for('home_bp.portfolio'))
 
-@app.route('/portfolio')
 @home_bp.route('/portfolio')
 def portfolio():
 
@@ -223,11 +222,11 @@ def set_active_usergroup():
 @home_bp.route('/logout')
 def logout():
     session.clear()
-    iam_blueprint.session.get("/logout")
+    iam.get("/logout")
     return redirect(url_for('home_bp.login'))
 
 
-@app.route('/callback', methods=['POST'])
+@home_bp.route('/callback', methods=['POST'])
 def callback():
     payload = request.get_json()
     app.logger.info("Callback payload: " + json.dumps(payload))
@@ -307,7 +306,7 @@ def getauthorization():
     for task in tasks["pre_tasks"]:
         func = task["action"]
         args = task["args"]
-        args["access_token"] = iam_blueprint.session.token['access_token']
+        args["access_token"] = iam.token['access_token']
         if func in functions:
             functions[func](**args)
 

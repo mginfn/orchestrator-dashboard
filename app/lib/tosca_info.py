@@ -24,18 +24,24 @@ import jsonschema
 
 class ToscaInfo:
     """Class to load tosca templates and metadata at application start"""
+    def __init__(self):
+        self.redis_client = None
+        self.tosca_dir = None
+        self.tosca_params_dir = None
+        self.tosca_metadata_dir = None
+        self.metadata_schema = None
 
-    def __init__(self, redis_client, tosca_dir, settings_dir, metadata_schema):
+    def init_app(self, app, redis_client):
         """
         Initialize the flask extension
         :param tosca_dir: the dir of the tosca templates
         :param settings_dir: the dir of the params and metadata files
         """
         self.redis_client = redis_client
-        self.tosca_dir = tosca_dir + '/'
-        self.tosca_params_dir = settings_dir + '/tosca-parameters'
-        self.tosca_metadata_dir = settings_dir + '/tosca-metadata'
-        self.metadata_schema = metadata_schema
+        self.tosca_dir = app.config.get("TOSCA_TEMPLATES_DIR") + '/'
+        self.tosca_params_dir = app.config.get("SETTINGS_DIR") + '/tosca-parameters'
+        self.tosca_metadata_dir = app.config.get("SETTINGS_DIR") + '/tosca-metadata'
+        self.metadata_schema = app.config.get("METADATA_SCHEMA")
 
         tosca_info = {}
         tosca_gmetadata = {}

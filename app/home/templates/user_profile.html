@@ -31,15 +31,15 @@
         </div>
     </div>
 
-    {% set s3_groups = ( s3_allowed_groups | intersect(session['supported_usergroups'])) %}
-    {% if enable_vault_integration or ( enable_s3creds == "yes" and (session['userrole']=='user:s3' or (s3_allowed_groups|length==0 or s3_groups|length >= 1)) )%}
-        {% if enable_vault_integration %}
+    {% set s3_groups = ( config['S3_IAM_GROUPS'] | intersect(session['supported_usergroups'])) %}
+    {% if config['FEATURE_VAULT_INTEGRATION']|str2bool or ( config['FEATURE_S3CREDS_MENU']|str2bool and (session['userrole']=='user:s3' or (config['S3_IAM_GROUPS']|length==0 or s3_groups|length >= 1)) )%}
+        {% if config['FEATURE_VAULT_INTEGRATION']|str2bool %}
         
             <!-- SSH keys -->
             {% include 'ssh_keys.html' %}
         {% endif %}
 
-        {% if (enable_s3creds == "yes" and (session['userrole']=='user:s3' or (s3_allowed_groups|length==0 or s3_groups|length >= 1))) or enable_vault_integration %}
+        {% if (config['FEATURE_S3CREDS_MENU']|str2bool and (session['userrole']=='user:s3' or (config['S3_IAM_GROUPS']|length==0 or s3_groups|length >= 1))) or config['FEATURE_VAULT_INTEGRATION']|str2bool %}
             <!-- Service Credentials -->
             {% include 'service_creds.html' %}
         {% endif %}

@@ -12,31 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from app import app, iam_blueprint
-from flask import redirect, render_template, session, url_for, json
 from functools import wraps
 import ast
 import requests
-from . import utils, settings
+from flask import current_app as app, redirect, render_template, session, url_for, json
+
+from app.iam import iam
+from app.lib import utils
 
 
 def validate_configuration():
-    if not settings.orchestratorConf.get('im_url'):
-        app.logger.debug("Trying to (re)load config from Orchestrator: " + json.dumps(settings.orchestratorConf))
-        access_token = iam_blueprint.session.token['access_token']
-        configuration = utils.getorchestratorconfiguration(settings.orchestratorUrl, access_token)
-        settings.orchestratorConf = configuration
+    if not app.settings.orchestratorConf.get('im_url'):
+        app.logger.debug("Trying to (re)load config from Orchestrator: " + json.dumps(app.settings.orchestratorConf))
+        access_token = iam.token['access_token']
+        configuration = utils.getorchestratorconfiguration(app.settings.orchestratorUrl, access_token)
+        app.settings.orchestratorConf = configuration
 
 
 def set_user_info():
-    account_info = iam_blueprint.session.get('/userinfo')
+    account_info = iam.get('/userinfo')
     account_info_json = account_info.json()
     user_groups = account_info_json['groups']
     user_id = account_info_json['sub']
 
     supported_groups = []
-    if settings.iamGroups:
-        supported_groups = list(set(settings.iamGroups) & set(user_groups))
+    if app.settings.iam_groups:
+        supported_groups = list(set(app.settings.iam_groups) & set(user_groups))
         if len(supported_groups) == 0:
             app.logger.warning("The user {} does not belong to any supported user group".format(user_id))
 
@@ -55,14 +56,14 @@ def set_user_info():
         session['active_usergroup'] = next(iter(supported_groups), None)
 
 def update_user_info():
-    account_info = iam_blueprint.session.get('/userinfo')
+    account_info = iam.get('/userinfo')
     account_info_json = account_info.json()
     user_groups = account_info_json['groups']
     user_id = account_info_json['sub']
 
     supported_groups = []
-    if settings.iamGroups:
-        supported_groups = list(set(settings.iamGroups) & set(user_groups))
+    if app.settings.iam_groups:
+        supported_groups = list(set(app.settings.iam_groups) & set(user_groups))
         if len(supported_groups) == 0:
             app.logger.warning("The user {} does not belong to any supported user group".format(user_id))
 
@@ -76,10 +77,10 @@ def authorized_with_valid_token(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
 
-        if not iam_blueprint.session.authorized or 'username' not in session:
+        if not iam.authorized or 'username' not in session:
             return redirect(url_for('iam.login'))
 
-        if iam_blueprint.session.token['expires_in'] < 60:
+        if iam.token['expires_in'] < 60:
             app.logger.debug("Token will expire soon...Refresh token")
             update_user_info()
 

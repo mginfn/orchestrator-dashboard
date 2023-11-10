@@ -48,6 +48,8 @@ FEATURE_ACCESS_REQUEST = "yes"
 
 NOT_GRANTED_ACCESS_TAG = "LOCKED"
 
+S3_IAM_GROUPS = []
+
 ### VAULT INTEGRATION SETTINGS
 VAULT_ROLE = "orchestrator"
 VAULT_OIDC_AUDIENCE = "ff2c57dc-fa09-43c9-984e-9ad8afc3fb56"
@@ -55,8 +57,8 @@ VAULT_OIDC_AUDIENCE = "ff2c57dc-fa09-43c9-984e-9ad8afc3fb56"
 #### LOOK AND FEEL SETTINGS
 WELCOME_MESSAGE = "Welcome! This is the PaaS Orchestrator Dashboard"
 NAVBAR_BRAND_TEXT = "PaaS Orchestrator Dashboard"
-NAVBAR_BRAND_ICON = "/home/static/images/indigodc_logo.png"
-FAVICON_PATH = "/home/static/images/favicon_io"
+NAVBAR_BRAND_ICON = "/static/home/images/indigodc_logo.png"
+FAVICON_PATH = "/static/home/images/favicon_io"
 MAIL_IMAGE_SRC = "https://raw.githubusercontent.com/maricaantonacci/orchestrator-dashboard/stateful/app/home/static/images/orchestrator-logo.png"
 PRIVACY_POLICY_URL = 'http://cookiesandyou.com/'
 

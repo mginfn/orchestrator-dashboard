@@ -14,37 +14,103 @@
 
 import enum
 import json
+import linecache
 import os
 import shutil
 import subprocess
-
-import requests
-import linecache
-import sys
-import randomcolor
 import re
+import sys
 import string
 import secrets
-from hashlib import md5
-from app import app, mail
-from flask_mail import Message
 from threading import Thread
-from flask import session, render_template
+from hashlib import md5
+import requests
+import randomcolor
+from flask_mail import Message
+from flask import current_app as app, session, render_template
 from markupsafe import Markup
+from app.extensions import mail
 
 
 def to_pretty_json(value):
+    """
+    Convert a Python data structure to a formatted JSON string.
+
+    This function takes a Python data structure (e.g., a dictionary or list) and
+    returns a formatted JSON string with sorted keys, indentation, and specified
+    key-value separators.
+
+    Args:
+        value: Any valid Python data structure to be converted to JSON.
+
+    Returns:
+        str: A pretty-printed JSON string.
+    """
     return json.dumps(value, sort_keys=True,
                       indent=4, separators=(',', ': '))
 
 
 def enum_to_string(obj):
+    """
+    Convert an Enum member to its string representation (name).
+
+    This function is used to extract the string representation (name) of an Enum
+    member. If the input is not an Enum member, the input is returned as is,
+    allowing Jinja or other template engines to use their default behavior.
+
+    Args:
+        obj: An object that may be an Enum member or any other type.
+
+    Returns:
+        str or obj: If `obj` is an Enum member, its name (a string) is returned.
+                    If `obj` is not an Enum member, `obj` is returned unchanged.
+    """
     if isinstance(obj, enum.Enum):
         return obj.name
     # For all other types, let Jinja use default behavior
     return obj
 
+def str2bool(s):
+    """
+    Convert a string representation of a boolean to a boolean value.
+
+    This function takes a string 's' and converts it to a boolean value. The conversion
+    is case-insensitive and considers values like 'yes', '1', and 'true' as True, while
+    values like 'no', '0', and 'false' are considered as False.
+
+    Args:
+        s (str): A string representing a boolean value.
+
+    Returns:
+        bool: True if 's' represents a truthy value, False otherwise.
+    """
+    return s.lower() in ['yes', '1', 'true']
+
 def python_eval(obj):
+    """
+    Safely evaluate a Python expression from a string.
+
+    This function is designed to safely evaluate a Python expression provided as
+    a string. If the input is a valid Python expression, it is evaluated. If there
+    are any errors during evaluation, a warning message is logged, and the original
+    input is returned as is.
+
+    Args:
+        obj: A string containing a Python expression to be evaluated.
+
+    Returns:
+        Any: If `obj` is a valid Python expression, the result of the evaluation is
+             returned. If there is an error during evaluation, `obj` is returned
+             unchanged.
+
+    Example:
+        result = python_eval("3 + 4")
+        print(result)  # Output: 7
+
+        invalid_expr = "3 / 0"
+        result = python_eval(invalid_expr)
+        print(result)  # Output: "3 / 0" (no division by zero error)
+    """
     if isinstance(obj, str):
         try:
             return eval(obj)
@@ -54,12 +120,40 @@ def python_eval(obj):
 
 
 def gencolors(hue, n):
+    """
+    Generate a list of random colors with a specified hue and count.
+
+    This function generates a list of random colors with a given hue and count
+    using the RandomColor library. The generated colors have a specified luminosity.
+
+    Args:
+        hue (str): The hue for the generated colors, e.g., "red", "blue", "green".
+        n (int): The number of random colors to generate.
+
+    Returns:
+        list: A list of random color strings in hexadecimal format.
+    """
     rand_color = randomcolor.RandomColor(42)
     rcolors = rand_color.generate(hue=hue, luminosity="dark", count=n)
     return rcolors
 
 
 def genstatuscolors(statuses):
+    """
+    Generate a list of colors corresponding to a list of deployment statuses.
+
+    This function takes a list of deployment statuses and maps each status to a
+    specific color. The resulting list contains colors corresponding to each
+    status in the input list. Unknown statuses are represented with a default
+    light grey color.
+
+    Args:
+        statuses (list): A list of deployment statuses, e.g., ["CREATE_COMPLETE",
+                         "CREATE_IN_PROGRESS", "DELETE_IN_PROGRESS", ...].
+
+    Returns:
+        list: A list of color strings representing the colors for each status.
+    """
     colors = []
     for status in statuses:
         if status == "CREATE_COMPLETE":
@@ -78,10 +172,38 @@ def genstatuscolors(statuses):
 
 
 def intersect(a, b):
+    """
+    Compute the intersection of two iterables.
+
+    This function takes two iterable objects (e.g., lists, sets) 'a' and 'b' and
+    returns a new set containing elements that are common to both 'a' and 'b'.
+
+    Args:
+        a (iterable): The first iterable.
+        b (iterable): The second iterable.
+
+    Returns:
+        set: A set containing elements that are present in both 'a' and 'b'.
+    """
     return set(a).intersection(b)
 
 
 def extract_netinterface_ips(input):
+    """
+    Extract network interface IP addresses from a dictionary.
+
+    This function iterates through the keys and values in the input dictionary and
+    extracts IP addresses associated with network interfaces. It looks for keys in
+    the format 'net_interface.<number>.ip' and converts the keys to a modified
+    format with underscores ('_') in the resulting dictionary.
+
+    Args:
+        input (dict): A dictionary containing key-value pairs.
+
+    Returns:
+        dict: A dictionary with modified keys and their corresponding IP values
+              extracted from the input.
+    """
     res = {}
     for key,value in input.items():
         if re.match("net_interface.[0-9].ip", key):
@@ -91,14 +213,55 @@ def extract_netinterface_ips(input):
     return res
 
 def xstr(s):
+    """
+    Convert a value to a string or return an empty string if the value is None.
+
+    This function takes a value 's' and converts it to a string representation if
+    's' is not None. If 's' is None, it returns an empty string.
+
+    Args:
+        s: Any value that can be converted to a string.
+
+    Returns:
+        str: A string representation of 's' if 's' is not None, or an empty string.
+    """
     return '' if s is None else str(s)
 
 
 def nnstr(s):
+    """
+    Convert a value to a string or return an empty string if the value is None or empty.
+
+    This function takes a value 's' and converts it to a string representation if 's'
+    is not None and not an empty string. If 's' is None or an empty string, it returns
+    an empty string.
+
+    Args:
+        s: Any value that can be converted to a string.
+
+    Returns:
+        str: A string representation of 's' if 's' is not None and not an empty string,
+             or an empty string.
+    """
     return '' if (s is None or s == '') else str(s)
 
 
 def avatar(email, size):
+    """
+    Generate a Gravatar URL for a given email address and image size.
+
+    This function generates a Gravatar URL for the provided email address and image
+    size. Gravatar is a service that provides globally recognized avatars based on email
+    addresses. The URL points to the avatar image, and the 'identicon' is used as the
+    default image if no Gravatar is associated with the email.
+
+    Args:
+        email (str): The email address for which to generate the Gravatar URL.
+        size (int, optional): The size of the Gravatar image (default is 80).
+
+    Returns:
+        str: The Gravatar URL with the specified email and image size.
+    """
     digest = md5(email.lower().encode('utf-8')).hexdigest()
     return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(digest, size)
 

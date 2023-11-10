@@ -15,13 +15,12 @@
 import json
 import random
 import string
-
-from flask import Blueprint, render_template, request, flash, session
-from app import app, iam_blueprint
-from app.lib import auth, openstack, utils, s3 as s3utils
-from .swift import Swift
-from werkzeug.exceptions import Forbidden
 import logging
+from werkzeug.exceptions import Forbidden
+from flask import current_app as app, Blueprint, render_template, request, flash, session
+from app.iam import iam
+from app.lib import auth, openstack, utils, s3 as s3utils
+from app.swift.swift import Swift
 
 
 swift_bp = Blueprint('swift_bp', __name__, template_folder='templates', static_folder='static')
@@ -79,7 +78,7 @@ def gets3creds():
             flash(" Sorry, something went wrong while getting S3 credentials: project {} not found".format(group), 'danger')
             return render_template('s3creds.html', s3urls=urls)
 
-        access_token = iam_blueprint.session.token['access_token']
+        access_token = iam.token['access_token']
         access, secret = openstack.get_or_create_ec2_creds(access_token, project, auth_url,
                                                            identity_provider=idp_name, protocol=idp_protocol)
         if access and secret:

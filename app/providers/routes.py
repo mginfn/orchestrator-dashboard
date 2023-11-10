@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from flask import Blueprint, render_template, flash, request
-from app.providers import sla
-from app import app, iam_blueprint
-from app.lib import auth, settings
 import requests
+from flask import current_app as app, Blueprint, render_template, flash, request
+from app.providers import sla
+from app.iam import iam
+from app.lib import auth
 
 
 providers_bp = Blueprint('providers_bp', __name__, template_folder='templates', static_folder='static')
@@ -28,9 +28,9 @@ def getslas():
     slas = {}
 
     try:
-        access_token = iam_blueprint.session.token['access_token']
-        app.logger.debug("SLAM_URL: {}".format(settings.orchestratorConf['slam_url']))
-        slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'])
+        access_token = iam.token['access_token']
+        app.logger.debug("SLAM_URL: {}".format(app.settings.orchestrator_conf['slam_url']))
+        slas = sla.get_slas(access_token, app.settings.orchestrator_conf['slam_url'], app.settings.orchestrator_conf['cmdb_url'])
         app.logger.debug("SLAs: {}".format(slas))
 
     except Exception as e:
@@ -46,10 +46,10 @@ def get_monitoring_info():
     serviceid = request.args.get('service_id', None)
     # servicetype = request.args.get('service_type',None)
 
-    access_token = iam_blueprint.session.token['access_token']
+    access_token = iam.token['access_token']
 
     headers = {'Authorization': 'bearer %s' % access_token}
-    url = settings.orchestratorConf[
+    url = app.settings.orchestrator_conf[
               'monitoring_url'] + "/monitoring/adapters/zabbix/zones/indigo/types/infrastructure/groups/" + \
           provider + "/hosts/" + serviceid
     response = requests.get(url, headers=headers)

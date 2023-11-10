@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from app import app
 import requests
+from flask import current_app as app
 
 def url_shorten(url, keyword=None):
     shorturl = None

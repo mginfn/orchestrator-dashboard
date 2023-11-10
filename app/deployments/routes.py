@@ -19,34 +19,24 @@ import os
 import re
 from urllib.parse import urlparse
 import yaml
-from flask import Blueprint, session, render_template, flash, redirect, url_for, json, request
+from flask import current_app as app, Blueprint, session, render_template, flash, redirect, url_for, json, request
 from packaging import version
 from werkzeug.exceptions import Forbidden
 from werkzeug.utils import secure_filename
-from app import app, iam_blueprint, tosca, vaultservice
-from app.lib import auth, utils, settings, dbhelpers, yourls
+from app.iam import iam
+from app.extensions import tosca, vaultservice
+from app.lib import auth, utils, dbhelpers, yourls
 from app.lib.ldap_user import LdapUserManager
 from app.models.Deployment import Deployment
 from app.providers import sla
 from app.lib import tosca_info as tosca_helpers
 from app.lib import openstack as keystone
-from app.lib.orchestrator import Orchestrator
 from app.lib import s3 as s3
 from app.swift.swift import Swift
 
 deployments_bp = Blueprint('deployments_bp', __name__,
                            template_folder='templates',
                            static_folder='static')
-
-iam_base_url = settings.iamUrl
-iam_client_id = settings.iamClientID
-iam_client_secret = settings.iamClientSecret
-
-issuer = settings.iamUrl
-if not issuer.endswith('/'):
-    issuer += '/'
-
-orchestrator = Orchestrator(settings.orchestratorUrl)
 
 
 @deployments_bp.route('/depls')
@@ -60,7 +50,7 @@ def showdeploymentsingroup():
 @deployments_bp.route('/list')
 @auth.authorized_with_valid_token
 def showdeployments():
-    access_token = iam_blueprint.session.token['access_token']
+    access_token = iam.token['access_token']
 
     group = None
     if 'active_usergroup' in session and session['active_usergroup'] is not None:
@@ -68,7 +58,7 @@ def showdeployments():
 
     deployments = []
     try:
-        deployments = orchestrator.get_deployments(access_token, created_by="me", user_group=group)
+        deployments = app.orchestrator.get_deployments(access_token, created_by="me", user_group=group)
     except Exception as e:
         flash("Error retrieving deployment list: \n" + str(e), 'warning')
 
@@ -84,17 +74,17 @@ def showdeployments():
 
 
 def update_deployments():
-    issuer = settings.iamUrl
+    issuer = app.settings.iam_url
     if not issuer.endswith('/'):
         issuer += '/'
 
     subject = session['userid']
 
     # retrieve deployments from orchestrator
-    access_token = iam_blueprint.session.token['access_token']
+    access_token = iam.token['access_token']
     deployments_from_orchestrator = []
     try:
-        deployments_from_orchestrator = orchestrator.get_deployments(access_token, created_by="{}@{}".format(subject, issuer))
+        deployments_from_orchestrator = app.orchestrator.get_deployments(access_token, created_by="{}@{}".format(subject, issuer))
     except Exception as e:
         flash("Error retrieving deployment list: \n" + str(e), 'warning')
 
@@ -143,10 +133,10 @@ def showdeploymentsoverview():
 @deployments_bp.route('/<depid>/template')
 @auth.authorized_with_valid_token
 def deptemplate(depid=None):
-    access_token = iam_blueprint.session.token['access_token']
+    access_token = iam.token['access_token']
 
     try:
-        template = orchestrator.get_template(access_token, depid)
+        template = app.orchestrator.get_template(access_token, depid)
     except Exception as e:
         flash("Error getting template: ".format(str(e)), 'danger')
         return redirect(url_for('deployments_bp.showdeployments'))
@@ -233,7 +223,7 @@ def depoutput(depid=None):
             if ((stinputs[k]['printable'] if 'printable' in stinputs[k] else True) if k in stinputs else True):
                 inputs[k] = v
 
-        additional_outputs = getadditionaloutputs(dep, iam_blueprint.session.token['access_token'])
+        additional_outputs = getadditionaloutputs(dep, iam.token['access_token'])
 
         outputs = {**outputs, **additional_outputs}
 
@@ -275,7 +265,7 @@ def getadditionaloutputs(dep, access_token):
 def extract_info_from_deplog(access_token, uuid, info_type):
     info = ""
     try:
-        log = orchestrator.get_log(access_token, uuid)
+        log = app.orchestrator.get_log(access_token, uuid)
         lines = log.split('\n\n')
 
         if info_type == "kubeconfig":
@@ -293,7 +283,7 @@ def extract_info_from_deplog(access_token, uuid, info_type):
 
 @deployments_bp.route('/<depid>/templatedb')
 def deptemplatedb(depid):
-    if not iam_blueprint.session.authorized:
+    if not iam.authorized:
         return redirect(url_for('home_bp.login'))
     # retrieve deployment from DB
     dep = dbhelpers.get_deployment(depid)
@@ -307,13 +297,13 @@ def deptemplatedb(depid):
 @deployments_bp.route('/<depid>/log')
 @auth.authorized_with_valid_token
 def deplog(depid=None):
-    access_token = iam_blueprint.session.token['access_token']
+    access_token = iam.token['access_token']
     dep = dbhelpers.get_deployment(depid)
 
     log = "Not available"
     if dep is not None:
         try:
-            log = orchestrator.get_log(access_token, depid)
+            log = app.orchestrator.get_log(access_token, depid)
         except Exception:
             pass
     return render_template('deplog.html', log=log)
@@ -322,12 +312,12 @@ def deplog(depid=None):
 @deployments_bp.route('/<depid>/infradetails')
 @auth.authorized_with_valid_token
 def depinfradetails(depid=None):
-    access_token = iam_blueprint.session.token['access_token']
+    access_token = iam.token['access_token']
 
     dep = dbhelpers.get_deployment(depid)
     if dep is not None and dep.physicalId is not None:
         try:
-            resources = orchestrator.get_resources(access_token, depid)
+            resources = app.orchestrator.get_resources(access_token, depid)
         except Exception as e:
             flash(str(e), 'warning')
             return redirect(url_for('deployments_bp.showdeployments'))
@@ -348,11 +338,11 @@ def depinfradetails(depid=None):
 @deployments_bp.route('/<depid>/actions', methods=['POST'])
 @auth.authorized_with_valid_token
 def depaction(depid):
-    access_token = iam_blueprint.session.token['access_token']
+    access_token = iam.token['access_token']
     dep = dbhelpers.get_deployment(depid)
     if dep is not None and dep.physicalId is not None:
         try:
-            orchestrator.post_action(access_token, depid, request.args['vmid'], request.args['action'])
+            app.orchestrator.post_action(access_token, depid, request.args['vmid'], request.args['action'])
         except Exception as e:
             app.logger.error('Action on deployment {} failed: {}'.format(depid, str(e)))
             flash(str(e), 'warning')
@@ -362,12 +352,12 @@ def depaction(depid):
 @deployments_bp.route('/<depid>/qcgdetails')
 @auth.authorized_with_valid_token
 def depqcgdetails(depid=None):
-    access_token = iam_blueprint.session.token['access_token']
+    access_token = iam.token['access_token']
 
     dep = dbhelpers.get_deployment(depid)
     if dep is not None and dep.physicalId is not None and dep.deployment_type == "QCG":
         try:
-            job = json.loads(orchestrator.get_extra_info(access_token, depid))
+            job = json.loads(app.orchestrator.get_extra_info(access_token, depid))
         except Exception as e:
             app.logger.warning("Error decoding Job details response: {}".format(str(e)))
             job = None
@@ -379,7 +369,7 @@ def depqcgdetails(depid=None):
 @deployments_bp.route('/<depid>/delete')
 @auth.authorized_with_valid_token
 def depdel(depid=None):
-    access_token = iam_blueprint.session.token['access_token']
+    access_token = iam.token['access_token']
 
     dep = dbhelpers.get_deployment(depid)
     if dep is not None and dep.storage_encryption == 1:
@@ -387,7 +377,7 @@ def depdel(depid=None):
         delete_secret_from_vault(access_token, secret_path)
 
     try:
-        orchestrator.delete(access_token, depid)
+        app.orchestrator.delete(access_token, depid)
     except Exception as e:
         flash(str(e), 'danger')
 
@@ -400,7 +390,7 @@ def depupdate(depid=None):
     if depid is not None:
         dep = dbhelpers.get_deployment(depid)
         if dep is not None:
-            access_token = iam_blueprint.session.token['access_token']
+            access_token = iam.token['access_token']
             template = dep.template
             tosca_info = tosca.extracttoscainfo(yaml.full_load(io.StringIO(template)), None)
             inputs = json.loads(dep.inputs.strip('\"')) if dep.inputs else {}
@@ -416,8 +406,8 @@ def depupdate(depid=None):
             tosca_info['outputs'] = {**tosca_info['outputs'], **stoutputs}
 
             sla_id = tosca_helpers.getslapolicy(tosca_info)
-            slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'],
-                                settings.orchestratorConf['cmdb_url'], dep.deployment_type)
+            slas = sla.get_slas(access_token, app.settings.orchestrator_conf['slam_url'],
+                                app.settings.orchestrator_conf['cmdb_url'], dep.deployment_type)
             ssh_pub_key = dbhelpers.get_ssh_pub_key(session['userid'])
 
             return render_template('updatedep.html',
@@ -441,7 +431,7 @@ def depupdate(depid=None):
 @auth.authorized_with_valid_token
 def updatedep():
 
-    access_token = iam_blueprint.session.token['access_token']
+    access_token = iam.token['access_token']
 
     form_data = request.form.to_dict()
 
@@ -478,7 +468,7 @@ def updatedep():
             'PROVIDER_TIMEOUT']
 
         try:
-            orchestrator.update(access_token, depid, template_text, inputs,
+            app.orchestrator.update(access_token, depid, template_text, inputs,
                                 keep_last_attempt, provider_timeout_mins,
                                 app.config['OVERALL_TIMEOUT'], app.config['CALLBACK_URL'])
             # store data into database
@@ -505,7 +495,7 @@ def configure():
         'total': 2
     }
 
-    access_token = iam_blueprint.session.token['access_token']
+    access_token = iam.token['access_token']
 
     tosca_info, tosca_templates, tosca_gmetadata = tosca.get()
 
@@ -549,7 +539,7 @@ def configure():
 
         sla_id = tosca_helpers.getslapolicy(template)
 
-        slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'],
+        slas = sla.get_slas(access_token, app.settings.orchestrator_conf['slam_url'], app.settings.orchestrator_conf['cmdb_url'],
                             template["deployment_type"])
 
         ssh_pub_key = dbhelpers.get_ssh_pub_key(session['userid'])
@@ -600,7 +590,7 @@ def remove_sla_from_template(template):
 def add_sla_to_template(template, sla_id):
     # Add or replace the placement policy
 
-    if version.parse(utils.getorchestratorversion(settings.orchestratorUrl)) >= version.parse("2.2.0-SNAPSHOT"):
+    if version.parse(utils.getorchestratorversion(app.settings.orchestrator_url)) >= version.parse("2.2.0-SNAPSHOT"):
         tosca_sla_placement_type = "tosca.policies.indigo.SlaPlacement"
     else:
         tosca_sla_placement_type = "tosca.policies.Placement"
@@ -617,13 +607,13 @@ def add_sla_to_template(template, sla_id):
 def createdep():
     tosca_info, tosca_templates, tosca_gmetadata = tosca.get()
 
-    access_token = iam_blueprint.session.token['access_token']
+    access_token = iam.token['access_token']
     selected_template = request.args.get('template')
     source_template = tosca_info[selected_template]
 
     app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
 
-    with io.open(os.path.join(settings.toscaDir, selected_template)) as stream:
+    with io.open(os.path.join(app.settings.tosca_dir, selected_template)) as stream:
         template = yaml.full_load(stream)
         # rewind file
         stream.seek(0)
@@ -779,9 +769,9 @@ def createdep():
             try:
                 del inputs[key]
 
-                iam_base_url = settings.iamUrl
-                iam_client_id = settings.iamClientID
-                iam_client_secret = settings.iamClientSecret
+                iam_base_url = app.settings.iam_url
+                iam_client_id = app.settings.iam_client_id
+                iam_client_secret = app.settings.iam_client_secret
 
                 username = '{}_{}'.format(session['userid'], urlparse(iam_base_url).netloc)
                 email = session['useremail']
@@ -905,7 +895,7 @@ def createdep():
         updatable = source_template['updatable']
 
         try:
-            rs_json = orchestrator.create(access_token, user_group, yaml.dump(template, default_flow_style=False, sort_keys=False), inputs,
+            rs_json = app.orchestrator.create(access_token, user_group, yaml.dump(template, default_flow_style=False, sort_keys=False), inputs,
                                 keep_last_attempt, provider_timeout_mins,
                                 app.config['OVERALL_TIMEOUT'], app.config['CALLBACK_URL'])
         except Exception as e:

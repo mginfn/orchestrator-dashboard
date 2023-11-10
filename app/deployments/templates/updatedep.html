@@ -97,7 +97,7 @@ $(document).ready(function () {
 
 </script>
 
-{% if enable_vault_integration and ssh_pub_key is none  %}
+{% if config['FEATURE_VAULT_INTEGRATION']|str2bool and ssh_pub_key is none  %}
 <script type="text/javascript">
 
 $('#popupMaintenanceCheckbox').click(function(){

@@ -23,7 +23,7 @@
 <p><strong>ssh_account</strong>: {{v['os_user_name']}} </p>
 
 {% elif "node_creds" in k or "cluster_creds" in k %}
-{%if require_ssh_pubkey=='no' %}
+{%if config['FEATURE_REQUIRE_USER_SSH_PUBKEY']|str2bool %}
 
 {% if v['token'] is  defined %}
 {% set v=[v] %}

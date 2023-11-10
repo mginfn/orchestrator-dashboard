@@ -12,31 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from app import app
-from app.lib import utils
-from flask import Blueprint, render_template, flash, redirect, url_for, request, session
-from flask import send_from_directory
-from app.lib import auth, settings, dbhelpers
-from werkzeug.utils import secure_filename
 import os
+from werkzeug.utils import secure_filename
+from flask import current_app as app, Blueprint, render_template, flash, redirect, url_for, request, session
+from flask import send_from_directory
+from app.lib import auth, dbhelpers, utils
+
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 #UPLOAD_FOLDER = "/tmp/uploads/"
-app.config['MAX_CONTENT_LENGTH'] = 1024 * 100
 
 services_bp = Blueprint('services_bp', __name__,
                            template_folder='templates',
                            static_folder='static')
 
-iam_base_url = settings.iamUrl
-iam_client_id = settings.iamClientID
-iam_client_secret = settings.iamClientSecret
-
-issuer = settings.iamUrl
-if not issuer.endswith('/'):
-    issuer += '/'
-
-app.jinja_env.filters['enum2str'] = utils.enum_to_string
 
 @services_bp.route('/list')
 @services_bp.route('/list/<visibility>')

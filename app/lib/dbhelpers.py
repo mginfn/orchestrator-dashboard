@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from app import app, iam_blueprint, db
-from . import settings
 import requests
+import datetime
 from dateutil import parser
+from flask import current_app as app, json
+
+from app.iam import iam 
+from app.extensions import db
 from app.models.Deployment import Deployment
 from app.models.User import User
 from app.models.Service import Service, UsersGroup
-from flask import json
-import datetime
 
 
 def add_object(object):
@@ -126,11 +127,11 @@ def updatedeploymentsstatus(deployments, userid):
             app.logger.info("Deployment with uuid:{} not found!".format(uuid))
 
             # retrieve template
-            access_token = iam_blueprint.session.token['access_token']
+            access_token = iam.token['access_token']
             headers = {'Authorization': 'bearer %s' % access_token}
 
-            url = settings.orchestratorUrl + "/deployments/" + uuid + "/template"
-            response = requests.get(url, headers=headers)
+            url = app.settings.orchestratorUrl + "/deployments/" + uuid + "/template"
+            response = requests.get(url, headers=headers, timeout=60)
 
             template = '' if not response.ok else response.text
 

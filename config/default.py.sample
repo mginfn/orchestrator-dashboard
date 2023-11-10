@@ -37,14 +37,14 @@ LOG_LEVEL = "info"
 UPLOAD_FOLDER = "./upload_swift/"
 
 ### VAULT INTEGRATION SETTINGS
-ENABLE_VAULT_INTEGRATION = "no"
+FEATURE_VAULT_INTEGRATION = "no"
 VAULT_ROLE = "orchestrator"
 VAULT_OIDC_AUDIENCE = "ff2c57dc-fa09-43c9-984e-9ad8afc3fb56"
 
 #### LOOK AND FEEL SETTINGS
 WELCOME_MESSAGE = "Welcome! This is the PaaS Orchestrator Dashboard"
 NAVBAR_BRAND_TEXT = "PaaS Orchestrator Dashboard"
-NAVBAR_BRAND_ICON = "static/images/orchestrator-logo.png"
+NAVBAR_BRAND_ICON = "/static/home/images/orchestrator-logo.png"
 
 ### Template Paths
 HOME_TEMPLATE = 'home.html'

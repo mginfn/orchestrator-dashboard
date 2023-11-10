@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from flask import render_template, request, Blueprint
-from app import app
+from flask import current_app as app, render_template, request, Blueprint
 
 errors_bp = Blueprint('errors', __name__,
                            template_folder='templates',

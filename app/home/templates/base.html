@@ -33,19 +33,19 @@
     <!-- FontAwesome-->
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
     <!-- Add favicon -->
-    <link rel="apple-touch-icon" sizes="180x180" href="{{favicon_path}}/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{favicon_path}}/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{favicon_path}}/favicon-16x16.png">
-    <!--link rel="manifest" href="{{favicon_path}}/site.webmanifest"-->
+    <link rel="apple-touch-icon" sizes="180x180" href="{{config['FAVICON_PATH']}}/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{config['FAVICON_PATH']}}/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{config['FAVICON_PATH']}}/favicon-16x16.png">
+    <!--link rel="manifest" href="{{config['FAVICON_PATH']}}/site.webmanifest"-->
     <!-- Dotdotdot -->
     <script type="text/javascript" src="{{ url_for('static', filename='dotdotdot-js/4.0.9/dotdotdot.js') }}"></script>
     <!-- Cookie Consent -->
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='cookieconsent2/3.1.1/cookieconsent.min.css') }}" />
     <script src="{{ url_for('static', filename='cookieconsent2/3.1.1/cookieconsent.min.js') }}"></script>
     <!-- CSS -->
-    <link rel="stylesheet" href="/home/static/css/style-v2.css">
+    <link rel="stylesheet" href="{{url_for('home_bp.static', filename='css/style-v2.css')}}">
     <script>
-    let link = "{{ privacy_policy_url }}"
+    let link = "{{ config['PRIVACY_POLICY_URL'] }}"
     window.addEventListener("load", function(){
         window.cookieconsent.initialise({
           "palette": {
@@ -76,10 +76,10 @@
             <div class="navbar-left-top">
                 <!-- NAVBAR BRAND -->
                 <div class="navbar-left-header">
-                    <a class="navbar-left-brand" href="{{ url_for('home_bp.home') }}" title="{{ navbar_brand_text }}">
-                        <img src="{{ navbar_brand_icon }}" width="80" alt="INFN Cloud logo">
+                    <a class="navbar-left-brand" href="{{ url_for('home_bp.home') }}" title="{{ config['NAVBAR_BRAND_TEXT'] }}">
+                        <img src="{{ config['NAVBAR_BRAND_ICON'] }}" width="80" alt="INFN Cloud logo">
                         <div class="navbar-left-brand-text">
-                            {{ navbar_brand_text }}
+                            {{ config['NAVBAR_BRAND_TEXT'] }}
                         </div>
                     </a>
                     <div class="navbar-left-header-mobile-toggle">
@@ -114,7 +114,7 @@
                     </div>
 
                     <!-- ADVANCED -->
-                    {% if enable_advanced_menu == "yes" or  session['userrole'] == 'admin' %}
+                    {% if config['FEATURE_ADVANCED_MENU']|str2bool or  session['userrole'] == 'admin' %}
                         <div class="navbar-left-dropdown">
                             <div class="navbar-left-dropdown-parent">
                                 <div class="navbar-left-dropdown-parent-text" title="Advanced">Advanced</div>
@@ -140,7 +140,7 @@
                     {% endif %}
                     
                     <!-- EXTERNAL LINKS -->
-                    {% if external_links|length > 0 %}
+                    {% if config['EXTERNAL_LINKS']|length > 0 %}
                         <div class="navbar-left-dropdown">
                             <div class="navbar-left-dropdown-parent">
                                 <div class="navbar-left-dropdown-parent-text" title="External Links">External Links</div>
@@ -150,7 +150,7 @@
                             </div>
                             <div class="navbar-left-dropdown-children-container">
                                 <div class="navbar-left-dropdown-children">
-                                    {% for link in external_links %}
+                                    {% for link in config['EXTERNAL_LINKS'] %}
                                         <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ link.url }}" title="{{link.menu_item_name}}">
                                             <i class="fas fa-link"></i>
                                             {{link.menu_item_name}}
@@ -186,8 +186,8 @@
                     {% endif %}
                     
                     <!-- USER -->
-                    {# <!-- {% set s3_groups = ( s3_allowed_groups | intersect(session['supported_usergroups'])) %}
-                    {% if enable_vault_integration or ( enable_s3creds == "yes" and (session['userrole']=='user:s3' or (s3_allowed_groups|length==0 or s3_groups|length >= 1)) )%}
+                    {# <!-- {% set s3_groups = ( config['S3_IAM_GROUPS'] | intersect(session['supported_usergroups'])) %}
+                    {% if config['FEATURE_VAULT_INTEGRATION']|str2bool or ( config['FEATURE_S3CREDS_MENU']|str2bool and (session['userrole']=='user:s3' or (config['S3_IAM_GROUPS']|length==0 or s3_groups|length >= 1)) )%}
                         <div class="navbar-left-dropdown">
                             <div class="navbar-left-dropdown-parent">
                                 <div class="navbar-left-dropdown-parent-text" title="User">User</div>
@@ -197,7 +197,7 @@
                             </div>
                             <div class="navbar-left-dropdown-children-container">
                                 <div class="navbar-left-dropdown-children">
-                                    {% if enable_vault_integration %}
+                                    {% if config['FEATURE_VAULT_INTEGRATION']|str2bool %}
                                         <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ url_for("vault_bp.ssh_keys") }}" title="SSH keys">
                                             <i class="fas fa-key"></i>
                                             SSH keys
@@ -208,7 +208,7 @@
                                         </a>
                                     {% endif %}
                                     
-                                    {% if enable_s3creds == "yes" and (session['userrole']=='user:s3' or (s3_allowed_groups|length==0 or s3_groups|length >= 1)) %}
+                                    {% if config['FEATURE_S3CREDS_MENU']|str2bool and (session['userrole']=='user:s3' or (config['S3_IAM_GROUPS']|length==0 or s3_groups|length >= 1)) %}
                                         <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ url_for("vault_bp.manage_service_creds") }}" title="S3 credentials">
                                             <i class="fas fa-asterisk"></i>
                                             S3 credentials
@@ -231,7 +231,7 @@
                         </a>
                     </div>
                     <div class="navbar-left-settings-item">
-                        <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ help_page_url }}" title="Help & Support">
+                        <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ config['HELP_PAGE_URL'] }}" title="Help & Support">
                             <i class="fas fa-life-ring"></i>
                             Help
                         </a>
@@ -297,13 +297,13 @@
     {% include 'flashed_messages.html' %}
     {% block content %}{% endblock %}
         </main>
-    {% include footer_template %}
+    {% include config['FOOTER_TEMPLATE'] %}
 </div>
 
 <div class="dashboard-loading-container">
     <div class="dashboard-loading">
         <div class="dashboard-loading-image">
-            <img src="{{ navbar_brand_icon }}" width="250" alt="INFN Cloud logo">
+            <img src="{{ config['NAVBAR_BRAND_ICON'] }}" width="250" alt="INFN Cloud logo">
         </div>
         <div class="dashboard-loading-bar"></div>
         <div class="dashboard-loading-bar-text">
@@ -324,7 +324,7 @@
 </body>
 
 <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.min.js'></script>
-<script src="/home/static/js/script-v2.js"></script>
+<script src="{{url_for('home_bp.static', filename='js/script-v2.js')}}"></script>
 
 
 

@@ -32,7 +32,7 @@
             
                 <div class="dashboard-template-header-buttons">
                   <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick='location.href="{{ url_for('deployments_bp.showdeployments') }}"'><i class="fas fa-sync-alt"></i>&nbsp;Refresh</button>
-                  <button type="button" class="dashboard-button dashboard-button-primary" title="New deployment" onclick='location.href="{{ url_for('home') }}"'><i class="fas fa-plus"></i>&nbsp;New deployment</button>
+                  <button type="button" class="dashboard-button dashboard-button-primary" title="New deployment" onclick='location.href="{{ url_for('home_bp.home') }}"'><i class="fas fa-plus"></i>&nbsp;New deployment</button>
                 </div>
             </div>
 
@@ -88,13 +88,13 @@
                             <a class="dropdown-item" data-toggle="modal" data-target="#editDeployment" data-id="{{ deployment.uuid }}" data-description="{{ deployment.description }}" data-action="{{ url_for('deployments_bp.editdeployment') }}">
                                 <span class="fas fa-edit mr-2 grey-text"></span>Edit</a>
                             <a class="dropdown-item" href="{{ url_for('deployments_bp.deptemplate', depid=deployment.uuid) }}"><span class="fas fa-search mr-2 grey-text"></span>Show template</a>
-                        {% if enable_update_deployment == "yes" and deployment.updatable == 1 %}
+                        {% if config['FEATURE_UPDATE_DEPLOYMENT']|str2bool and deployment.updatable == 1 %}
                             <a class="dropdown-item" href="{{ url_for('deployments_bp.depupdate', depid=deployment.uuid) }}"><span class="fas fa-plus-minus mr-2 grey-text"></span>Add/Remove nodes</a>
                         {% endif %}
                         {% if deployment.deployment_type == "CLOUD" %}
                             <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.deplog', depid=deployment.uuid) }}">
                                 <span class="fas fa-file-alt mr-2 grey-text"></span>Log</a>
-                            {% if enable_ports_request == "yes" %}
+                            {% if config['FEATURE_PORTS_REQUEST']|str2bool %}
                             <a class="dropdown-item" data-toggle="modal" data-target="#requestPorts" data-id="{{ deployment.uuid }}" data-action="{{ url_for('deployments_bp.sendportsrequest') }}" >
                                 <span class="fas fa-ticket-alt mr-2 grey-text"></span>Request Ports</a>
                             {% endif %}
@@ -222,9 +222,9 @@
                 "targets"  : 'no-sort',
                 "orderable": false,
             },
-            {% if hidden_deployment_columns != '' %}
+            {% if config['FEATURE_HIDDEN_DEPLOYMENT_COLUMNS'] != '' %}
             {
-                "targets": [{{hidden_deployment_columns}}],
+                "targets": [{{config['FEATURE_HIDDEN_DEPLOYMENT_COLUMNS']}}],
                 "visible": false,
             },
             {% endif %}

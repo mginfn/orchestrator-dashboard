@@ -29,7 +29,7 @@
             {% if loop.index == 1 or loop.index == 3 %}
 
                 {% if tosca['metadata']['access_locked'] %}
-                    {% if enable_access_request == "yes" %}
+                    {% if config['FEATURE_ACCESS_REQUEST']|str2bool %}
                         {% set pre_tasks = tosca['metadata']['authorization_required'] %}
                             {% if tosca['metadata']['display_name'] is defined %}
                                 {% set service_label = tosca['metadata']['display_name'] %}
@@ -110,7 +110,7 @@
                     <!-- RIBBON -->
                     {% if tosca['metadata']['access_locked'] %}
                         <div class="ribbon red">
-                            <span>{{ not_granted_access_tag }}</span>
+                            <span>{{ config['NOT_GRANTED_ACCESS_TAG'] }}</span>
                         </div>
                     {% else %}
                         {% if tosca['metadata']['tag'] is defined %}
@@ -136,7 +136,7 @@
                         <div class="dashboard-card-body-bottom">
                             <div class="dashboard-card-buttons">
                                 {% if tosca['metadata']['access_locked'] %}
-                                    {% if enable_access_request == "yes" %}
+                                    {% if config['FEATURE_ACCESS_REQUEST']|str2bool %}
                                         {% set pre_tasks = tosca['metadata']['authorization_required'] %}
                                             {% if tosca['metadata']['display_name'] is defined %}
                                                 {% set service_label = tosca['metadata']['display_name'] %}
@@ -185,7 +185,7 @@
                     <!-- RIBBON -->
                     {% if tosca['metadata']['access_locked'] %}
                         <div class="ribbon red">
-                            <span>{{ not_granted_access_tag }}</span>
+                            <span>{{ config['NOT_GRANTED_ACCESS_TAG'] }}</span>
                         </div>
                     {% else %}
                         {% if tosca['metadata']['tag'] is defined %}
@@ -212,7 +212,7 @@
                             <i class="far fa-bookmark"></i>
                         </div>
                         {% if tosca['metadata']['access_locked'] %}
-                            {% if enable_access_request == "yes" %}
+                            {% if config['FEATURE_ACCESS_REQUEST']|str2bool %}
                                 {% set pre_tasks = tosca['metadata']['authorization_required'] %}
                                     {% if tosca['metadata']['display_name'] is defined %}
                                         {% set service_label = tosca['metadata']['display_name'] %}
@@ -271,7 +271,7 @@
                         <img class="card-img-bottom img-fluid" src="{{tosca['metadata']['icon']}}" alt="Card image cap">
                         {% if tosca['metadata']['access_locked'] %}
                         <div class="ribbon red">
-                            <span>{{ not_granted_access_tag }}</span>
+                            <span>{{ config['NOT_GRANTED_ACCESS_TAG'] }}</span>
                         </div>
                         {% else %}
                             {% if tosca['metadata']['tag'] is defined %}
@@ -293,7 +293,7 @@
                                 <a class="badge badge-pill badge-info text-left read_more" tabindex="0" data-toggle="popover" title="Full description" data-trigger="focus" data-html="true" data-content="{{tosca['description']}}">Read More</a>
                             </div>
                             {% if tosca['metadata']['access_locked'] %}
-                            {% if enable_access_request == "yes" %}
+                            {% if config['FEATURE_ACCESS_REQUEST']|str2bool %}
                             {% set pre_tasks = tosca['metadata']['authorization_required'] %}
                             <div class="col-4">
                                 {% if tosca['metadata']['display_name'] is defined %}
