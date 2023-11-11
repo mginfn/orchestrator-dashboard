@@ -8,5 +8,3 @@ MAIL_IMAGE_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAABWCAYAAACK
 ### Template Paths
 HOME_TEMPLATE = 'deep/home.html'
 FOOTER_TEMPLATE = 'deep/footer.html'
-
-

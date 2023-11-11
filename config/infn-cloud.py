@@ -17,5 +17,3 @@ FOOTER_TEMPLATE = 'infn-cloud/footer.html'
 
 ### Links
 PRIVACY_POLICY_URL = 'https://www-cloud.infn.it/privacy-policy/'
-
-
