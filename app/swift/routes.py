@@ -15,7 +15,6 @@
 import json
 import random
 import string
-import logging
 from werkzeug.exceptions import Forbidden
 from flask import current_app as app, Blueprint, render_template, request, flash, session
 from app.iam import iam
@@ -31,7 +30,7 @@ swift_bp = Blueprint('swift_bp', __name__, template_folder='templates', static_f
 @auth.only_for_admin
 def createswifttoken():
     if request.method == 'POST':
-        logging.debug("Form data: " + json.dumps(request.form.to_dict()))
+        app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
         form_data = request.form.to_dict()
         swift_a = form_data["swiftauthurl"] if "swiftauthurl" in form_data else None
         swift_v = form_data["swiftauthversion"] if "swiftauthversion" in form_data else None
