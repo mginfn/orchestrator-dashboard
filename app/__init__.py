@@ -11,14 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logging
 import json
-import sys
-import socket
-
+from logging.config import dictConfig
 from flask import Flask
-from flask_alembic import Alembic
-from sqlalchemy import Table, Column, String, MetaData
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_migrate import upgrade
 
@@ -37,7 +32,6 @@ from app.swift.routes import swift_bp
 from app.services.routes import services_bp
 from app.vault.routes import vault_bp
 
-
 def create_app():
     """
     Create and configure the Flask application.
@@ -53,7 +47,6 @@ def create_app():
         app = create_app()
         app.run()
     """
-
     app = Flask(__name__, instance_relative_config=True)
     app.wsgi_app = ProxyFix(app.wsgi_app)
     app.secret_key = "30bb7cf2-1fef-4d26-83f0-8096b6dcc7a3"
@@ -80,10 +73,9 @@ def create_app():
         app.config.from_object('config.' + profile)
 
     db.init_app(app)
-    migrate.init_app(app, db)
+    migrate.init_app(app, db, compare_server_default=True, compare_type=True)
 
     with app.app_context():
-        db.create_all()
         upgrade(directory='migrations', revision='head')
 
     app.config['CACHE_TYPE'] = 'RedisCache'
@@ -106,7 +98,15 @@ def create_app():
     app.jinja_env.filters['enum2str'] = utils.enum_to_string
     app.jinja_env.filters['str2bool'] = utils.str2bool
 
+    register_blueprints(app) 
 
+    # Configure logging using dictConfig
+    configure_logging(app)
+
+    return app
+
+def register_blueprints(app):
+    
     app.register_blueprint(errors_bp)
 
     iam_base_url = app.config['IAM_BASE_URL']
@@ -134,16 +134,71 @@ def create_app():
     if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
         app.register_blueprint(vault_bp, url_prefix="/vault")
 
-    # logging
-    loglevel = app.config.get("LOG_LEVEL") if app.config.get("LOG_LEVEL") else "INFO"
-    numeric_level = getattr(logging, loglevel.upper(), None)
-    if not isinstance(numeric_level, int):
-        raise ValueError('Invalid log level: %s' % loglevel)
+def validate_log_level(log_level):
+    """
+    Validates that the provided log level is a valid choice.
 
-    logging.basicConfig(level=numeric_level)
+    Parameters:
+    - log_level (str): The log level to validate.
 
-    return app
+    Raises:
+    - ValueError: If the log level is not one of ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'].
+    """
+    valid_log_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+    if log_level not in valid_log_levels:
+        raise ValueError(f'Invalid log level: {log_level}. Valid log levels are {valid_log_levels}')
 
+def configure_logging(app):
+    """
+    Configures logging for a Flask application based on the provided app configuration.
+
+    This function sets up a logging configuration using the provided log level from the app's configuration.
+    It configures a stream handler with a custom formatter for the 'app' logger and the root logger.
+
+    Parameters:
+    - app (Flask): The Flask application instance.
+    """
+    level = app.config.get('LOG_LEVEL')
+    validate_log_level(level)
+
+    if level == 'DEBUG':
+        msg_format = '%(asctime)s - %(levelname)s - %(message)s [%(filename)s:%(lineno)s]'
+    else:
+        msg_format = '%(asctime)s - %(levelname)s - %(message)s'
+
+    logging_config = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'stream_handler': {
+                'class': 'logging.StreamHandler',
+                'level': level,
+                'formatter': 'custom_formatter',
+            },
+        },
+        'formatters': {
+            'custom_formatter': {
+                'format': msg_format,
+            },
+        },
+        'loggers': {
+            'app': {
+                'handlers': ['stream_handler'],
+                'level': level,
+                'propagate': False,  # Do not propagate messages to the root logger
+
+            },
+            'root': {
+                'handlers': [],
+                'level': level,
+            },
+        },
+        'root': {
+            'handlers': ['stream_handler'],
+            'level': level,
+        },
+    }
+    dictConfig(logging_config)
 
 #### TODO
 # add route /info
