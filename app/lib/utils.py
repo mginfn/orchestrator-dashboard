@@ -361,18 +361,44 @@ def create_and_send_email(subject, sender, recipients, uuid, status):
 
 
 def send_email(subject, sender, recipients, html_body):
+    """
+    Send an email asynchronously.
+
+    Args:
+        subject (str): The subject of the email.
+        sender (str): The email address of the sender.
+        recipients (list): A list of email addresses of the recipients.
+        html_body (str): The HTML content of the email.
+    """
+    appc = app._get_current_object()
     msg = Message(subject, sender=sender, recipients=recipients)
     msg.html = html_body
     msg.body = "This email is an automatic notification"  # Add plain text, needed to avoid MPART_ALT_DIFF with AntiSpam
-    Thread(target=send_async_email, args=(app, msg)).start()
+    Thread(target=send_async_email, args=(appc, msg)).start()
 
 
 def send_async_email(app, msg):
+    """
+    Send an email asynchronously within the application context.
+
+    Args:
+        app (Flask): The Flask application instance.
+        msg (Message): The email message to be sent.
+    """
     with app.app_context():
         mail.send(msg)
 
 
 def has_write_permission(directory):
+    """
+    Check if write permission is available for a directory.
+
+    Args:
+        directory (str): The directory path to check for write permission.
+
+    Returns:
+        bool: True if write permission is available, False otherwise.
+    """
     parent_directory = os.path.dirname(os.path.normpath(directory))
     try:
         test_file = os.path.join(parent_directory, '.test_file')
@@ -385,6 +411,15 @@ def has_write_permission(directory):
 
 
 def backup_directory(directory):
+    """
+    Create a backup of a directory.
+
+    Args:
+        directory (str): The path of the directory to be backed up.
+
+    Returns:
+        str: The path of the created backup directory, or None if an error occurs.
+    """
     try:
         backup_path = f"{os.path.normpath(directory)}.bak"
         if os.path.exists(backup_path):
@@ -397,6 +432,16 @@ def backup_directory(directory):
 
 
 def restore_directory(backup_path, target_directory):
+    """
+    Restore a directory from a backup.
+
+    Args:
+        backup_path (str): The path to the backup directory.
+        target_directory (str): The path to the target directory to be restored.
+
+    Returns:
+        bool: True if the restoration is successful, False otherwise.
+    """
     try:
         if os.path.exists(target_directory):
             shutil.rmtree(target_directory)
@@ -408,6 +453,20 @@ def restore_directory(backup_path, target_directory):
 
 
 def download_git_repo(repo_url, target_directory, tag_or_branch=None, private=False, username=None, deploy_token=None):
+    """
+    Download a Git repository to the specified directory.
+
+    Args:
+        repo_url (str): The URL of the Git repository.
+        target_directory (str): The path to the target directory for the repository.
+        tag_or_branch (str, optional): The tag or branch to checkout after cloning.
+        private (bool, optional): True if the repository is private, False otherwise.
+        username (str, optional): The username for authentication (for private repositories).
+        deploy_token (str, optional): The deploy token for authentication (for private repositories).
+
+    Returns:
+        tuple: A tuple containing a boolean indicating success, and a message.
+    """
     try:
         if not has_write_permission(target_directory):
             return False, "No permission for creating the directory {}".format(target_directory)
