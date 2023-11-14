@@ -28,7 +28,7 @@ class User(db.Model):
     picture = db.Column(db.String(128), nullable=True)
     role = db.Column(db.String(32), nullable=False, default='user')
     sshkey = db.Column(db.Text, nullable=True)
-    active = db.Column(db.Integer, nullable=False, default='1')
+    active = db.Column(db.Boolean, nullable=False, default=1)
     deployments = relationship("Deployment", back_populates="user")
 
     def __repr__(self):

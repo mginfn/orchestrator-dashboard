@@ -48,7 +48,7 @@ class ServiceAccess(db.Model):
     __tablename__ = 'service_access'
     id = db.Column(db.Integer, primary_key=True)
     service_id = db.Column(db.Integer, db.ForeignKey('service.id', ondelete="cascade"))
-    group_id = db.Column(db.Integer, db.ForeignKey('users_group.name', ondelete="cascade"))
+    group_id = db.Column(db.String(128), db.ForeignKey('users_group.name', ondelete="cascade"))
 
     #service = relationship(Service, backref=backref("service_access", cascade="all, delete-orphan"))
     #group = relationship(UsersGroup, backref=backref("service_access", cascade="all, delete-orphan"))
