@@ -223,10 +223,6 @@ def depoutput(depid=None):
             if ((stinputs[k]['printable'] if 'printable' in stinputs[k] else True) if k in stinputs else True):
                 inputs[k] = v
 
-        additional_outputs = getadditionaloutputs(dep, iam.token['access_token'])
-
-        outputs = {**outputs, **additional_outputs}
-
         browser = request.user_agent.browser
         version = request.user_agent.version and int(request.user_agent.version.split('.')[0])
 
@@ -237,48 +233,6 @@ def depoutput(depid=None):
                                inputs=inputs,
                                outputs=outputs,
                                stoutputs=stoutputs)
-
-
-def getadditionaloutputs(dep, access_token):
-    uuid = dep.uuid
-    status = dep.status
-    template_type = dep.template_type
-    additional_outputs = json.loads(dep.additional_outputs.strip('\"')) if dep.additional_outputs else {}
-
-    update = False
-    if status == "CREATE_COMPLETE" and additional_outputs == {} and template_type == 'kubernetes':
-        # try to get kubeconfig file from log
-        try:
-            kubeconfig = extract_info_from_deplog(access_token, uuid, 'kubeconfig')
-            additional_outputs = {"kubeconfig": kubeconfig}
-            update = True
-        except:
-            app.logger.debug("Error while extracting kubeconfig file from log for deployment {}".format(dep.uuid))
-
-    if update:
-        dep.additional_outputs = json.dumps(additional_outputs)
-        dbhelpers.add_object(dep)
-
-    return additional_outputs
-
-
-def extract_info_from_deplog(access_token, uuid, info_type):
-    info = ""
-    try:
-        log = app.orchestrator.get_log(access_token, uuid)
-        lines = log.split('\n\n')
-
-        if info_type == "kubeconfig":
-
-            match = None
-            for line in lines:
-                match = re.search('^.*KUBECONFIG file.*\n.*\n.*\n.*\n.*\n.*\"(apiVersion.*)\"\n.*\n.*$', line)
-                if match is not None:
-                    info = match.group(1)
-    except Exception as e:
-        app.logger.warning("Error extracting info from deployment log: {}".format(str(e)))
-
-    return info
 
 
 @deployments_bp.route('/<depid>/templatedb')
@@ -962,9 +916,9 @@ def delete_secret_from_vault(access_token, secret_path):
     vault_delete_token_renewal_time_duration = app.config.get("DELETE_TOKEN_RENEWAL_TIME_DURATION")
     vault_role = app.config.get("VAULT_ROLE")
 
-    jwt_token = auth.exchange_token_with_audience(iam_base_url,
-                                                  iam_client_id,
-                                                  iam_client_secret,
+    jwt_token = auth.exchange_token_with_audience(app.settings.iam_url,
+                                                  app.settings.iam_client_id,
+                                                  app.settings.iam_client_secret,
                                                   access_token,
                                                   vault_bound_audience)
 
@@ -1000,9 +954,9 @@ def add_storage_encryption(access_token, inputs):
             vault_secret_key = inputs['vault_secret_key']
         app.logger.debug("Storage encryption enabled, appending wrapping token.")
 
-        jwt_token = auth.exchange_token_with_audience(iam_base_url,
-                                                      iam_client_id,
-                                                      iam_client_secret,
+        jwt_token = auth.exchange_token_with_audience(app.settings.iam_url,
+                                                      app.settings.iam_client_id,
+                                                      app.settings.iam_client_secret,
                                                       access_token,
                                                       vault_bound_audience)
 
