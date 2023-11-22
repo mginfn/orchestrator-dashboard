@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
+import os
 from logging.config import dictConfig
 from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -51,8 +52,12 @@ def create_app():
     app.wsgi_app = ProxyFix(app.wsgi_app)
     app.secret_key = "30bb7cf2-1fef-4d26-83f0-8096b6dcc7a3"
     app.config.from_object('config.default')
-    app.config.from_file('config.json', json.load)
     app.config.from_file('../config/schemas/metadata_schema.json', json.load)
+
+    if os.environ.get('TESTING', '').lower() == 'true':
+        app.config.from_file('../tests/resources/config.json', json.load)
+    else:
+        app.config.from_file('config.json', json.load)
 
     settings = Settings(app)
     app.settings = settings # attach the Settings object to the app
@@ -80,7 +85,13 @@ def create_app():
 
     app.config['CACHE_TYPE'] = 'RedisCache'
     app.config['CACHE_REDIS_URL'] = app.config.get('REDIS_URL')
-    redis_client.init_app(app)
+
+    redis_kwargs = {
+        'socket_timeout': app.config['REDIS_SOCKET_TIMEOUT'],
+    }
+    redis_client.init_app(app, **redis_kwargs)
+    redis_client.ping()
+    
     cache.init_app(app)
 
     if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
@@ -90,6 +101,14 @@ def create_app():
 
     # initialize ToscaInfo
     tosca.init_app(app, redis_client)
+
+    # initialize iam blueprint
+    app.iam_blueprint = make_iam_blueprint(
+        client_id=app.config['IAM_CLIENT_ID'],
+        client_secret=app.config['IAM_CLIENT_SECRET'],
+        base_url=app.config['IAM_BASE_URL'],
+        redirect_to='home_bp.home'
+    )
 
     app.jinja_env.filters['tojson_pretty'] = utils.to_pretty_json
     app.jinja_env.filters['extract_netinterface_ips'] = utils.extract_netinterface_ips
@@ -106,18 +125,29 @@ def create_app():
     return app
 
 def register_blueprints(app):
-    
+    """
+    Register Flask blueprints for different application modules.
+
+    Parameters:
+    - app (Flask): The Flask application to which the blueprints will be registered.
+
+    Blueprints:
+    - `errors_bp`: Handles error pages and error-related routes.
+    - `app.iam_blueprint`: Handles IAM routes under "/login".
+    - `home_bp`: Handles routes related to the home page ("/").
+    - `users_bp`: Handles routes related to user management ("/users").
+    - `deployments_bp`: Handles routes related to deployments ("/deployments").
+    - `providers_bp`: Handles routes related to providers ("/providers").
+    - `swift_bp`: Handles routes related to Swift integration ("/swift").
+    - `services_bp`: Handles routes related to services ("/services").
+
+    Conditional Blueprints:
+    - If the Flask app has the "FEATURE_VAULT_INTEGRATION" set to "yes":
+        - `vault_bp`: Handles routes related to Vault integration ("/vault").
+    """
     app.register_blueprint(errors_bp)
 
-    iam_base_url = app.config['IAM_BASE_URL']
-
-    iam_blueprint = make_iam_blueprint(
-        client_id=app.config['IAM_CLIENT_ID'],
-        client_secret=app.config['IAM_CLIENT_SECRET'],
-        base_url=iam_base_url,
-        redirect_to='home_bp.home'
-    )
-    app.register_blueprint(iam_blueprint, url_prefix="/login")
+    app.register_blueprint(app.iam_blueprint, url_prefix="/login")
 
     app.register_blueprint(home_bp, url_prefix="/")
 
@@ -162,7 +192,7 @@ def configure_logging(app):
     validate_log_level(level)
 
     if level == 'DEBUG':
-        msg_format = '%(asctime)s - %(levelname)s - %(message)s [%(filename)s:%(lineno)s]'
+        msg_format = '%(asctime)s - %(levelname)s - %(message)s [%(funcName)s() in %(pathname)s:%(lineno)s]'
     else:
         msg_format = '%(asctime)s - %(levelname)s - %(message)s'
 
