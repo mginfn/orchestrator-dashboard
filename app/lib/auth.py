@@ -21,14 +21,6 @@ from app.iam import iam
 from app.lib import utils
 
 
-def validate_configuration():
-    if not app.settings.orchestratorConf.get('im_url'):
-        app.logger.debug("Trying to (re)load config from Orchestrator: " + json.dumps(app.settings.orchestratorConf))
-        access_token = iam.token['access_token']
-        configuration = utils.getorchestratorconfiguration(app.settings.orchestratorUrl, access_token)
-        app.settings.orchestratorConf = configuration
-
-
 def set_user_info():
     account_info = iam.get('/userinfo')
     account_info_json = account_info.json()
