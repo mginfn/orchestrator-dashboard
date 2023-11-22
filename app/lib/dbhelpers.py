@@ -99,6 +99,9 @@ def updatedeploymentsstatus(deployments, userid):
         dep_json['creationTime'] = dt.strftime("%Y-%m-%d %H:%M:%S")
         dt = parser.parse(dep_json['updateTime'])
         dep_json['updateTime'] = dt.strftime("%Y-%m-%d %H:%M:%S")
+        update_time = datetime.datetime.strptime(dep_json['updateTime'], "%Y-%m-%d %H:%M:%S")
+        creation_time = datetime.datetime.strptime(dep_json['creationTime'], "%Y-%m-%d %H:%M:%S")
+
 
         providername = dep_json['cloudProviderName'] if 'cloudProviderName' in dep_json else ''
         status_reason = dep_json['statusReason'] if 'statusReason' in dep_json else ''
@@ -109,7 +112,7 @@ def updatedeploymentsstatus(deployments, userid):
         if dep is not None:
             if dep.status != dep_json['status'] or dep.provider_name != providername \
                     or str(dep.status_reason or '') != status_reason:
-                dep.update_time = dep_json['updateTime']
+                dep.update_time = update_time
                 dep.physicalId = vphid
                 dep.status = dep_json['status']
                 dep.outputs = json.dumps(dep_json['outputs'])
@@ -128,19 +131,18 @@ def updatedeploymentsstatus(deployments, userid):
 
             # retrieve template
             access_token = iam.token['access_token']
-            headers = {'Authorization': 'bearer %s' % access_token}
 
-            url = app.settings.orchestratorUrl + "/deployments/" + uuid + "/template"
-            response = requests.get(url, headers=headers, timeout=60)
-
-            template = '' if not response.ok else response.text
-
+            try:
+                template = app.orchestrator.get_template(access_token, uuid)
+            except Exception:
+                template = ''
+            
             # insert missing deployment in database
             endpoint = dep_json['outputs']['endpoint'] if 'endpoint' in dep_json['outputs'] else ''
 
             deployment = Deployment(uuid=uuid,
-                                    creation_time=dep_json['creationTime'],
-                                    update_time=dep_json['updateTime'],
+                                    creation_time=creation_time,
+                                    update_time=update_time,
                                     physicalId=vphid,
                                     description='',
                                     status=dep_json['status'],
