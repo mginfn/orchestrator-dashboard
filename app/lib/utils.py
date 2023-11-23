@@ -46,8 +46,7 @@ def to_pretty_json(value):
     Returns:
         str: A pretty-printed JSON string.
     """
-    return json.dumps(value, sort_keys=True,
-                      indent=4, separators=(',', ': '))
+    return json.dumps(value, sort_keys=True, indent=4, separators=(",", ": "))
 
 
 def enum_to_string(obj):
@@ -70,6 +69,7 @@ def enum_to_string(obj):
     # For all other types, let Jinja use default behavior
     return obj
 
+
 def str2bool(s):
     """
     Convert a string representation of a boolean to a boolean value.
@@ -84,7 +84,8 @@ def str2bool(s):
     Returns:
         bool: True if 's' represents a truthy value, False otherwise.
     """
-    return s.lower() in ['yes', '1', 'true']
+    return s.lower() in ["yes", "1", "true"]
+
 
 def python_eval(obj):
     """
@@ -157,17 +158,17 @@ def genstatuscolors(statuses):
     colors = []
     for status in statuses:
         if status == "CREATE_COMPLETE":
-            colors.append('green')
+            colors.append("green")
         elif status == "CREATE_IN_PROGRESS":
             colors.append("lightgreen")
         elif status == "DELETE_IN_PROGRESS":
-            colors.append('salmon')
+            colors.append("salmon")
         elif status == "CREATE_FAILED":
-            colors.append('red')
+            colors.append("red")
         elif status == "DELETE_FAILED":
-            colors.append('firebrick')
+            colors.append("firebrick")
         else:
-            colors.append('lightgrey')
+            colors.append("lightgrey")
     return colors
 
 
@@ -205,12 +206,13 @@ def extract_netinterface_ips(input):
               extracted from the input.
     """
     res = {}
-    for key,value in input.items():
+    for key, value in input.items():
         if re.match("net_interface.[0-9].ip", key):
-            new_key = key.replace('.','_')
+            new_key = key.replace(".", "_")
             res[new_key] = value
 
     return res
+
 
 def xstr(s):
     """
@@ -225,7 +227,7 @@ def xstr(s):
     Returns:
         str: A string representation of 's' if 's' is not None, or an empty string.
     """
-    return '' if s is None else str(s)
+    return "" if s is None else str(s)
 
 
 def nnstr(s):
@@ -243,7 +245,7 @@ def nnstr(s):
         str: A string representation of 's' if 's' is not None and not an empty string,
              or an empty string.
     """
-    return '' if (s is None or s == '') else str(s)
+    return "" if (s is None or s == "") else str(s)
 
 
 def avatar(email, size):
@@ -262,8 +264,8 @@ def avatar(email, size):
     Returns:
         str: The Gravatar URL with the specified email and image size.
     """
-    digest = md5(email.lower().encode('utf-8')).hexdigest()
-    return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(digest, size)
+    digest = md5(email.lower().encode("utf-8")).hexdigest()
+    return "https://www.gravatar.com/avatar/{}?d=identicon&s={}".format(digest, size)
 
 
 def logexception(err):
@@ -273,18 +275,22 @@ def logexception(err):
     filename = f.f_code.co_filename
     linecache.checkcache(filename)
     line = linecache.getline(filename, lineno, f.f_globals)
-    app.logger.error('{} at ({}, LINE {} "{}"): {}'.format(err, filename, lineno, line.strip(), exc_obj))
+    app.logger.error(
+        '{} at ({}, LINE {} "{}"): {}'.format(
+            err, filename, lineno, line.strip(), exc_obj
+        )
+    )
 
 
 def getorchestratorversion(orchestrator_url):
     url = orchestrator_url + "/info"
     response = requests.get(url)
 
-    return response.json()['build']['version']
+    return response.json()["build"]["version"]
 
 
 def getorchestratorconfiguration(orchestrator_url, access_token):
-    headers = {'Authorization': 'bearer %s' % access_token}
+    headers = {"Authorization": "bearer %s" % access_token}
 
     url = orchestrator_url + "/configuration"
     response = requests.get(url, headers=headers)
@@ -294,6 +300,7 @@ def getorchestratorconfiguration(orchestrator_url, access_token):
         configuration = response.json()
 
     return configuration
+
 
 def format_json_radl(vminfo):
     res = {}
@@ -312,52 +319,79 @@ def generate_password():
     alphabet = string.ascii_letters + string.digits
     password = ""
     while True:
-        password = ''.join(secrets.choice(alphabet) for i in range(10))
-        if (any(c.islower() for c in password)
-                and any(c.isupper() for c in password)
-                and sum(c.isdigit() for c in password) >= 3):
+        password = "".join(secrets.choice(alphabet) for i in range(10))
+        if (
+            any(c.islower() for c in password)
+            and any(c.isupper() for c in password)
+            and sum(c.isdigit() for c in password) >= 3
+        ):
             break
 
     return password
 
 
 def send_authorization_request_email(service_type, **kwargs):
-    user_email = kwargs['email'] if 'email' in kwargs else ""
-    message = kwargs['message'] if 'message' in kwargs else ""
+    user_email = kwargs["email"] if "email" in kwargs else ""
+    message = kwargs["message"] if "message" in kwargs else ""
     message = Markup(
-        "The following user has requested access for service \"{}\": <br>username: {} " \
-        "<br>IAM id (sub): {} <br>IAM groups: {} <br>email registered in IAM: {} " \
-        "<br>email provided by the user: {} " \
-        "<br>Message: {}".format(service_type, session['username'], session['userid'],
-                                 session['usergroups'], session['useremail'], user_email, message))
+        'The following user has requested access for service "{}": <br>username: {} '
+        "<br>IAM id (sub): {} <br>IAM groups: {} <br>email registered in IAM: {} "
+        "<br>email provided by the user: {} "
+        "<br>Message: {}".format(
+            service_type,
+            session["username"],
+            session["userid"],
+            session["usergroups"],
+            session["useremail"],
+            user_email,
+            message,
+        )
+    )
 
-    sender = kwargs['email'] if 'email' in kwargs else session['useremail']
-    send_email("New Authorization Request",
-               sender=sender,
-               recipients=[app.config.get('SUPPORT_EMAIL')],
-               html_body=message)
+    sender = kwargs["email"] if "email" in kwargs else session["useremail"]
+    send_email(
+        "New Authorization Request",
+        sender=sender,
+        recipients=[app.config.get("SUPPORT_EMAIL")],
+        html_body=message,
+    )
+
 
 def send_ports_request_email(deployment_uuid, **kwargs):
-    user_email = kwargs['email'] if 'email' in kwargs else ""
-    message = kwargs['message'] if 'message' in kwargs else ""
+    user_email = kwargs["email"] if "email" in kwargs else ""
+    message = kwargs["message"] if "message" in kwargs else ""
     message = Markup(
-        "The following user has requested to open further ports for deployment \"{}\": <br>username: {} " \
-        "<br>IAM id (sub): {} <br>email registered in IAM: {} " \
-        "<br>email provided by the user: {} " \
-        "<br>Message: {}".format(deployment_uuid, session['username'], session['userid'],
-                                  session['useremail'], user_email, message))
+        'The following user has requested to open further ports for deployment "{}": <br>username: {} '
+        "<br>IAM id (sub): {} <br>email registered in IAM: {} "
+        "<br>email provided by the user: {} "
+        "<br>Message: {}".format(
+            deployment_uuid,
+            session["username"],
+            session["userid"],
+            session["useremail"],
+            user_email,
+            message,
+        )
+    )
 
-    sender = kwargs['email'] if 'email' in kwargs else session['useremail']
-    send_email("New Ports Request",
-               sender=sender,
-               recipients=[app.config.get('SUPPORT_EMAIL')],
-               html_body=message)
+    sender = kwargs["email"] if "email" in kwargs else session["useremail"]
+    send_email(
+        "New Ports Request",
+        sender=sender,
+        recipients=[app.config.get("SUPPORT_EMAIL")],
+        html_body=message,
+    )
+
 
 def create_and_send_email(subject, sender, recipients, uuid, status):
-    send_email(subject,
-               sender=sender,
-               recipients=recipients,
-               html_body=render_template(app.config.get('MAIL_TEMPLATE'), uuid=uuid, status=status))
+    send_email(
+        subject,
+        sender=sender,
+        recipients=recipients,
+        html_body=render_template(
+            app.config.get("MAIL_TEMPLATE"), uuid=uuid, status=status
+        ),
+    )
 
 
 def send_email(subject, sender, recipients, html_body):
@@ -401,9 +435,9 @@ def has_write_permission(directory):
     """
     parent_directory = os.path.dirname(os.path.normpath(directory))
     try:
-        test_file = os.path.join(parent_directory, '.test_file')
-        with open(test_file, 'w') as f:
-            f.write('test')
+        test_file = os.path.join(parent_directory, ".test_file")
+        with open(test_file, "w") as f:
+            f.write("test")
         os.remove(test_file)
         return True
     except Exception:
@@ -452,7 +486,14 @@ def restore_directory(backup_path, target_directory):
         return False
 
 
-def download_git_repo(repo_url, target_directory, tag_or_branch=None, private=False, username=None, deploy_token=None):
+def download_git_repo(
+    repo_url,
+    target_directory,
+    tag_or_branch=None,
+    private=False,
+    username=None,
+    deploy_token=None,
+):
     """
     Download a Git repository to the specified directory.
 
@@ -469,33 +510,59 @@ def download_git_repo(repo_url, target_directory, tag_or_branch=None, private=Fa
     """
     try:
         if not has_write_permission(target_directory):
-            return False, "No permission for creating the directory {}".format(target_directory)
+            return False, "No permission for creating the directory {}".format(
+                target_directory
+            )
 
         backup_path = backup_directory(target_directory)
 
         try:
             # Check if the target directory is not empty
             if os.path.exists(target_directory) and os.listdir(target_directory):
-                app.logger.warn(f"Warning: Target directory '{target_directory}' is not empty. Removing existing contents.")
+                app.logger.warn(
+                    f"Warning: Target directory '{target_directory}' is not empty. Removing existing contents."
+                )
                 shutil.rmtree(target_directory)
 
             # Clone the repository
             if private and username and deploy_token:
-                git_url = repo_url.replace("https://", f"https://{username}:{deploy_token}@")
-                subprocess.run(['git', 'clone', git_url, target_directory], check=True, capture_output=True)
+                git_url = repo_url.replace(
+                    "https://", f"https://{username}:{deploy_token}@"
+                )
+                subprocess.run(
+                    ["git", "clone", git_url, target_directory],
+                    check=True,
+                    capture_output=True,
+                )
             else:
-                subprocess.run(['git', 'clone', repo_url, target_directory], check=True, capture_output=True)
+                subprocess.run(
+                    ["git", "clone", repo_url, target_directory],
+                    check=True,
+                    capture_output=True,
+                )
 
             # Change directory to the cloned repository
             cwd = target_directory
             if tag_or_branch:
-                subprocess.run(['git', 'checkout', tag_or_branch], cwd=cwd, check=True, capture_output=True)
+                subprocess.run(
+                    ["git", "checkout", tag_or_branch],
+                    cwd=cwd,
+                    check=True,
+                    capture_output=True,
+                )
                 app.logger.info(f"Switched to tag/branch '{tag_or_branch}'.")
 
-            app.logger.info(f"Repository '{repo_url}' (branch: '{tag_or_branch}') downloaded to '{target_directory}'.")
-            return True, f"Repository '{repo_url}' (branch: '{tag_or_branch}') downloaded to '{target_directory}'."
+            app.logger.info(
+                f"Repository '{repo_url}' (branch: '{tag_or_branch}') downloaded to '{target_directory}'."
+            )
+            return (
+                True,
+                f"Repository '{repo_url}' (branch: '{tag_or_branch}') downloaded to '{target_directory}'.",
+            )
         except subprocess.CalledProcessError as e:
-            sanitized_error_message = f"{e} {e.stderr.decode('utf-8')}".replace(username + ':' + deploy_token, '[SENSITIVE DATA]')
+            sanitized_error_message = f"{e} {e.stderr.decode('utf-8')}".replace(
+                username + ":" + deploy_token, "[SENSITIVE DATA]"
+            )
             restore_directory(backup_path, target_directory)
             app.logger.error(f"Error: {sanitized_error_message}")
             return False, f"Error: {sanitized_error_message}"

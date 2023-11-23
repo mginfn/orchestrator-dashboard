@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from app import db
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
+
+from app import db
 
 
 class Deployment(db.Model):

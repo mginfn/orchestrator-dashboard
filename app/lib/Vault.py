@@ -26,7 +26,14 @@ class Vault(object):
     setting Vault secrets.
     """
 
-    def __init__(self, app=None, vault_url=None, vault_secrets_path=None, vault_bound_audience=None, vault_role=None):
+    def __init__(
+        self,
+        app=None,
+        vault_url=None,
+        vault_secrets_path=None,
+        vault_bound_audience=None,
+        vault_role=None,
+    ):
         """
         Initialize a VaultClient instance with optional configuration.
 
@@ -62,13 +69,13 @@ class Vault(object):
     def init_app(self, app):
         """Init the Flask_Vault extension"""
         if self.vault_url is None:
-            self.vault_url = app.config.get("VAULT_URL", '')
+            self.vault_url = app.config.get("VAULT_URL", "")
         if self.vault_secrets_path is None:
-            self.vault_secrets_path = app.config.get("VAULT_SECRET_PATH", 'secret')
+            self.vault_secrets_path = app.config.get("VAULT_SECRET_PATH", "secret")
         if self.vault_bound_audience is None:
-            self.vault_bound_audience = app.config.get("VAULT_BOUND_AUDIENCE", '')
+            self.vault_bound_audience = app.config.get("VAULT_BOUND_AUDIENCE", "")
         if self.vault_role is None:
-            self.vault_role = app.config.get("VAULT_ROLE", '')
+            self.vault_role = app.config.get("VAULT_ROLE", "")
 
     def connect(self, token, role=None):
         """
@@ -86,4 +93,3 @@ class Vault(object):
         if role is None:
             role = self.vault_role
         return VaultClient(self.vault_url, token, role)
-

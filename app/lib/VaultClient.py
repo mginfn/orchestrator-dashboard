@@ -12,35 +12,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+
 import hvac
 import requests
-import json
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class VaultClient:
-    def __init__(self, vault_url, jwt_token, role): 
-
+    def __init__(self, vault_url, jwt_token, role):
         self.vault_url = vault_url
 
-        login_url = vault_url + '/v1/auth/jwt/login'
-        
+        login_url = vault_url + "/v1/auth/jwt/login"
+
         data = '{ "jwt": "' + jwt_token + '", "role": "' + role + '" }'
-        
+
         response = requests.post(login_url, data=data, verify=False)
-        
+
         if not response.ok:
-            raise Exception("Error getting Vault token: {} - {}".format(response.status_code, response.text))
-        
+            raise Exception(
+                "Error getting Vault token: {} - {}".format(
+                    response.status_code, response.text
+                )
+            )
+
         deserialized_response = json.loads(response.text)
-        
+
         self.vault_auth_token = deserialized_response["auth"]["client_token"]
         self.vault_entity_id = deserialized_response["auth"]["entity_id"]
-        
+
         self.client = hvac.Client(url=vault_url, token=self.vault_auth_token)
         if not self.client.is_authenticated():
-            raise Exception("Error authenticating against Vault with token: {}".format(self.vault_auth_token))
+            raise Exception(
+                "Error authenticating against Vault with token: {}".format(
+                    self.vault_auth_token
+                )
+            )
 
         # ______________________________________
 
@@ -56,55 +65,61 @@ class VaultClient:
     def set_token(self, vault_token):
         self.client.token = vault_token
         if not self.client.is_authenticated():
-            raise Exception("Error authenticating against Vault with token: {}".format(self.vault_token))
+            raise Exception(
+                "Error authenticating against Vault with token: {}".format(vault_token)
+            )
 
     def read_service_creds(self, path):
-        
         vault_secret_path = "data/" + self.vault_entity_id + "/" + path
 
         try:
-            secret = self.client.secrets.kv.v1.read_secret(path=vault_secret_path, mount_point="secret")
-        except hvac.exceptions.InvalidPath as e:
+            secret = self.client.secrets.kv.v1.read_secret(
+                path=vault_secret_path, mount_point="secret"
+            )
+        except hvac.exceptions.InvalidPath:
             secret = None
         return secret
 
     def write_service_creds(self, path, creds):
-
         vault_secret_path = "data/" + self.vault_entity_id + "/" + path
 
-        self.client.secrets.kv.v1.create_or_update_secret(path=vault_secret_path, mount_point="secret", secret=creds)
+        self.client.secrets.kv.v1.create_or_update_secret(
+            path=vault_secret_path, mount_point="secret", secret=creds
+        )
 
     def delete_service_creds(self, path):
-
         vault_secret_path = "data/" + self.vault_entity_id + "/" + path
 
-        self.client.secrets.kv.v1.delete_secret(path=vault_secret_path, mount_point="secret")
+        self.client.secrets.kv.v1.delete_secret(
+            path=vault_secret_path, mount_point="secret"
+        )
 
     def v1_read_secret(self, path):
-
         vault_secret_path = "data/" + self.vault_entity_id + "/" + path
 
         try:
-            secret = self.client.secrets.kv.v1.read_secret(path=vault_secret_path, mount_point="secret")
-        except hvac.exceptions.InvalidPath as e:
+            secret = self.client.secrets.kv.v1.read_secret(
+                path=vault_secret_path, mount_point="secret"
+            )
+        except hvac.exceptions.InvalidPath:
             secret = None
         return secret
 
     def v1_write_secret(self, path, secret):
-
         vault_secret_path = "data/" + self.vault_entity_id + "/" + path
 
-        self.client.secrets.kv.v1.create_or_update_secret(path=vault_secret_path, mount_point="secret", secret=secret)
+        self.client.secrets.kv.v1.create_or_update_secret(
+            path=vault_secret_path, mount_point="secret", secret=secret
+        )
 
     def get_wrapping_token(self, wrap_ttl, policy, ttl, period):
         """
         Get Vault wrapping token with specific policy
         POST '/v1/auth/token/create'
         """
-        token = self.client.create_token(policies=[policy],
-                                         ttl=ttl,
-                                         period=period,
-                                         wrap_ttl=wrap_ttl)
+        token = self.client.create_token(
+            policies=[policy], ttl=ttl, period=period, wrap_ttl=wrap_ttl
+        )
 
         return token["wrap_info"]["token"]
 
@@ -115,10 +130,12 @@ class VaultClient:
         """
         self.set_token(token)
 
-        secret_dict=dict()
-        secret_dict[key]=value
+        secret_dict = dict()
+        secret_dict[key] = value
         try:
-            response = self.client.secrets.kv.v2.create_or_update_secret(path=secret_path, mount_point='secrets', cas=0, secret=secret_dict)
+            response = self.client.secrets.kv.v2.create_or_update_secret(
+                path=secret_path, mount_point="secrets", cas=0, secret=secret_dict
+            )
         except hvac.exceptions.InvalidRequest as e:
             raise Exception("[FATAL] Unable to write vault path: {}".format(str(e)))
 
@@ -131,7 +148,9 @@ class VaultClient:
         """
         self.set_token(token)
         try:
-            secret = self.client.secrets.kv.v2.read_secret_version(path=secret_path, mount_point='secrets')
+            secret = self.client.secrets.kv.v2.read_secret_version(
+                path=secret_path, mount_point="secrets"
+            )
         except hvac.exceptions.InvalidPath as e:
             raise Exception("[FATAL] Unable to read vault path: {}".format(str(e)))
 
@@ -143,7 +162,9 @@ class VaultClient:
         delete_url = self.vault_url + '/v1/'+self.secrets_root+'/metadata/' + secret_path
         """
         self.set_token(token)
-        self.client.secrets.kv.v2.delete_metadata_and_all_versions(path=secret_path, mount_point='secrets')
+        self.client.secrets.kv.v2.delete_metadata_and_all_versions(
+            path=secret_path, mount_point="secrets"
+        )
 
     def revoke_token(self):
         """

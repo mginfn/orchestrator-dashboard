@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from flask_mail import Mail
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from flask_caching import Cache
+from flask_mail import Mail
+from flask_migrate import Migrate
 from flask_redis import FlaskRedis
+from flask_sqlalchemy import SQLAlchemy
+
 from app.lib.tosca_info import ToscaInfo
 from app.lib.Vault import Vault
 
@@ -32,10 +32,9 @@ vaultservice: Vault = Vault()
 # initialize Redis
 redis_client: FlaskRedis = FlaskRedis()
 
-# initialize the cache    
+# initialize the cache
 cache: Cache = Cache()
 
 mail: Mail = Mail()
 
 tosca: ToscaInfo = ToscaInfo()
-

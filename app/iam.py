@@ -13,16 +13,13 @@
 # limitations under the License.
 
 from flask import g
-from werkzeug.local import LocalProxy
-
 from flask_dance.consumer import OAuth2ConsumerBlueprint
+from werkzeug.local import LocalProxy
 
 
 def make_iam_blueprint(
-        client_id=None,
-        client_secret=None,
-        base_url=None,
-        redirect_to=None):
+    client_id=None, client_secret=None, base_url=None, redirect_to=None
+):
     """
     Create an OAuth2 blueprint for integrating with an IAM service.
 
@@ -45,14 +42,15 @@ def make_iam_blueprint(
         OAuth2ConsumerBlueprint: A Flask-Dance OAuth2 blueprint for IAM integration.
     """
     iam_bp = OAuth2ConsumerBlueprint(
-        "iam", __name__,
+        "iam",
+        __name__,
         client_id=client_id,
         client_secret=client_secret,
         base_url=base_url,
-        token_url=base_url + '/token',
-        auto_refresh_url=base_url + '/token',
-        authorization_url=base_url + '/authorize',
-        redirect_to=redirect_to
+        token_url=base_url + "/token",
+        auto_refresh_url=base_url + "/token",
+        authorization_url=base_url + "/authorize",
+        redirect_to=redirect_to,
     )
 
     @iam_bp.before_app_request
@@ -60,5 +58,6 @@ def make_iam_blueprint(
         g.flask_dance_iam = iam_bp.session
 
     return iam_bp
+
 
 iam = LocalProxy(lambda: g.flask_dance_iam)

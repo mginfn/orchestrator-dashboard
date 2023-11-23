@@ -15,12 +15,18 @@
 import requests
 from flask import current_app as app
 
+
 def url_shorten(url, keyword=None):
     shorturl = None
-    api_url = "{}/yourls-api.php".format(app.config.get('YOURLS_SITE'))
-    signature = app.config.get('YOURLS_API_SIGNATURE_TOKEN')
+    api_url = "{}/yourls-api.php".format(app.config.get("YOURLS_SITE"))
+    signature = app.config.get("YOURLS_API_SIGNATURE_TOKEN")
     if api_url and signature:
-        data = {"signature": signature, "action": "shorturl", "url": url, "format": "json"}
+        data = {
+            "signature": signature,
+            "action": "shorturl",
+            "url": url,
+            "format": "json",
+        }
         if keyword is not None:
             data["keyword"] = keyword
         response = requests.post(api_url, data={**data})
@@ -29,4 +35,3 @@ def url_shorten(url, keyword=None):
             shorturl = json_resp["shorturl"]
 
     return shorturl
-
