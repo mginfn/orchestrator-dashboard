@@ -50,7 +50,7 @@ def create_app():
     """
     app = Flask(__name__, instance_relative_config=True)
     app.wsgi_app = ProxyFix(app.wsgi_app)
-    app.secret_key = "30bb7cf2-1fef-4d26-83f0-8096b6dcc7a3"
+    
     app.config.from_object('config.default')
     app.config.from_file('../config/schemas/metadata_schema.json', json.load)
 
@@ -59,6 +59,7 @@ def create_app():
     else:
         app.config.from_file('config.json', json.load)
 
+    app.secret_key = app.config['SECRET_KEY']
     settings = Settings(app)
     app.settings = settings # attach the Settings object to the app
 
