@@ -15,7 +15,7 @@
 import requests
 from flask import session
 
-from app import cache
+from app.extensions import cache
 
 
 def get_sla_extra_info(access_token, service_id, cmdb_url):
