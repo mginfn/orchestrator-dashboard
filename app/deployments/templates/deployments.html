@@ -133,7 +133,7 @@
                         <br>
                         <div class="dashboard-template-buttons-container">
                             <button data-dismiss="modal" class="dashboard-button dashboard-button-lg dashboard-button-primary-outline" title="Close modal">No, go back</button>
-                            <button role="button" href="{{ url_for("deployments_bp.depdel", depid=deployment.uuid) }}" type=button class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Delete deployment"><i class="fas fa-trash-alt"></i>&nbsp;Yes, delete</button>
+                            <button role="button" onclick="set_loading(true); location.href='{{ url_for('deployments_bp.depdel', depid=deployment.uuid) }}'" type=button class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Delete deployment"><i class="fas fa-trash-alt"></i>&nbsp;Yes, delete</button>
                         </div>
                     </div>
                     </div>

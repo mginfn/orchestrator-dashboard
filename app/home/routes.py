@@ -178,6 +178,13 @@ def home():
 @app.route('/portfolio')
 @home_bp.route('/portfolio')
 def portfolio():
+    """ GET STATUSES """
+    deps = dbhelpers.get_user_deployments(session["userid"])
+    statuses = {}
+    for dep in deps:
+        status = dep.status if dep.status else "UNKNOWN"
+        if status != 'DELETE_COMPLETE' and dep.remote == 1:
+            statuses[status] = 1 if status not in statuses else statuses[status] + 1
 
     if session.get('userid'):
         # check database
@@ -207,7 +214,8 @@ def portfolio():
         templates_info, enable_template_groups = check_template_access(session['usergroups'], session['active_usergroup'])
 
         return render_template(app.config.get('PORTFOLIO_TEMPLATE'), services=services, templates_info=templates_info,
-                               enable_template_groups=enable_template_groups)
+                               enable_template_groups=enable_template_groups,                             
+                               s_values=list(statuses.values()))
 
     return redirect(url_for('home_bp.login'))
 

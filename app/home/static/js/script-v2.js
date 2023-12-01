@@ -10,6 +10,8 @@ $( document ).ready(() => {
     add_cards_input_filter();
     add_max_length_counter();
     add_max_file_length();
+    bookmark_show_on_load();
+    bookmark_add_on_click();
 });
 
 
@@ -353,4 +355,69 @@ function add_max_file_length() {
             }
         })
     }
+}
+
+
+/*
+*
+*   -- DASHBOARD BOOKMARKS --
+*
+*/
+
+function bookmark_show_on_load() {
+    let visible = 0;
+
+    for(let i = 0; i < localStorage.length; i++) {
+        if(localStorage.key(i).includes('_bookmark_visibility')) {
+            let name = localStorage.key(i).replace('_bookmark_visibility', '');
+            
+            if(localStorage.getItem(localStorage.key(i)) == 1) {
+                visible++;
+
+                $('#'+ name +'_shortcut').show();
+        
+                $('[bookmark="'+ name +'"] > i').removeClass('far');
+                $('[bookmark="'+ name +'"] > i').addClass('fas');
+            } else {
+                $('[bookmark="'+ name +'"] > i').removeClass('fas');
+                $('[bookmark="'+ name +'"] > i').addClass('far');
+            }
+        }
+
+        if(i == localStorage.length - 1) {
+            if(visible > 0) {
+                $('#bookmarks_title').show();
+            } else {
+                $('#bookmarks_title').fadeOut();
+            }
+        }
+    }
+}
+
+function bookmark_add_on_click() {
+    let bookmarks = $('.dashboard-card-bookmark')
+
+    bookmarks.on('click', (e) => {
+        let name = e.currentTarget.getAttribute('bookmark');
+        let storageItem = name + '_bookmark_visibility'
+        let icon = $('[bookmark="'+ name +'"] > i');
+
+        if(localStorage[storageItem] == undefined || localStorage[storageItem] == 0) {
+            localStorage[storageItem] = 1
+            
+            icon.removeClass('far');
+            icon.addClass('fas');
+
+            $('#'+ name +'_shortcut').fadeIn();
+        } else {
+            localStorage[storageItem] = 0
+
+            icon.removeClass('fas');
+            icon.addClass('far');
+
+            $('#'+ name +'_shortcut').fadeOut();
+        }   
+        
+        bookmark_show_on_load();
+    })
 }

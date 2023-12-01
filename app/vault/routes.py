@@ -197,11 +197,11 @@ def update_ssh_key(subject):
         sshkeyhelpers.check_ssh_key(sshkey)
     except Exception as e:
         flash("Invalid SSH public key: {}".format(str(e)), 'warning')
-        return redirect(url_for('vault_bp.ssh_keys'))
+        return redirect(url_for('home_bp.show_user_profile'))
 
     dbhelpers.update_user(subject, dict(sshkey=sshkey))
 
-    return redirect(url_for('vault_bp.ssh_keys'))
+    return redirect(url_for('home_bp.show_user_profile'))
 
 @vault_bp.route('/manage_credentials')
 @auth.authorized_with_valid_token

@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-<br>
 <div class="container">
+  <br>
 
     {% if enable_vault_integration and template['metadata']['require_ssh_key'] and ssh_pub_key is none  %}
     <!-- Modal -->
@@ -17,21 +17,21 @@
               </div>
               <div class="modal-body">
               <p>SSH keys allow you to establish a secure connection between your computer and your virtual machine. At least one public key has to be provided.</p>
-              <hr>
+              <br>
               <p>To create a new ssh key pair or upload your public key, please go <a target="_blank" href="{{ url_for("vault_bp.ssh_keys") }}">here</a></p>
               {% if user_documentation_url is defined %}
               <p>For more information, please visit our <a href="{{ user_documentation_url }}" target="_blank">documentation site</a>.</p>
               {% endif %}
               </div>
-              <div class="modal-footer">
-                  {% if require_ssh_pubkey=='no' %}
-                  <div class="d-flex flex-grow-1 justify-content-start custom-control custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="popupMaintenanceCheckbox" name="checkbox-maintenance"/>
-                      <label class="custom-control-label checkbox-maintenance" for="popupMaintenanceCheckbox">Don't show me again</label>
-                  </div>
-                  {% endif %}
-                  <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+              {% if require_ssh_pubkey=='no' %}
+              <div class="d-flex flex-grow-1 justify-content-start custom-control custom-checkbox">
+                  <input type="checkbox" class="custom-control-input" id="popupMaintenanceCheckbox" name="checkbox-maintenance"/>
+                  <label class="custom-control-label checkbox-maintenance" for="popupMaintenanceCheckbox">Don't show me again</label>
               </div>
+              {% endif %}
+              <!-- <div class="modal-footer">
+                  <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+              </div> -->
             </div>
           </div>
         </div>
@@ -93,7 +93,7 @@
             
             #}
 
-            <form id="depSubmit" action="{{ url_for('deployments_bp.configure', template=selectedTemplate, selected_tosca=selectedTemplate, check_data=steps['total'])}}" method="post" autocomplete="off" enctype="multipart/form-data">
+            <form id="depSubmit" action="{{ url_for('deployments_bp.createdep', template=selectedTemplate) }}" method="post" autocomplete="off" enctype="multipart/form-data">
               <div class="form-group">
                   <label for="additional_description">Deployment description</label>
                   <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="Description" value="" maxlength="50" required>
@@ -112,9 +112,26 @@
                   <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="history.back()" style="margin-left: auto; margin-right: 4px;"><i class="fas fa-arrow-left"></i>&nbsp;Back</button>
                 {% endif %}
 
-                <button type="submit" class="dashboard-button dashboard-button-lg dashboard-button-primary" title="Continue">Continue&nbsp;<i class="fas fa-arrow-right"></i></button>
+                <button id="continue_btn" type="button" class="dashboard-button dashboard-button-lg dashboard-button-primary" title="Continue">Continue&nbsp;<i class="fas fa-arrow-right"></i></button>
               </div>
             </form>
+
+            <div id="checkSubmit" style="display: none;">
+              <div class="dashboard-title" style="margin-top: 0;">
+                <i class="fas fa-check-circle"></i>&nbsp;Check data
+              </div>
+
+              <div class="dashboard-check-data">
+
+              </div>
+
+              <br>
+              <div class="dashboard-template-buttons-container">
+                <button id="cancelBtn" type=button class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Cancel" onclick="location.href='{{ url_for('home_bp.portfolio') }}'">Cancel&nbsp;<i class="fas fa-ban"></i></button>
+                  <button id="back_btn" type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="" style="margin-left: auto; margin-right: 4px;"><i class="fas fa-arrow-left"></i>&nbsp;Back</button>
+                  <button id="submit_btn" type="button" class="dashboard-button dashboard-button-lg dashboard-button-primary" title="Submit">Submit&nbsp;<i class="fas fa-share"></i></button>
+              </div>
+            </div>
 
         </div>
     </div>
@@ -132,6 +149,221 @@ $(document).ready(function() {
     $('.js-example-basic-single').select2({
       width: '100%' // https://github.com/select2/select2/issues/4220
     });
+
+    $('#continue_btn').on('click', () => {
+      if($('#depSubmit')[0].checkValidity()) {
+        $('#depSubmit').hide();
+        $('#checkSubmit').show();
+  
+        $('.dashboard-template-step').html("Step&nbsp;{{ steps['total'] }}/{{ steps['total'] }}")
+  
+        let data = $('#depSubmit').serializeArray();
+
+        let template_inputs = $('<textarea />').html("{{template_inputs}}").text()
+
+        template_inputs = template_inputs.replace(/="([^"]*)"/g, "='$1'").replace(/\n/g, "\\n").replaceAll('False', 'false').replaceAll('True', 'true')
+
+        let inputs = JSON.parse(template_inputs);
+        let append = ''; 
+        let map_array = [];
+        let list_array = [];
+        let multi_array = [];
+
+        // console.log(inputs)
+  
+        for(let i = 0; i < data.length; i++) {
+          for(let j = 0; j < Object.keys(inputs).length; j++) {
+            let key = Object.keys(inputs)[j];
+  
+            if(data[i].name.includes(key)) {
+              let input = inputs[key];
+              let html_value = '';
+
+              // console.log(data)
+
+              // console.log(input, data[i].value)
+  
+              if(input.type !== 'hidden') {
+                
+                switch(input.type) {
+                  // COMBINED
+                  case 'combined':
+                    let selected = input.constraints.filter(e => { return e.value == data[i].value });
+
+                    if(selected.length > 0) {
+                      html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>'+ key +':</label>&nbsp;';
+                        html_value += selected[0].label;
+                      html_value += '</div>';
+                    }
+                  break;
+
+                  // MAP
+                  case 'map':
+                    let map_split = data[i].name.split('_tmp[')
+
+                    if(data[i].name == map_split[0]) {
+                      if(map_array !== undefined && map_array.length > 0) {
+                        html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>'+ key +':</label>&nbsp;';
+                          html_value += '<ul>';
+                          
+                          for(let j = 0; j < map_array.length; j++) {
+                            if(map_array[j] !== undefined && map_array[j] !== '' && map_array[j] !== null) {
+                              html_value += '<li>'+ map_array[j] +'</li>';
+                            }
+                          }
+                        
+                          html_value += '</ul>';
+                        html_value += '</div>';
+                      
+                        map_array = [];
+                      }
+                    } else {
+                      let map_num = data[i].name.split('_tmp[')[1].split(']')[0];
+
+                      if(map_array[map_num] == undefined) {
+                        map_array[map_num] = '';
+                      }
+
+                      map_array[map_num] += data[i].value + ' ';
+                    }
+                  break;
+
+                  // LIST
+                  case 'list':
+                    if(data[i].value == '') {
+                      if(list_array !== undefined && list_array.length > 0) {
+                        html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>'+ key +':</label>&nbsp;';
+                          html_value += '<ul>';
+                          
+                          for(let j = 0; j < list_array.length; j++) {
+                            if(list_array[j] !== undefined && list_array[j] !== '' && list_array[j] !== null) {
+                              html_value += '<li>'+ list_array[j] +'</li>';
+                            }
+                          }
+  
+                          html_value += '</ul>';
+                        html_value += '</div>';
+  
+                        list_array = [];
+                      }
+                    } else {
+                      list_array.push(data[i].value);
+                    }
+
+                  break;
+
+                  // STRING & PASSWORD
+                  case 'string':
+                    if(data[i].value !== "") {
+                      if(key.includes('password')) {
+                        html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>'+ key +':</label>&nbsp;';
+                          html_value += '<span style="color: inherit!important">';
+  
+                            for(let j = 0; j < data[i].value.length; j++) {
+                              html_value += '•';
+                            }
+                            
+                          html_value += '</span>';
+  
+                          html_value += '<span style="display: none; color: inherit!important">'+ data[i].value +'</span>';
+                          html_value += '&nbsp;<i class="fas fa-eye show-hide-password" style="color: inherit; cursor: pointer;" title="Show & hide password"></i>';
+                        html_value += '</div>';
+                      } else {
+                        html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>'+ key +':</label>&nbsp;';
+                          html_value += data[i].value;
+                        html_value += '</div>';
+                      }
+                    }
+                  break;
+
+                  // MULTISELECT
+                  case 'multiselect':
+                    multi_array.push(data[i].value)
+
+                    if(multi_array.length == data.filter(e => {return e.name == data[i].name}).length) {
+                      html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>'+ key +':</label>&nbsp;';
+                        html_value += '<ul>';
+
+                        for(let j = 0; j < multi_array.length; j++) {
+                          if(multi_array[j] !== undefined && multi_array[j] !== '' && multi_array[j] !== null) {
+                            html_value += '<li>'+ multi_array[j] +'</li>';
+                          }
+                        }
+
+                        html_value += '</ul>';
+                      html_value += '</div>';
+
+                      multi_array = [];
+                    }
+                  break;
+
+                  // SSH USER
+                  case 'ssh_user':
+                  break;
+    
+                  // DEFAULT
+                  default:
+                    html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>'+ key +':</label>&nbsp;';
+                      html_value += data[i].value;
+                    html_value += '</div>';
+                  break;
+                }
+              }
+              
+              append += html_value;
+            }
+          }
+
+          /* DESCRIPTION */
+          console.log(data[i].name)
+          if(data[i].name == "additional_description") {
+            html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>Deployment description:</label>&nbsp;';
+              html_value += data[i].value;
+            html_value += '</div>';
+
+            append += html_value;
+          }
+        }
+  
+        $('#checkSubmit > .dashboard-check-data').html(append);
+
+        /* SHOW AND HIDE PASSWORD ON ICON CLICK */
+        $('.show-hide-password')
+          .off()
+          .on('click', (e) => {
+            let asterysk = $($(e.target).parent().children()[1]);
+            let text = $($(e.target).parent().children()[2]);
+            let icon = $($(e.target).parent().children()[3]);
+
+            if(text.is(":hidden")) {
+              asterysk.hide();
+              text.show();
+              
+              icon.removeClass('fa-eye');
+              icon.addClass('fa-eye-slash');
+            } else {
+              text.hide();
+              asterysk.show();
+              
+              icon.removeClass('fa-eye-slash');
+              icon.addClass('fa-eye');
+            }
+          })
+      }
+    })
+
+    $('#back_btn').on('click', () => {
+      $('#depSubmit').show();
+      $('#checkSubmit').hide();
+
+      $('.dashboard-template-step').html("Step&nbsp;{{ steps['current'] }}/{{ steps['total'] }}")
+    })
+
+    $('#submit_btn').on('click', () => {
+      set_loading(true);
+
+      $('#depSubmit').submit();
+    })
 });
 </script>
 
@@ -145,10 +377,16 @@ $(document).ready(function () {
 });
 
 $(document).ready(function () {
-  $(".nav-link").click(function () {
+  $(".nav-link").on('click', () => {
      checkForm()
   });
-  $('input').on("input", function () {
+  $('input').on("focusout", () => {
+     checkForm()
+  });
+  $('select').on("change", () => {
+    checkForm()
+  });
+  $('#continue_btn').on("click", () => {
      checkForm()
   });
 
@@ -156,6 +394,10 @@ $(document).ready(function () {
 
 function checkForm(){
     var valid = true;
+    if(!$('#depSubmit')[0].checkValidity()) {
+      $('#depSubmit')[0].reportValidity();
+    }
+
     $('input').each(function(){
        if ( (this.disabled == false) && this.required && (this.value == '')){
          this.style.borderColor = 'red';
@@ -165,6 +407,17 @@ function checkForm(){
          this.style.borderColor = '#ccc';
        }
     });
+  
+    $('select').each(function(){
+       if ( (this.disabled == false) && this.required && (this.value == '')){
+        $(this).parent().children('span.select2').children().children().css('cssText', 'border-color: red!important');
+        valid = false; 
+      }
+      else {
+        $(this).parent().children('span.select2').children().children().css('cssText', 'border-color: #80808056!important'); 
+       }
+    });
+
     if (!valid){
         document.getElementById('myalert').style.display = "block";
     }
@@ -175,7 +428,7 @@ function checkForm(){
     return valid;
 };
 
-/* $(document).ready(function () {
+$(document).ready(function () {
     $("#depSubmit").submit(function () {
         //disable button on click
         $(".submitBtn").attr("disabled", true);
@@ -221,7 +474,7 @@ function checkForm(){
         return true;
 
     });
-}); */
+});
 
 
 $(document).ready(function () {

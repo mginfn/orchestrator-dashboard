@@ -66,7 +66,7 @@ form {
 */
 
 .disabled {
-    background: #00000025!important;
+    opacity: 0.4;
     cursor: not-allowed!important;
     pointer-events: none;
 }
@@ -95,6 +95,10 @@ form {
 
 .dashboard-title > i {
     margin-right: 4px;
+}
+
+#checkSubmit > .dashboard-title{
+    margin-bottom: 20px;
 }
 
 .dashboard-button {
@@ -182,7 +186,7 @@ form {
 }
 
 .dropdown-menu {
-    border-radius: 25px;
+    border-radius: 12px;
     overflow: hidden;
 }
 
@@ -279,6 +283,10 @@ table.table-bordered.dataTable tbody td {
     border-radius: 25px;
 }
 
+.page-item .page-link {
+    border-radius: 25px!important;
+}
+
 .pagination {
     align-items: center;
 }
@@ -290,6 +298,22 @@ table.table-bordered.dataTable tbody td {
 .jumbotron {
     background-color: transparent;
     color: var(--color-primary);
+}
+
+/* SUMMERNOTE */
+
+.note-toolbar {
+    border-top-left-radius: 25px!important;
+    border-top-right-radius: 25px!important;
+    text-align: center; 
+}
+
+
+.note-editor.note-frame .note-statusbar {
+    border-radius: 25px;
+    width: 100px;
+    margin: 4px auto;
+    border: 1px solid #00000032;
 }
 
 /* paginate_button page-item previous disabled */
@@ -650,17 +674,17 @@ table.table-bordered.dataTable tbody td {
 
 /* 
 *
-*   -- AVAILABILITIES --
+*   -- REPORT --
 *
 */
 
-.dashboard-availabilities-container {
+.dashboard-report-container {
     display: flex;
     justify-content: space-between;
     flex-wrap: wrap;
 }
 
-.dashboard-availability {
+.dashboard-report {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -675,17 +699,17 @@ table.table-bordered.dataTable tbody td {
     margin: 4px 0;
 }
 
-.dashboard-availability > div {
+.dashboard-report > div {
     opacity: .7;
 }
 
-.dashboard-availability-text {
+.dashboard-report-text {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.dashboard-availability-count {
+.dashboard-report-count {
     margin-left: 3px;
 }
 
@@ -695,6 +719,10 @@ table.table-bordered.dataTable tbody td {
 *   -- BOOKMARKS --
 *
 */
+
+#bookmarks_title {
+    display: none;
+}
 
 .dashboard-bookmarks-container {
     display: flex;
@@ -713,6 +741,7 @@ table.table-bordered.dataTable tbody td {
     margin-bottom: 16px;
     cursor: pointer;
     transition: transform 300ms;
+    display: none;
 }
 
 .dashboard-bookmark {
@@ -736,11 +765,14 @@ table.table-bordered.dataTable tbody td {
 .dashboard-bookmark-image {
     width: 40px;
     height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .dashboard-bookmark-image > img {
-    width: 100%;
-    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
 }
 
 .dashboard-bookmark-text {
@@ -832,8 +864,11 @@ table.table-bordered.dataTable tbody td {
     position: relative;
 }
 
-.dashboard-card-image {
+.dashboard-card-container > .dashboard-card-image {
     width: 25%;
+}
+
+.dashboard-card-image {    
     height: var(--dashboard-card-height);
     border-radius: 25px;
     padding: 24px;
@@ -907,13 +942,13 @@ table.table-bordered.dataTable tbody td {
 /* INFO */
 .dashboard-card-info-container {
     display: none;
-    width: -webkit-fill-available;
-    padding: 2em;
+    z-index: 1020;
+    padding: 5em 10em;
     height: 100%;
+    width: 100%;
     position: fixed;
-    z-index: 1019;
+    left: 0;
     top: 0;
-    left: var(--navbar-width);
     background: #00000099;
     overflow-y: auto;
     -webkit-backdrop-filter: blur(5px);
@@ -989,6 +1024,7 @@ table.table-bordered.dataTable tbody td {
     margin-top: 24px;
     flex-wrap: wrap;
     justify-content: center;
+    color: var(--color-primary);
 }
 
 .dashboard-card-info-buttons > div, .dashboard-card-info-buttons > a {
@@ -1146,6 +1182,18 @@ table.table-bordered.dataTable tbody td {
     color: var(--color-primary)!important;
 }
 
+.form-group > span > span.selection > span {
+    border-radius: 16px;
+    padding: 5px 20px;
+    border-color: #80808056!important;
+    min-height: 42px;
+    color: var(--color-primary)!important;
+}
+
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background: var(--color-primary)!important;
+}
+
 .form-group > .custom-file > label {
     overflow: hidden;
 }
@@ -1219,16 +1267,16 @@ table.table-bordered.dataTable tbody td {
     }
 
     .dashboard-card-info-container {
-        left: 0;
         top: var(--dashboard-navbar-height);
         height: -webkit-fill-available;
+        padding: 2em 4em;
     }
 
     .dashboard-card-info-description {
         margin: 32px 0 0;
     }
 
-    .dashboard-availability {
+    .dashboard-report {
         width: 49%;
     }
 
@@ -1276,7 +1324,11 @@ table.table-bordered.dataTable tbody td {
     }
 
     .dashboard-card-image {
-        width: var(--dashboard-card-height);
+        width: var(--dashboard-card-height)!important;
+    }
+
+    .dashboard-card-info-container {
+        padding: 1em;
     }
 
     .dashboard-card-buttons {
