@@ -16,7 +16,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import backref, relationship
 
-from app import db
+from app.extensions import db
 
 
 class Visibility(enum.Enum):

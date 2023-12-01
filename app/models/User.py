@@ -14,7 +14,7 @@
 
 from sqlalchemy.orm import relationship
 
-from app import db
+from app.extensions import db
 
 
 class User(db.Model):
