@@ -157,6 +157,7 @@
                 </div>
                 <div class="modal-body">
                     <form id="requestform" action="#" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="form-group">
                             <label for="username"><strong>User</strong></label>
                             <input type="text" class="form-control" name="username" id="username" value="{{ session['username'] }}" disabled>
@@ -192,6 +193,7 @@
                 </div>
                 <div class="modal-body">
                     <form id="editform" action="#" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="form-group">
                             <label for="description"><strong>Description</strong></label>
                             <input type="text" class="form-control" maxlength="50" name="description" id="description" value="">

@@ -28,6 +28,7 @@
             </div>
 
             <form id="depSubmit" action="{{ url_for('deployments_bp.createdep', template=selectedTemplate) }}" method="post" autocomplete="off" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 {% set map = {} %}
                 {% set list = {} %}
 

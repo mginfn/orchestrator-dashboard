@@ -21,7 +21,8 @@
                     Encoded Token<br><br>{{token}}
                 </h5>
             {% else %}
-            <form id="stkSubmit" action="{{ url_for('swift_bp.createswifttoken') }}" method="post" >
+            <form id="stkSubmit" action="{{ url_for('swift_bp.createswifttoken') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <label for="swiftauthurl">Swift Auth URL</label>
                     <input type="text" class="form-control" id="swiftauthurl" name="swiftauthurl" placeholder="Siwft auth URL (Keystone)" value="" required>

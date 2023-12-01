@@ -94,6 +94,7 @@
             #}
 
             <form id="depSubmit" action="{{ url_for('deployments_bp.configure', template=selectedTemplate, selected_tosca=selectedTemplate, check_data=steps['total'])}}" method="post" autocomplete="off" enctype="multipart/form-data">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="form-group">
                   <label for="additional_description">Deployment description</label>
                   <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="Description" value="" maxlength="50" required>

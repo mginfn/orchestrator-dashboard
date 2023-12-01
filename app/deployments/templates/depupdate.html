@@ -23,6 +23,7 @@
             {% endif %}
 
             <form id="depSubmit" action="{{ url_for('deployments_bp.updatedep', template=selectedTemplate) }}" method="post" onsubmit="return checkForm(this);">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group row">
                     <div class="col-md-2">Deployment description:</div>
                     <div class="col-md-10">

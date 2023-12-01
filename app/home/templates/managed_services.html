@@ -40,6 +40,7 @@
                                 </div>
                             </a>
                             <form method="post" action="{{ url_for('services_bp.delete', id=service.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="name" value="value" /> 
                                 <a onclick="this.parentNode.submit();">
                                     <div class="dashboard-button-round exclude-detail-opening" title="Delete {{ service.name }}" style="background: var(--color-danger); margin-right: 4px;">

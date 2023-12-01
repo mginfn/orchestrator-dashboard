@@ -16,6 +16,7 @@
             </div>
 
             <form id="serviceSubmit" action="" method="post" autocomplete="off" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <label for="service_name">Name</label>
                     <input type="text" class="form-control" id="service_name" name="name" value="{{ service.name }}" maxlength="128" required>

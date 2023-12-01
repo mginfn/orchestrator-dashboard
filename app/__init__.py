@@ -14,24 +14,26 @@
 import json
 import os
 from logging.config import dictConfig
-from flask import Flask
-from werkzeug.middleware.proxy_fix import ProxyFix
-from flask_migrate import upgrade
 
-from app.extensions import db, vaultservice, mail, migrate, redis_client, cache, tosca
+from flask import Flask
+from flask_migrate import upgrade
+from flask_wtf.csrf import CSRFProtect
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+from app.deployments.routes import deployments_bp
+from app.errors.routes import errors_bp
+from app.extensions import cache, db, mail, migrate, redis_client, tosca, vaultservice
+from app.home.routes import home_bp
 from app.iam import make_iam_blueprint
 from app.lib import utils
 from app.lib.orchestrator import Orchestrator
 from app.lib.settings import Settings
-
-from app.home.routes import home_bp
-from app.errors.routes import errors_bp
-from app.users.routes import users_bp
-from app.deployments.routes import deployments_bp
 from app.providers.routes import providers_bp
-from app.swift.routes import swift_bp
 from app.services.routes import services_bp
+from app.swift.routes import swift_bp
+from app.users.routes import users_bp
 from app.vault.routes import vault_bp
+
 
 def create_app():
     """
@@ -50,49 +52,51 @@ def create_app():
     """
     app = Flask(__name__, instance_relative_config=True)
     app.wsgi_app = ProxyFix(app.wsgi_app)
-    
-    app.config.from_object('config.default')
-    app.config.from_file('../config/schemas/metadata_schema.json', json.load)
 
-    if os.environ.get('TESTING', '').lower() == 'true':
-        app.config.from_file('../tests/resources/config.json', json.load)
+    app.config.from_object("config.default")
+    app.config.from_file("../config/schemas/metadata_schema.json", json.load)
+
+    if os.environ.get("TESTING", "").lower() == "true":
+        app.config.from_file("../tests/resources/config.json", json.load)
     else:
-        app.config.from_file('config.json', json.load)
+        app.config.from_file("config.json", json.load)
 
-    app.secret_key = app.config['SECRET_KEY']
+    app.secret_key = app.config["SECRET_KEY"]
+    CSRFProtect(app)
+
     settings = Settings(app)
-    app.settings = settings # attach the Settings object to the app
+    app.settings = settings  # attach the Settings object to the app
 
     orchestrator = Orchestrator(settings.orchestrator_url)
     app.orchestrator = orchestrator
 
-    app.config['MAX_CONTENT_LENGTH'] = 1024 * 100 # put in the config.py
+    app.config["MAX_CONTENT_LENGTH"] = 1024 * 100  # put in the config.py
 
     if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
-        app.config.from_file('vault-config.json', json.load)
+        app.config.from_file("vault-config.json", json.load)
 
     if app.config.get("FEATURE_S3CREDS_MENU") == "yes":
-        app.config.from_file('s3-config.json', json.load)
+        app.config.from_file("s3-config.json", json.load)
 
-    profile = app.config.get('CONFIGURATION_PROFILE')
-    if profile is not None and profile != 'default':
-        app.config.from_object('config.' + profile)
+    profile = app.config.get("CONFIGURATION_PROFILE")
+    if profile is not None and profile != "default":
+        app.config.from_object("config." + profile)
 
     db.init_app(app)
     migrate.init_app(app, db, compare_server_default=True, compare_type=True)
 
     with app.app_context():
-        upgrade(directory='migrations', revision='head')
+        upgrade(directory="migrations", revision="head")
 
-    app.config['CACHE_TYPE'] = 'RedisCache'
-    app.config['CACHE_REDIS_URL'] = app.config.get('REDIS_URL')
+    app.config["CACHE_TYPE"] = "RedisCache"
+    app.config["CACHE_REDIS_URL"] = app.config.get("REDIS_URL")
 
     redis_kwargs = {
-        'socket_timeout': app.config['REDIS_SOCKET_TIMEOUT'],
+        "socket_timeout": app.config["REDIS_SOCKET_TIMEOUT"],
     }
     redis_client.init_app(app, **redis_kwargs)
     redis_client.ping()
-    
+
     cache.init_app(app)
 
     if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
@@ -105,25 +109,26 @@ def create_app():
 
     # initialize iam blueprint
     app.iam_blueprint = make_iam_blueprint(
-        client_id=app.config['IAM_CLIENT_ID'],
-        client_secret=app.config['IAM_CLIENT_SECRET'],
-        base_url=app.config['IAM_BASE_URL'],
-        redirect_to='home_bp.home'
+        client_id=app.config["IAM_CLIENT_ID"],
+        client_secret=app.config["IAM_CLIENT_SECRET"],
+        base_url=app.config["IAM_BASE_URL"],
+        redirect_to="home_bp.home",
     )
 
-    app.jinja_env.filters['tojson_pretty'] = utils.to_pretty_json
-    app.jinja_env.filters['extract_netinterface_ips'] = utils.extract_netinterface_ips
-    app.jinja_env.filters['intersect'] = utils.intersect
-    app.jinja_env.filters['python_eval'] = utils.python_eval
-    app.jinja_env.filters['enum2str'] = utils.enum_to_string
-    app.jinja_env.filters['str2bool'] = utils.str2bool
+    app.jinja_env.filters["tojson_pretty"] = utils.to_pretty_json
+    app.jinja_env.filters["extract_netinterface_ips"] = utils.extract_netinterface_ips
+    app.jinja_env.filters["intersect"] = utils.intersect
+    app.jinja_env.filters["python_eval"] = utils.python_eval
+    app.jinja_env.filters["enum2str"] = utils.enum_to_string
+    app.jinja_env.filters["str2bool"] = utils.str2bool
 
-    register_blueprints(app) 
+    register_blueprints(app)
 
     # Configure logging using dictConfig
     configure_logging(app)
 
     return app
+
 
 def register_blueprints(app):
     """
@@ -165,6 +170,7 @@ def register_blueprints(app):
     if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
         app.register_blueprint(vault_bp, url_prefix="/vault")
 
+
 def validate_log_level(log_level):
     """
     Validates that the provided log level is a valid choice.
@@ -175,9 +181,10 @@ def validate_log_level(log_level):
     Raises:
     - ValueError: If the log level is not one of ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'].
     """
-    valid_log_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+    valid_log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     if log_level not in valid_log_levels:
-        raise ValueError(f'Invalid log level: {log_level}. Valid log levels are {valid_log_levels}')
+        raise ValueError(f"Invalid log level: {log_level}. Valid log levels are {valid_log_levels}")
+
 
 def configure_logging(app):
     """
@@ -189,49 +196,50 @@ def configure_logging(app):
     Parameters:
     - app (Flask): The Flask application instance.
     """
-    level = app.config.get('LOG_LEVEL')
+    level = app.config.get("LOG_LEVEL")
     validate_log_level(level)
 
-    if level == 'DEBUG':
-        msg_format = '%(asctime)s - %(levelname)s - %(message)s [%(funcName)s() in %(pathname)s:%(lineno)s]'
+    if level == "DEBUG":
+        msg_format = (
+            "%(asctime)s - %(levelname)s - %(message)s [%(funcName)s() in %(pathname)s:%(lineno)s]"
+        )
     else:
-        msg_format = '%(asctime)s - %(levelname)s - %(message)s'
+        msg_format = "%(asctime)s - %(levelname)s - %(message)s"
 
     logging_config = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'handlers': {
-            'stream_handler': {
-                'class': 'logging.StreamHandler',
-                'level': level,
-                'formatter': 'custom_formatter',
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "stream_handler": {
+                "class": "logging.StreamHandler",
+                "level": level,
+                "formatter": "custom_formatter",
             },
         },
-        'formatters': {
-            'custom_formatter': {
-                'format': msg_format,
+        "formatters": {
+            "custom_formatter": {
+                "format": msg_format,
             },
         },
-        'loggers': {
-            'app': {
-                'handlers': ['stream_handler'],
-                'level': level,
-                'propagate': False,  # Do not propagate messages to the root logger
-
+        "loggers": {
+            "app": {
+                "handlers": ["stream_handler"],
+                "level": level,
+                "propagate": False,  # Do not propagate messages to the root logger
             },
-            'root': {
-                'handlers': [],
-                'level': level,
+            "root": {
+                "handlers": [],
+                "level": level,
             },
         },
-        'root': {
-            'handlers': ['stream_handler'],
-            'level': level,
+        "root": {
+            "handlers": ["stream_handler"],
+            "level": level,
         },
     }
     dictConfig(logging_config)
 
+
 #### TODO
 # add route /info
-#from app import info
-
+# from app import info

@@ -66,6 +66,7 @@
                     <br>
                     <p class="text-success">Last update at: {{ tosca_settings.updated_at }}</p>
                     <form id="settingsform" action="{{ url_for('home_bp.submit_settings')}}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <fieldset>
                             <br>
                             <div class="dashboard-text"><h5>TOSCA templates</h5></div>

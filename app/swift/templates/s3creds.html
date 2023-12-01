@@ -17,7 +17,8 @@
             <br><br>
             <h5 class="font-weight-bold">Secret Access key:</h5> {{s3creds['secret_key']}}
             {% else %}
-            <form id="s3Submit" action="{{ url_for('swift_bp.gets3creds') }}" method="post" >
+            <form id="s3Submit" action="{{ url_for('swift_bp.gets3creds') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <label for="s3url">S3 URL</label>
                     <select class="js-example-basic-single js-states form-control" id="s3url" name="s3url" required>
