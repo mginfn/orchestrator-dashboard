@@ -37,7 +37,7 @@ def upgrade():
     sa.Column('physicalId', sa.String(length=36), nullable=True),
     sa.Column('description', sa.String(length=256), nullable=True),
     sa.Column('status', sa.String(length=128), nullable=True),
-    sa.Column('status_reason', sa.String(length=256), nullable=True),
+    sa.Column('status_reason', sa.Text(), nullable=True),
     sa.Column('outputs', sa.Text(), nullable=True),
     sa.Column('task', sa.String(length=64), nullable=True),
     sa.Column('links', sa.Text(), nullable=True),
