@@ -16,6 +16,9 @@ SQLALCHEMY_DATABASE_URI = "mysql+pymysql://dashboard:dashboard@localhost/orchest
 SQLALCHEMY_TRACK_MODIFICATIONS = "False"
 SQLALCHEMY_VERSION_HEAD = "88bc3c2c02a6"
 
+### REDIS SETTINGS
+REDIS_SOCKET_TIMEOUT = 5
+
 ### NOTIFICATION SETTINGS
 MAIL_SERVER = "relay-mbox.recas.ba.infn.it"
 MAIL_PORT = "25"
