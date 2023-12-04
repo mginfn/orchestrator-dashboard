@@ -1,69 +1,115 @@
 {% extends "base.html" %}
 {% block content %}
+
 <div class="container mt-2" id="cardsContainer" xmlns="http://www.w3.org/1999/html">
-    <!-- AVAILABILITY -->
+
+    <!-- REPORT -->
     <div class="dashboard-title">
-        <i class="fas fa-user-check"></i>
-        Availability
+        <i class="fas fa-chart-bar"></i>
+        Report
     </div>
 
-    <div class="dashboard-availabilities-container">
-        <div class="dashboard-availability" title="Services {{ services|length }}">
-            <div class="dashboard-availability-text">
-                Services
+    <div class="dashboard-report-container">
+        <div class="dashboard-report" title="Creation completed: {{ s_values[0] if s_values[0] != undefined else 0 }}" style="color: #43A047;">
+            <div class="dashboard-report-text">
+                <i class="fas fa-check-circle"></i>&nbsp;&nbsp; Creation completed
             </div>
-            <div class="dashboard-availability-count">
+            <div class="dashboard-report-count">
+                {{ s_values[0] if s_values[0] != undefined else 0 }}
+            </div>
+        </div>
+
+        <div class="dashboard-report" title="Creation in progress: {{ s_values[2] if s_values[2] != undefined else 0 }}" style="color: #FF9800;">
+            <div class="dashboard-report-text">
+                <i class="fas fa-clock"></i>&nbsp;&nbsp;    Creation in progress
+            </div>
+            <div class="dashboard-report-count">
+                {{ s_values[2] if s_values[2] != undefined else 0 }}
+            </div>
+        </div>
+
+        <div class="dashboard-report" title="Creation failed: {{ s_values[1] if s_values[1] != undefined else 0 }}" style="color: #DD2C00;">
+            <div class="dashboard-report-text">
+                <i class="fas fa-times-circle"></i>&nbsp;&nbsp; Creation failed
+            </div>
+            <div class="dashboard-report-count">
+                {{ s_values[1] if s_values[1] != undefined else 0 }}
+            </div>
+        </div>
+
+        <div class="dashboard-report" title="Services: {{ services|length }}">
+            <div class="dashboard-report-text">
+                <i class="fas fa-cogs"></i>&nbsp;&nbsp;Services
+            </div>
+            <div class="dashboard-report-count">
                 {{ services|length }}
             </div>
         </div>
     </div>
 
     <!-- BOOKMARKS -->
-    <div class="dashboard-title">
+    <div class="dashboard-title" id="bookmarks_title">
         <i class="fas fa-bookmark"></i>
         Bookmarks
     </div>
 
     <div class="dashboard-bookmarks-container">
-        {% for tosca_name, tosca in templates_info.items() %}
-            {% if loop.index == 1 or loop.index == 3 %}
-
-                {% if tosca['metadata']['access_locked'] %}
-                    {% if config['FEATURE_ACCESS_REQUEST']|str2bool %}
-                        {% set pre_tasks = tosca['metadata']['authorization_required'] %}
-                            {% if tosca['metadata']['display_name'] is defined %}
-                                {% set service_label = tosca['metadata']['display_name'] %}
-                            {% else %}
-                                {% set service_label = tosca_name %}
-                            {% endif %}
-                            <a data-id="{{ service_label }}" data-action="{{ url_for('home_bp.sendaccessrequest', service_type=service_label) }}" data-toggle="modal" data-target="#requestAccess">
-                    {% else %}
-                        <a class="disabled">
-                    {% endif %}
-                {% elif tosca['metadata']['tag'] is defined and tosca['metadata']['tag']|upper == 'MAINTENANCE'   %}
-                    <a class="disabled">
-                {% else %}
-                    {% if enable_template_groups %}
-                        <a href="{{ url_for('deployments_bp.configure', selected_group=tosca_name) }}">
-                    {% else %}
-                        <a href="{{ url_for('deployments_bp.configure', selected_tosca=tosca_name) }}">
-                    {% endif %}
-                {% endif %}
-                    <div class="dashboard-bookmark" title="{% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}">
-                        <div class="dashboard-bookmark-left">
-                            <div class="dashboard-bookmark-image">
-                                <img src="{{tosca['metadata']['icon']}}" alt="{% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} Image">
-                            </div>
-                            <div class="dashboard-bookmark-text">
-                                {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}
-                            </div>
+        <!-- CENTRALISED SERVICE BOOKMARKS -->
+        {% for service in services %}
+            <a id="{{ service.id }}_shortcut" href="{{ service.url }}">
+                <div class="dashboard-bookmark" title="{{ service.name }}">
+                    <div class="dashboard-bookmark-left">
+                        <div class="dashboard-bookmark-image">
+                            <img src="{{ url_for('services_bp.showimg', filename=service.icon) }}" alt="Service Image">
                         </div>
-                        <div class="dashboard-bookmark-right">
-                            <i class="fas fa-arrow-right"></i>
+                        <div class="dashboard-bookmark-text">
+                            {{ service.name }}
                         </div>
                     </div>
-                </a>
+                    <div class="dashboard-bookmark-right">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                </div>
+            </a>
+        {% endfor %}
+
+        <!-- ON-DEMAND SERVICE BOOKMARKS -->
+        {% for tosca_name, tosca in templates_info.items() %}
+            {% if tosca['metadata']['access_locked'] %}
+                {% if enable_access_request == "yes" %}
+                    {% set pre_tasks = tosca['metadata']['authorization_required'] %}
+                        {% if tosca['metadata']['display_name'] is defined %}
+                            {% set service_label = tosca['metadata']['display_name'] %}
+                        {% else %}
+                            {% set service_label = tosca_name %}
+                        {% endif %}
+                        <a id="{{tosca['metadata']['bookmark_id']}}_shortcut" data-id="{{ service_label }}" data-action="{{ url_for('home_bp.sendaccessrequest', service_type=service_label) }}" data-toggle="modal" data-target="#requestAccess">
+                {% else %}
+                    <a id="{{tosca['metadata']['bookmark_id']}}_shortcut" class="disabled">
+                {% endif %}
+            {% elif tosca['metadata']['tag'] is defined and tosca['metadata']['tag']|upper == 'MAINTENANCE'   %}
+                <a id="{{tosca['metadata']['bookmark_id']}}_shortcut" class="disabled">
+            {% else %}
+                {% if enable_template_groups %}
+                    <a id="{{tosca['metadata']['bookmark_id']}}_shortcut" href="{{ url_for('deployments_bp.configure', selected_group=tosca_name) }}">
+                {% else %}
+                    <a id="{{tosca['metadata']['bookmark_id']}}_shortcut" href="{{ url_for('deployments_bp.configure', selected_tosca=tosca_name) }}">
+                {% endif %}
             {% endif %}
+                <div class="dashboard-bookmark" title="{% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}">
+                    <div class="dashboard-bookmark-left">
+                        <div class="dashboard-bookmark-image">
+                            <img src="{{tosca['metadata']['icon']}}" alt="{% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} Image">
+                        </div>
+                        <div class="dashboard-bookmark-text">
+                            {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}
+                        </div>
+                    </div>
+                    <div class="dashboard-bookmark-right">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                </div>
+            </a>
         {% endfor %}
     </div>
 
@@ -125,7 +171,7 @@
                         <div class="dashboard-card-body-top">
                             <div class="dashboard-card-header">
                                 <div class="dashboard-card-title">{% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}</div>
-                                <div class="dashboard-card-bookmark exclude-detail-opening" title="Add {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} to bookmarks">
+                                <div bookmark="{{tosca['metadata']['bookmark_id']}}" class="dashboard-card-bookmark exclude-detail-opening {{tosca['metadata']['bookmark_id']}}_bookmark_btn" title="Add {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} to bookmarks">
                                     <i class="far fa-bookmark exclude-detail-opening"></i>
                                 </div>
                             </div>
@@ -208,7 +254,7 @@
                         {{tosca['description'] | safe}}
                     </div>
                     <div class="dashboard-card-info-buttons">
-                        <div class="dashboard-card-bookmark" title="Add {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} to bookmarks" style="margin-right: 4px;">
+                        <div bookmark="{{tosca['metadata']['bookmark_id']}}" class="dashboard-card-bookmark" title="Add {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} to bookmarks" style="margin-right: 4px;">
                             <i class="far fa-bookmark"></i>
                         </div>
                         {% if tosca['metadata']['access_locked'] %}
@@ -253,79 +299,6 @@
             </div>
         {% endfor %}
     </div>
-
-
-    <!-- <div class="row">
-        <div class="col-md-12">
-        {% for tosca_name, tosca in templates_info.items() %}
-            {% if loop.index % 3 == 1 %}
-            <div class="card-deck">
-            {% endif %}
-                <div class="card mb-4" style="max-width: 20rem; max-height: 25rem;">
-                    <div class="card-body">
-                        <h5 class="card-title text-center">
-                            <strong>{% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} </strong>
-                        </h5>
-                    </div>
-                    <div class="wrapper">
-                        <img class="card-img-bottom img-fluid" src="{{tosca['metadata']['icon']}}" alt="Card image cap">
-                        {% if tosca['metadata']['access_locked'] %}
-                        <div class="ribbon red">
-                            <span>{{ config['NOT_GRANTED_ACCESS_TAG'] }}</span>
-                        </div>
-                        {% else %}
-                            {% if tosca['metadata']['tag'] is defined %}
-                        <div class="ribbon {{tosca['metadata']['tag_color']}}">
-                            <span>{{tosca['metadata']['tag']}}</span>
-                        </div>
-                            {% endif %}
-                        {% endif %}
-                    </div>
-                    <div class="card-img-overlay text-center" style="z-index: 1;">
-                        <h5>
-                            <strong> {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} </strong>
-                        </h5>
-                        <div id="toscaDescription" class="card-text service-descr">
-                            <small>{{tosca['description'] | safe}}</small>
-                        </div>
-                        <div class="row justify-content-center">
-                            <div class="col-4">
-                                <a class="badge badge-pill badge-info text-left read_more" tabindex="0" data-toggle="popover" title="Full description" data-trigger="focus" data-html="true" data-content="{{tosca['description']}}">Read More</a>
-                            </div>
-                            {% if tosca['metadata']['access_locked'] %}
-                            {% if config['FEATURE_ACCESS_REQUEST']|str2bool %}
-                            {% set pre_tasks = tosca['metadata']['authorization_required'] %}
-                            <div class="col-4">
-                                {% if tosca['metadata']['display_name'] is defined %}
-                                {% set service_label = tosca['metadata']['display_name'] %}
-                                {% else %}
-                                {% set service_label = tosca_name %}
-                                {% endif %}
-                                <a role="button" data-id="{{ service_label }}" data-action="{{ url_for('home_bp.sendaccessrequest', service_type=service_label) }}" class="badge badge-pill badge-danger" data-toggle="modal" data-target="#requestAccess"> Request Access</a>
-                            </div>
-                            {% endif %}
-                            {% elif tosca['metadata']['tag'] is defined and tosca['metadata']['tag']|upper == 'MAINTENANCE'   %}
-                            {% else %}
-                            <div class="col-4">
-                                {% if enable_template_groups %}
-                                <a href="{{ url_for('deployments_bp.configure', selected_group=tosca_name) }}" class="badge badge-pill badge-primary">Configure</a>
-                                {% else %}
-                                <a href="{{ url_for('deployments_bp.configure', selected_tosca=tosca_name) }}" class="badge badge-pill badge-primary">Configure</a>
-                                {% endif %}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            {% if loop.index % 3 == 0 %}
-            </div>
-            {% endif %}
-        {% endfor %}
-        {% if templates_info|count % 3 != 0 %}
-            </div>
-        {% endif %}
-        </div>
-    </div> -->
 
     <!-- Modal begin -->
     <div class="modal fade" id="requestAccess" tabindex="-1" role="dialog" aria-labelledby="requestAccess" aria-hidden="true">

@@ -529,15 +529,9 @@ def configure():
         if "check_data" in request.args:
             check_data = int(request.args["check_data"])
 
-        if check_data == 1:  # from choose
-            steps["total"] = 3
-            steps["current"] = 2
-        elif check_data == 2:  # from create no choose
-            steps["total"] = 2
-            steps["current"] = 2
-        elif check_data == 3:  # from create with choose
-            steps["total"] = 3
-            steps["current"] = 3
+        if check_data == 1:         # from choose
+            steps['total'] = 3
+            steps['current'] = 2
 
     if "selected_tosca" in request.args:
         selected_tosca = request.args["selected_tosca"]
@@ -575,36 +569,19 @@ def configure():
                     as no Public SSH key has been uploaded.",
                 "danger",
             )
-
-        if steps["current"] == steps["total"]:
-            return render_template(
-                "checkdep.html",
-                data=request.form,
-                template=template,
-                feedback_required=True,
-                keep_last_attempt=False,
-                provider_timeout=app.config["PROVIDER_TIMEOUT"],
-                selectedTemplate=selected_tosca,
-                ssh_pub_key=ssh_pub_key,
-                slas=slas,
-                steps=steps,
-                sla_id=sla_id,
-                update=False,
-            )
-        else:
-            return render_template(
-                "createdep.html",
-                template=template,
-                feedback_required=True,
-                keep_last_attempt=False,
-                provider_timeout=app.config["PROVIDER_TIMEOUT"],
-                selectedTemplate=selected_tosca,
-                ssh_pub_key=ssh_pub_key,
-                slas=slas,
-                steps=steps,
-                sla_id=sla_id,
-                update=False,
-            )
+        
+        return render_template('createdep.html',
+                            template=template,
+                            template_inputs=json.dumps(template['inputs'], ensure_ascii=False),
+                            feedback_required=True,
+                            keep_last_attempt=False,
+                            provider_timeout=app.config['PROVIDER_TIMEOUT'],
+                            selectedTemplate=selected_tosca,
+                            ssh_pub_key=ssh_pub_key,
+                            slas=slas,
+                            steps=steps,
+                            sla_id=sla_id,
+                            update=False)
 
 
 def remove_sla_from_template(template):

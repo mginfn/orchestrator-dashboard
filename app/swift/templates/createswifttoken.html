@@ -17,9 +17,12 @@
             </div>
             
             {% if token %}
-                <h5 class="font-weight-bold text-primary">
-                    Encoded Token<br><br>{{token}}
-                </h5>
+                <div class="dashboard-title" style="margin-top: 0;">
+                    Encoded Token
+                </div>
+                <p class="dashboard-text">
+                    {{token}}
+                </p>
             {% else %}
             <form id="stkSubmit" action="{{ url_for('swift_bp.createswifttoken') }}" method="post">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -52,7 +55,7 @@
                   <button id="cancelBtn" type=button class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Cancel" onclick="location.href='{{ url_for('home_bp.home') }}'">
                   Cancel&nbsp;<i class="fas fa-ban"></i></button>
 
-                  <button type="submit" class="dashboard-button dashboard-button-lg dashboard-button-primary" title="Submit">Submit&nbsp;<i class="fas fa-share"></i></button>
+                  <button type="submit" class="dashboard-button dashboard-button-lg dashboard-button-primary" title="Submit" onclick="set_loading(true)">Submit&nbsp;<i class="fas fa-share"></i></button>
                 </div>
             </form>
            {% endif %}

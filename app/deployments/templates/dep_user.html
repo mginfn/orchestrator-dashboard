@@ -83,8 +83,8 @@
         <td>{{deployment.provider_name}}</td>
         <td>{{deployment.physicalId}}</td>
         <td>{{deployment.user_group}}</td>
-        <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}"'><i class='fas fa-folder-open mr-2 grey-text' aria-hidden='true' title="Show outputs"></i>Details</button></td>
-        <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('deployments_bp.deptemplatedb', depid=deployment.uuid) }}"'><i class='fas fa-search mr-2 grey-text' aria-hidden='true' title="Show template"></i>Show template</button></td>
+        <td style='text-align:center'><button class='btn' onclick='set_loading(true); location.href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}"'><i class='fas fa-folder-open mr-2 grey-text' aria-hidden='true' title="Show outputs"></i>Details</button></td>
+        <td style='text-align:center'><button class='btn' onclick='set_loading(true); location.href="{{ url_for('deployments_bp.deptemplatedb', depid=deployment.uuid) }}"'><i class='fas fa-search mr-2 grey-text' aria-hidden='true' title="Show template"></i>Show template</button></td>
         <td style='text-align:center'>
         {% if deployment.remote == 1 %}
             <i class='fas fa-cloud mr-2 grey-text' aria-hidden='true' title="Remote deployment">

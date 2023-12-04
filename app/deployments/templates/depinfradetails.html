@@ -6,6 +6,10 @@
     <div class="card shadow mb-4">
         <div class="card-body">
             <div class="dashboard-template-header">
+                <div class="dashboard-template-image">
+                  <i class="fas fa-desktop"></i>
+                </div>
+
                 <div class="dashboard-template-title">
                   Virtual Machines
                 </div>
@@ -69,12 +73,12 @@
                                 {% set stop_enable = 'disabled' %}
                                 {% if info.state == "STOPPED" %}{% set start_enable = 'enabled' %}{% endif %}
                                 {% if info.state == "STARTED" %}{% set stop_enable = 'enabled' %}{% endif %}
-                                <a class="btn btn-danger btn-sm {{stop_enable}}" data-toggle="modal"
+                                <a class="dashboard-button dashboard-button-danger {{stop_enable}}" data-toggle="modal" style="color: white"
                                    data-target="#confirm_action"
                                    data-text="Do you really want to stop the VM {{ info.instance_name }}?"
                                    data-url="{{ url_for('deployments_bp.depaction', depid=info.depId, vmid=info.resId, action='stop') }}"><span
                                         class="fas fa-stop mr-2 grey-text"></span>Stop VM</a>
-                                <a class="btn btn-info btn-sm {{start_enable}}" data-toggle="modal"
+                                <a class="dashboard-button dashboard-button-primary {{start_enable}}" data-toggle="modal" style="color: white"
                                    data-target="#confirm_action"
                                    data-text="Do you really want to start the VM {{ info.instance_name }}?"
                                    data-url="{{ url_for('deployments_bp.depaction', depid=info.depId, vmid=info.resId, action='start') }}"><span
@@ -96,14 +100,14 @@
                             <button type="button" class="close" data-dismiss="modal">&times;</button>
                         </div>
                         <div class="modal-body">
-                        </div>
-                        <div class="modal-footer">
-                            <form class="form-inline" id="performActionForm" action="#" method="post">
+                            <br><br>
+                            <form id="performActionForm" action="#" method="post">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <a class="btn btn-outline-primary cancelActionBtn mr-2" role="button"
-                                   data-dismiss="modal">Cancel</a>
-                                <button type="submit" class="btn btn-success execActionBtn" role="button">Execute
-                                </button>
+                                <div class="dashboard-template-buttons-container">
+                                    <button data-dismiss="modal" type=button class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Cancel">Cancel&nbsp;<i class="fas fa-ban"></i></button>
+                
+                                    <button type="submit" class="dashboard-button dashboard-button-lg dashboard-button-primary execActionBtn" role="button" title="Execute">Execute&nbsp;<i class="fas fa-arrow-right"></i></button>
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -142,11 +146,13 @@ $('#tableUserDeployments').dataTable( {
 
 <script>
 $(document).ready(function () {
-    $(".execActionBtn").click(function () {
+    $(".execActionBtn").click(() => {
         // add spinner to button
-        $(this).parent().find(".cancelActionBtn").addClass("disabled", true);
+        /* $(this).parent().find(".cancelActionBtn").addClass("disabled", true);
         $(this).addClass("disabled", true);
-        $(this).html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Executing...` );
+        $(this).html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Executing...` ); */
+
+        set_loading(true)
     });
 });
 
@@ -160,7 +166,7 @@ $('.confirm_action').on('show.bs.modal', function (event) {
     var url = target.data('url')
 
     var modal = $(this)
-    modal.find('.modal-body').text(title)
+    modal.find('.modal-body').prepend(title)
     modal.find('#performActionForm').prop('action', url)
 })
 

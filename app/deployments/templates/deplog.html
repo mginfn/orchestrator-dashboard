@@ -20,6 +20,7 @@
               <div class="dashboard-template-header-buttons">
                 <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="history.back()"><i class="fas fa-arrow-left"></i>&nbsp;Back</button>
                 <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick='location.reload(true)'><i class="fas fa-sync-alt"></i>&nbsp;Refresh</button>
+                <button type="button" class="dashboard-button dashboard-button-primary downloadBtn" title="Download">Download<i class="fa fa-download"></i></button>
               </div>
           </div>
           <pre id="text-val">{{ log | safe }}</pre>
@@ -29,7 +30,7 @@
           <div class="dashboard-template-footer-buttons">
             <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick='location.reload(true)'><i class="fas fa-sync-alt"></i>&nbsp;Refresh</button>
             <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Top" onclick="topFunction()"><i class="fa fa-angle-double-up"></i>&nbsp;Top</button>
-            <button type="button" class="dashboard-button dashboard-button-primary" title="Download" id="downloadBtn"><i class="fa fa-download"></i>&nbsp;Download</button>
+            <button type="button" class="dashboard-button dashboard-button-primary downloadBtn" title="Download">Download<i class="fa fa-download"></i></button>
           </div>
         </div>
     </div>
@@ -55,12 +56,19 @@ function download(filename, text) {
   document.body.removeChild(element);
 }
 
-document.getElementById("downloadBtn").addEventListener("click", function(){
+$('.downloadBtn').click(function(){
+    var text = document.getElementById("text-val").innerHTML;
+    var filename = "deployment-log.txt";
+
+    download(filename, text);
+});
+
+/* document.getElementById("downloadBtn").addEventListener("click", function(){
     var text = document.getElementById("text-val").innerHTML;
     var filename = "deployment-log.txt";
 
     download(filename, text);
 }, false);
-
+ */
 </script>
 {% endblock %}

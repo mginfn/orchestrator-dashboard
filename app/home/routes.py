@@ -224,7 +224,15 @@ def home():
 
 @home_bp.route("/portfolio")
 def portfolio():
-    if session.get("userid"):
+    """ GET STATUSES """
+    deps = dbhelpers.get_user_deployments(session["userid"])
+    statuses = {}
+    for dep in deps:
+        status = dep.status if dep.status else "UNKNOWN"
+        if status != 'DELETE_COMPLETE' and dep.remote == 1:
+            statuses[status] = 1 if status not in statuses else statuses[status] + 1
+
+    if session.get('userid'):
         # check database
         # if user not found, insert
         user = dbhelpers.get_user(session["userid"])
@@ -259,12 +267,9 @@ def portfolio():
             session["usergroups"], session["active_usergroup"]
         )
 
-        return render_template(
-            app.config.get("PORTFOLIO_TEMPLATE"),
-            services=services,
-            templates_info=templates_info,
-            enable_template_groups=enable_template_groups,
-        )
+        return render_template(app.config.get('PORTFOLIO_TEMPLATE'), services=services, templates_info=templates_info,
+                               enable_template_groups=enable_template_groups,                             
+                               s_values=list(statuses.values()))
 
     return redirect(url_for("home_bp.login"))
 
