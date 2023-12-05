@@ -32,9 +32,7 @@ from app.lib import auth, dbhelpers
 from app.lib import sshkey as sshkeyhelpers
 from app.providers import sla
 
-vault_bp = Blueprint(
-    "vault_bp", __name__, template_folder="templates", static_folder="static"
-)
+vault_bp = Blueprint("vault_bp", __name__, template_folder="templates", static_folder="static")
 
 
 @vault_bp.route("/read_secret/<depid>")
@@ -44,9 +42,7 @@ def read_secret(depid=None):
     vault_role = app.config.get("VAULT_ROLE")
     vault_read_policy = app.config.get("READ_POLICY")
     vault_read_token_time_duration = app.config.get("READ_TOKEN_TIME_DURATION")
-    vault_read_token_renewal_duration = app.config.get(
-        "READ_TOKEN_RENEWAL_TIME_DURATION"
-    )
+    vault_read_token_renewal_duration = app.config.get("READ_TOKEN_RENEWAL_TIME_DURATION")
 
     access_token = iam.token["access_token"]
 
@@ -108,9 +104,7 @@ def store_privkey(access_token, privkey_value):
     vault_role = app.config.get("VAULT_ROLE")
     vault_write_policy = app.config.get("WRITE_POLICY")
     vault_write_token_time_duration = app.config.get("WRITE_TOKEN_TIME_DURATION")
-    vault_write_token_renewal_time_duration = app.config.get(
-        "WRITE_TOKEN_RENEWAL_TIME_DURATION"
-    )
+    vault_write_token_renewal_time_duration = app.config.get("WRITE_TOKEN_RENEWAL_TIME_DURATION")
 
     jwt_token = auth.exchange_token_with_audience(
         app.settings.iam_url,
@@ -147,9 +141,7 @@ def read_privkey(subject):
     vault_role = app.config.get("VAULT_ROLE")
     vault_read_policy = app.config.get("READ_POLICY")
     vault_read_token_time_duration = app.config.get("READ_TOKEN_TIME_DURATION")
-    vault_read_token_renewal_duration = app.config.get(
-        "READ_TOKEN_RENEWAL_TIME_DURATION"
-    )
+    vault_read_token_renewal_duration = app.config.get("READ_TOKEN_RENEWAL_TIME_DURATION")
 
     access_token = iam.token["access_token"]
 
@@ -176,9 +168,7 @@ def read_privkey(subject):
         response_output = vault_client.read_secret(read_token, secret_path, privkey_key)
     except Exception as e:
         app.logger.warning(
-            "Error retrieving ssh key for user {}: {}".format(
-                session["username"], str(e)
-            )
+            "Error retrieving ssh key for user {}: {}".format(session["username"], str(e))
         )
         response_output = "Not Available"
 
@@ -194,9 +184,7 @@ def delete_ssh_key(subject):
     vault_role = app.config.get("VAULT_ROLE")
     vault_delete_policy = app.config.get("DELETE_POLICY")
     vault_delete_token_time_duration = app.config.get("DELETE_TOKEN_TIME_DURATION")
-    vault_delete_token_renewal_time_duration = app.config.get(
-        "DELETE_TOKEN_RENEWAL_TIME_DURATION"
-    )
+    vault_delete_token_renewal_time_duration = app.config.get("DELETE_TOKEN_RENEWAL_TIME_DURATION")
 
     dbhelpers.delete_ssh_key(subject)
 
@@ -232,12 +220,12 @@ def update_ssh_key(subject):
     try:
         sshkeyhelpers.check_ssh_key(sshkey)
     except Exception as e:
-        flash("Invalid SSH public key: {}".format(str(e)), 'warning')
-        return redirect(url_for('home_bp.show_user_profile'))
+        flash("Invalid SSH public key: {}".format(str(e)), "warning")
+        return redirect(url_for("home_bp.show_user_profile"))
 
     dbhelpers.update_user(subject, dict(sshkey=sshkey))
 
-    return redirect(url_for('home_bp.show_user_profile'))
+    return redirect(url_for("home_bp.show_user_profile"))
 
 
 @vault_bp.route("/manage_credentials")
@@ -301,8 +289,6 @@ def write_service_creds():
 
     serviceid = request.args.get("service_id", "")
     servicetype = request.args.get("service_type", "")
-
-    app.logger.debug("service_id={}".format(serviceid))
 
     if request.method == "GET":
         return render_template(

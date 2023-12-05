@@ -37,9 +37,8 @@ from werkzeug.utils import secure_filename
 
 from app.extensions import tosca, vaultservice
 from app.iam import iam
-from app.lib import auth, dbhelpers, utils, yourls
+from app.lib import auth, dbhelpers, s3, utils, yourls
 from app.lib import openstack as keystone
-from app.lib import s3
 from app.lib import tosca_info as tosca_helpers
 from app.lib.ldap_user import LdapUserManager
 from app.models.Deployment import Deployment
@@ -342,13 +341,15 @@ def depaction(depid):
     dep = dbhelpers.get_deployment(depid)
     if dep is not None and dep.physicalId is not None:
         try:
+            app.logger.debug(f"Requested action on deployment {dep.uuid}")
             app.orchestrator.post_action(
                 access_token, depid, request.args["vmid"], request.args["action"]
             )
         except Exception as e:
-            app.logger.error("Action on deployment {} failed: {}".format(depid, str(e)))
+            app.logger.error("Action on deployment {} failed: {}".format(dep.uuid, str(e)))
             flash(str(e), "warning")
         flash("Action successfully triggered.", "success")
+
     return redirect(url_for("deployments_bp.depinfradetails", depid=depid))
 
 
@@ -529,9 +530,9 @@ def configure():
         if "check_data" in request.args:
             check_data = int(request.args["check_data"])
 
-        if check_data == 1:         # from choose
-            steps['total'] = 3
-            steps['current'] = 2
+        if check_data == 1:  # from choose
+            steps["total"] = 3
+            steps["current"] = 2
 
     if "selected_tosca" in request.args:
         selected_tosca = request.args["selected_tosca"]
@@ -569,19 +570,21 @@ def configure():
                     as no Public SSH key has been uploaded.",
                 "danger",
             )
-        
-        return render_template('createdep.html',
-                            template=template,
-                            template_inputs=json.dumps(template['inputs'], ensure_ascii=False),
-                            feedback_required=True,
-                            keep_last_attempt=False,
-                            provider_timeout=app.config['PROVIDER_TIMEOUT'],
-                            selectedTemplate=selected_tosca,
-                            ssh_pub_key=ssh_pub_key,
-                            slas=slas,
-                            steps=steps,
-                            sla_id=sla_id,
-                            update=False)
+
+        return render_template(
+            "createdep.html",
+            template=template,
+            template_inputs=json.dumps(template["inputs"], ensure_ascii=False),
+            feedback_required=True,
+            keep_last_attempt=False,
+            provider_timeout=app.config["PROVIDER_TIMEOUT"],
+            selectedTemplate=selected_tosca,
+            ssh_pub_key=ssh_pub_key,
+            slas=slas,
+            steps=steps,
+            sla_id=sla_id,
+            update=False,
+        )
 
 
 def remove_sla_from_template(template):
@@ -627,12 +630,20 @@ def createdep():
     tosca_info, tosca_templates, tosca_gmetadata = tosca.get()
 
     access_token = iam.token["access_token"]
-    selected_template = request.args.get("template")
+
+    # validate input
+    request_template = request.args.get("template")
+    if request_template not in tosca_info.keys():
+        raise ValueError("Template path invalid (not found in current configuration")
+
+    selected_template = request_template
     source_template = tosca_info[selected_template]
 
     app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
 
-    with io.open(os.path.join(app.settings.tosca_dir, selected_template)) as stream:
+    with io.open(
+        os.path.join(app.settings.tosca_dir, selected_template), encoding="utf-8"
+    ) as stream:
         template = yaml.full_load(stream)
         # rewind file
         stream.seek(0)
@@ -819,9 +830,7 @@ def createdep():
             except Exception as e:
                 flash(
                     " The deployment submission failed with: {}. \
-                        Please contact the admin(s): {}".format(
-                        e, app.config.get("SUPPORT_EMAIL")
-                    ),
+                        Please contact the admin(s): {}".format(e, app.config.get("SUPPORT_EMAIL")),
                     "danger",
                 )
                 doprocess = False
