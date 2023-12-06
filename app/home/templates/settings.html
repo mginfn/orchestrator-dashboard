@@ -6,10 +6,17 @@
     <br>
 
     <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h4 class="font-weight-bold text-primary">Settings</h4>
-        </div>
         <div class="card-body">
+            <div class="dashboard-template-header">
+                <div class="dashboard-template-image">
+                    <i class="fas fa-cog"></i>
+                </div>
+            
+                <div class="dashboard-template-title">
+                    Settings
+                </div>
+            </div>
+
             <ul class="nav nav-tabs">
                 <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#conf_endpoints">Configured endpoints</a></li>
                 {% if session['userrole'] == 'admin' %}
@@ -59,8 +66,10 @@
                     <br>
                     <p class="text-success">Last update at: {{ tosca_settings.updated_at }}</p>
                     <form id="settingsform" action="{{ url_for('home_bp.submit_settings')}}" method="post">
-                        <fieldset class="border p-2 mb-2">
-                            <div class="text-info font-weight-bold"><h5>TOSCA templates</h5></div>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <fieldset>
+                            <br>
+                            <div class="dashboard-text"><h5>TOSCA templates</h5></div>
                             <p class="text-success">Current settings:
                             {% if tosca_settings.tosca_templates_url %}
                                     {{ tosca_settings.tosca_templates_url }} (branch/tag: {{ tosca_settings.tosca_templates_tag_or_branch }})
@@ -91,8 +100,9 @@
                                 </div>
                             </div>
                         </fieldset>
-                        <fieldset class="border p-2 mb-2">
-                            <div class="text-info font-weight-bold"><h5>Dashboard configuration</h5></div>
+                        <fieldset>
+                            <br><br>
+                            <div class="dashboard-text"><h5>Dashboard configuration</h5></div>
                             <p class="text-muted">the repo containing the folders "tosca-parameters" and "tosca-metadata"</p>
                             <p class="text-success">Current settings:
                                 {% if tosca_settings.dashboard_configuration_url %}
@@ -124,8 +134,9 @@
                                 </div>
                             </div>
                         </fieldset>
-                        <fieldset class="border p-2 mb-2">
-                            <div class="text-info font-weight-bold"><h5>Notifications</h5></div>
+                        <fieldset>
+                            <br><br>
+                            <div class="dashboard-text"><h5>Notifications</h5></div>
                             <div class="form-row">
                                 <div class="form-check m-2">
                                     <input type="checkbox" class="form-check-input" id="notify_admins" name="notify_admins" checked="checked">
@@ -143,8 +154,10 @@
                                 <textarea class="form-control" name="message" id="message" placeholder="Motivation for updating the dashboard settings." rows="3"></textarea>
                             </div>
                         </fieldset>
-
-                        <button type="submit" class="btn btn-success submitBtn">Reload</button>
+                        <br>
+                        <div class="dashboard-template-buttons-container">
+                            <button type="submit" class="dashboard-button dashboard-button-primary dashboard-button-lg submitBtn" style="margin-left: auto;">Apply<i class="fas fa-save"></i></button>
+                        </div>
                     </form>
                 </div>
                 {% endif %}
@@ -182,13 +195,13 @@ $(document).ready(function() {
     event.preventDefault();
 
     // Show loading modal
-    $("#loadingModal").modal({ backdrop: "static", keyboard: false });
+    set_loading(true)
 
     var actionUrl = "{{ url_for('home_bp.submit_settings')}}";
     // Perform asynchronous form submission
     $.post(actionUrl, $(this).serialize(), function(response) {
       // Hide loading modal
-      $("#loadingModal").modal("hide");
+      set_loading(false)
 
       // Replace the entire content of the current page with the response
       document.open();

@@ -17,7 +17,8 @@
             <br><br>
             <h5 class="font-weight-bold">Secret Access key:</h5> {{s3creds['secret_key']}}
             {% else %}
-            <form id="s3Submit" action="{{ url_for('swift_bp.gets3creds') }}" method="post" >
+            <form id="s3Submit" action="{{ url_for('swift_bp.gets3creds') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <label for="s3url">S3 URL</label>
                     <select class="js-example-basic-single js-states form-control" id="s3url" name="s3url" required>
@@ -29,10 +30,10 @@
                 <div>
                     <label for="project">Project</label>
                     <select class="js-example-basic-single js-states form-control" id="project" name="project" required>
-                        {% if s3_allowed_groups|length == 0 or session['userrole'] == 'user:s3' %}
+                        {% if config['S3_IAM_GROUPS']|length == 0 or session['userrole'] == 'user:s3' %}
                           {% set s3_groups = session['supported_usergroups'] %}
                         {% else %}
-                          {% set s3_groups = session['supported_usergroups']| intersect(s3_allowed_groups) %}
+                          {% set s3_groups = session['supported_usergroups']| intersect(config['S3_IAM_GROUPS']) %}
                         {% endif %}
                         {% for prj in s3_groups %}
                         <option value="{{prj}}">{{prj}}</option>
@@ -41,7 +42,7 @@
                 </div>
                 <br>
                 <button type="submit" class="btn btn-success submitBtn">Submit</button>
-                <button id="cancelBtn" type=button class="btn btn-small btn-primary" onclick="location.href='{{ url_for('home_bp.home') }}'">
+                <button id="cancelBtn" type=button class="btn btn-small btn-primary" onclick="location.href='{{url_for('home_bp.home')}}'">
                 <span class="fas fa-ban mr-2"></span>Cancel</button>
             </form>
            {% endif %}

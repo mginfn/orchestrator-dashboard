@@ -1,57 +1,112 @@
-<p class="font-weight-bold" style="font-size:20px;font-variant:small-caps">Centralised Services: </p>
-{% for service in services %}
-{% if loop.index % 3 == 1 %}
-<!-- open card deck -->
-<div id="card-deck" class="card-deck">
-{% endif %}
-    <div class="card mb-4" style="max-width: 20rem; max-height: 25rem;">
-        <div class="card-body">
-            <h5 class="card-title text-center">
-                <strong>{{ service.name }}</strong>
-            </h5>
-        </div>
-        <div class="wrapper">
-            {% if service.icon != "" %}
-            <img class="card-img-bottom img-fluid" src="{{ url_for('services_bp.showimg', filename=service.icon) }}" alt="Card image cap">
-            {% else %}
-            <img class="card-img-bottom img-fluid" src="{{ url_for('services_bp.static', filename='images/default_service.png') }}" alt="Card image cap">
-            {% endif %}
-        </div>
-        <div class="card-img-overlay text-center" style="z-index: 1;">
-            <h5>
-                <strong>{{ service.name }}</strong>
-            </h5>
-            <div id="toscaDescription" class="card-text service-descr">
-                <small>{{ service.description | safe}}</small>
-            </div>
-            <div class="row justify-content-center mt-4">
-                <div class="col">
-                    <a class="badge badge-pill badge-info text-left read_more" tabindex="0" data-toggle="popover" title="Full description" data-trigger="focus" data-html="true" data-content="{{ service.description }}">Read More</a>
-                </div>
-                {% if session['userrole'] == 'admin' and 'admin' in request.path %}
-                <div class="col">
-                    <a href="{{ url_for('services_bp.edit', id=service.id) }}" class="badge badge-pill badge-warning">Edit</a>
-                </div>
-                <div class="col">
-                    <form action="{{ url_for('services_bp.delete', id=service.id) }}" method="post">
-                        <button type="submit" class="badge badge-pill badge-danger" style="border-width:0 !important;">Delete</button>
-                    </form>
-                </div>
-                {% endif %}
-                <div class="col">
-                    <a href="{{ service.url }}" target="_blank" class="badge badge-pill badge-primary">Go to service</a>
-                </div>
-            </div>
-        </div>
-        {% if service.visibility | enum2str == 'private' %}
-        <div class="card-footer" style="height: 40px;">
-            <small class="text-muted">Scope: {{ service.get_groups_list() | join(', ') }}</small>
-        </div> {% endif %}
+<div class="dashboard-cards-container">
+    <div class="dashboard-cards-no-result" id="dashboardCardsNoResult_1">
+        No Centralised Services found for the specified term.
     </div>
-{% if loop.index % 3 == 0 %} <!-- close card deck if it contains 3 cards -->
+
+    {% for service in services %}
+    <!-- CARD -->
+    <div class="dashboard-card" title="Show details" id="dashboardCard_{{ service.id }}">
+        <div class="dashboard-card-container">
+            <!-- CARD IMAGE -->
+            <div class="dashboard-card-image">
+                {% if service.icon != "" %}
+                    <img src="{{ url_for('services_bp.showimg', filename=service.icon) }}" alt="Service Image">
+                {% else %}
+                    <img src="{{ url_for('services_bp.static', filename='images/default_service.png') }}" alt="Service Image">
+                {% endif %}
+            </div>
+            <!-- CARD BODY -->
+            <div class="dashboard-card-body">
+                <div class="dashboard-card-body-top">
+                    <div class="dashboard-card-header">
+                        <div class="dashboard-card-title">{{ service.name }}</div>
+                        <div bookmark="{{service.id}}" class="dashboard-card-bookmark exclude-detail-opening" title="Add {{ service.name }} to bookmarks">
+                            <i class="far fa-bookmark exclude-detail-opening"></i>
+                        </div>
+                    </div>
+                    <div class="dashboard-card-text">
+                        {{ service.description | safe}}
+                        {% if service.visibility | enum2str == 'private' %}
+                            <br><small>Scope: {{ service.get_groups_list() | join(', ') }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="dashboard-card-body-bottom">
+                    <div class="dashboard-card-buttons">
+                        {% if session['userrole'] == 'admin' and 'admin' in request.path %}
+                            <a href="{{ url_for('services_bp.edit', id=service.id) }}">
+                                <div class="dashboard-button-round exclude-detail-opening" title="Edit {{ service.name }}" style="background: rgb(255, 230, 0); margin-right: 4px;">
+                                    <i class="fas fa-pencil-alt exclude-detail-opening"></i>
+                                </div>
+                            </a>
+                            <form method="post" action="{{ url_for('services_bp.delete', id=service.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="name" value="value" /> 
+                                <a onclick="this.parentNode.submit();">
+                                    <div class="dashboard-button-round exclude-detail-opening" title="Delete {{ service.name }}" style="background: var(--color-danger); margin-right: 4px;">
+                                        <i class="fas fa-trash-alt exclude-detail-opening"></i>
+                                    </div>
+                                </a>
+                            </form>
+                        {% endif %}
+                        <a href="{{ service.url }}">
+                            <div class="dashboard-button dashboard-button-primary dashboard-button-lg exclude-detail-opening" title="Go to {{ service.name }}">
+                                Go to service
+                                <i class="fas fa-arrow-right exclude-detail-opening"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SERVICE INFO -->
+    <div class="dashboard-card-info-container" id="dashboardCard_Info_{{ service.id }}">
+        <div class="dashboard-card-info">
+            <div class="dashboard-card-info-close" id="dashboardCard_Info_Close_{{ service.id }}" title="Close">
+                <i class="fas fa-times"></i>
+            </div>
+            <div class="dashboard-card-image">
+                {% if service.icon != "" %}
+                    <img src="{{ url_for('services_bp.showimg', filename=service.icon) }}" alt="Service Image">
+                {% else %}
+                    <img src="{{ url_for('services_bp.static', filename='images/default_service.png') }}" alt="Service Image">
+                {% endif %}
+            </div>
+            <div class="dashboard-card-info-title">
+                {{ service.name }}
+            </div>
+            <div class="dashboard-card-info-description">
+                {{ service.description | safe}}
+                {% if service.visibility | enum2str == 'private' %}
+                    <br><small>Scope: {{ service.get_groups_list() | join(', ') }}</small>
+                {% endif %}
+            </div>
+            <div class="dashboard-card-info-buttons">
+                {% if session['userrole'] == 'admin' and 'admin' in request.path %}
+                    <a href="{{ url_for('services_bp.edit', id=service.id) }}">
+                        <div class="dashboard-button-round" title="Edit {{ service.name }}" style="background: rgb(255, 230, 0); margin-right: 4px;">
+                            <i class="fas fa-pencil-alt"></i>
+                        </div>
+                    </a>
+                    <a href="{{ url_for('services_bp.delete', id=service.id) }}">
+                        <div class="dashboard-button-round" title="Delete {{ service.name }}" style="background: #ff2500; margin-right: 4px;">
+                            <i class="fas fa-trash-alt"></i>
+                        </div>
+                    </a>
+                {% endif %}
+                <div bookmark="{{service.id}}" class="dashboard-card-bookmark" title="Add {{ service.name }} to bookmarks" style="margin-right: 4px;">
+                    <i class="far fa-bookmark"></i>
+                </div>
+                <a href="{{ service.url }}">
+                    <div class="dashboard-button dashboard-button-primary dashboard-button-lg" title="Go to {{ service.name }}">
+                        Go to service
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 </div>
-{% endif %}
-{% endfor %}
-{% if services|count % 3 != 0 %} <!-- close card deck if last row contains less then 3 cards -->
-</div>
-{% endif %}

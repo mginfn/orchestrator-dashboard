@@ -65,3 +65,10 @@ instance/
 # VSCode
 .vscode
 .devcontainer
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+certs/cert.pem
+certs/privkey.pem

@@ -12,198 +12,234 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-import sys
-import socket
+import os
+from logging.config import dictConfig
 
 from flask import Flask
-from flask_alembic import Alembic
-from sqlalchemy_utils import database_exists, create_database
-from sqlalchemy import Table, Column, String, MetaData
+from flask_migrate import upgrade
+from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
-from flask_dance.consumer import OAuth2ConsumerBlueprint
-from flask_mail import Mail
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate, upgrade
-from flask_caching import Cache
-from flask_redis import FlaskRedis
-from app.lib.tosca_info import ToscaInfo
-from app.lib.Vault import Vault
-
-import logging
-
-# initialize SQLAlchemy
-db: SQLAlchemy = SQLAlchemy()
-
-# initialize Migrate
-migrate: Migrate = Migrate()
-
-# Intialize Alembic
-alembic: Alembic = Alembic()
-
-# initialize Vault
-vaultservice: Vault = Vault()
-
-app = Flask(__name__, instance_relative_config=True)
-app.wsgi_app = ProxyFix(app.wsgi_app)
-app.secret_key = "30bb7cf2-1fef-4d26-83f0-8096b6dcc7a3"
-app.config.from_object('config.default')
-app.config.from_file('config.json', json.load)
-app.config.from_file('../config/schemas/metadata_schema.json', json.load)
-
-if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
-    app.config.from_file('vault-config.json', json.load)
-
-if app.config.get("FEATURE_S3CREDS_MENU") == "yes":
-    app.config.from_file('s3-config.json', json.load)
-
-profile = app.config.get('CONFIGURATION_PROFILE')
-if profile is not None and profile != 'default':
-    app.config.from_object('config.' + profile)
-
-
-@app.context_processor
-def inject_settings():
-    return dict(
-        footer_template=app.config.get('FOOTER_TEMPLATE'),
-        welcome_message=app.config.get('WELCOME_MESSAGE'),
-        navbar_brand_text=app.config.get('NAVBAR_BRAND_TEXT'),
-        navbar_brand_icon=app.config.get('NAVBAR_BRAND_ICON'),
-        favicon_path=app.config.get('FAVICON_PATH'),
-        privacy_policy_url=app.config.get('PRIVACY_POLICY_URL'),
-        mail_image_src=app.config.get('MAIL_IMAGE_SRC'),
-        enable_vault_integration=False if app.config.get('FEATURE_VAULT_INTEGRATION').lower() == 'no' else True,
-        external_links=app.config.get('EXTERNAL_LINKS') if app.config.get('EXTERNAL_LINKS') else [],
-        enable_advanced_menu=app.config.get('FEATURE_ADVANCED_MENU') if app.config.get(
-            'FEATURE_ADVANCED_MENU') else "no",
-        enable_update_deployment=app.config.get('FEATURE_UPDATE_DEPLOYMENT') if app.config.get(
-            'FEATURE_UPDATE_DEPLOYMENT') else "no",
-        require_ssh_pubkey=app.config.get('FEATURE_REQUIRE_USER_SSH_PUBKEY') if app.config.get(
-            'FEATURE_REQUIRE_USER_SSH_PUBKEY') else "no",
-        hidden_deployment_columns=app.config.get('FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') if app.config.get(
-            'FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') else "",
-        enable_ports_request=app.config.get('FEATURE_PORTS_REQUEST') if app.config.get(
-            'FEATURE_PORTS_REQUEST') else "no",
-        enable_s3creds=app.config.get('FEATURE_S3CREDS_MENU') if app.config.get(
-            'FEATURE_S3CREDS_MENU') else "no",
-        s3_allowed_groups=app.config.get("S3_IAM_GROUPS") if app.config.get("S3_IAM_GROUPS") else [],
-        enable_access_request=app.config.get("FEATURE_ACCESS_REQUEST") if app.config.get(
-            'FEATURE_ACCESS_REQUEST') else "no",
-        not_granted_access_tag=app.config.get("NOT_GRANTED_ACCESS_TAG")
-    )
-
-
-db.init_app(app)
-migrate.init_app(app, db)
-alembic.init_app(app, run_mkdir=False)
-
-app.config['CACHE_TYPE'] = 'RedisCache'
-app.config['CACHE_REDIS_URL'] = app.config.get('REDIS_URL')
-redis_client = FlaskRedis(app)
-cache = Cache(app)
-
-if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
-    vaultservice.init_app(app)
-
-mail = Mail(app)
-
-# initialize ToscaInfo
-tosca: ToscaInfo = ToscaInfo(redis_client, app.config.get("TOSCA_TEMPLATES_DIR"),
-                             app.config.get("SETTINGS_DIR"), app.config.get("METADATA_SCHEMA"))
-
-from app.errors.routes import errors_bp
-app.register_blueprint(errors_bp)
-
-iam_base_url = app.config['IAM_BASE_URL']
-iam_token_url = iam_base_url + '/token'
-iam_refresh_url = iam_base_url + '/token'
-iam_authorization_url = iam_base_url + '/authorize'
-
-iam_blueprint = OAuth2ConsumerBlueprint(
-    "iam", __name__,
-    client_id=app.config['IAM_CLIENT_ID'],
-    client_secret=app.config['IAM_CLIENT_SECRET'],
-    base_url=iam_base_url,
-    token_url=iam_token_url,
-    auto_refresh_url=iam_refresh_url,
-    authorization_url=iam_authorization_url,
-    redirect_to='home'
-)
-app.register_blueprint(iam_blueprint, url_prefix="/login")
-
-from app.home.routes import home_bp
-app.register_blueprint(home_bp, url_prefix="/home")
-
-from app.users.routes import users_bp
-app.register_blueprint(users_bp, url_prefix="/users")
 
 from app.deployments.routes import deployments_bp
-app.register_blueprint(deployments_bp, url_prefix="/deployments")
-
+from app.errors.routes import errors_bp
+from app.extensions import cache, db, mail, migrate, redis_client, tosca, vaultservice
+from app.home.routes import home_bp
+from app.iam import make_iam_blueprint
+from app.lib import utils
+from app.lib.orchestrator import Orchestrator
+from app.lib.settings import Settings
 from app.providers.routes import providers_bp
-app.register_blueprint(providers_bp, url_prefix="/providers")
-
-from app.swift.routes import swift_bp
-app.register_blueprint(swift_bp, url_prefix="/swift")
-
 from app.services.routes import services_bp
-app.register_blueprint(services_bp, url_prefix="/services")
+from app.swift.routes import swift_bp
+from app.users.routes import users_bp
+from app.vault.routes import vault_bp
 
-if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
-    from app.vault.routes import vault_bp
-    app.register_blueprint(vault_bp, url_prefix="/vault")
 
-# logging
-loglevel = app.config.get("LOG_LEVEL") if app.config.get("LOG_LEVEL") else "INFO"
-numeric_level = getattr(logging, loglevel.upper(), None)
-if not isinstance(numeric_level, int):
-    raise ValueError('Invalid log level: %s' % loglevel)
+def create_app():
+    """
+    Create and configure the Flask application.
 
-logging.basicConfig(level=numeric_level)
+    This function initializes a Flask application, configures it, registers blueprints,
+    and sets up various extensions such as the database connection, authentication,
+    and error handling.
 
-# check if database exists
-engine = db.get_engine(app)
-if not database_exists(engine.url):  # Checks for the first time
-    create_database(engine.url)  # Create new DB
-    if database_exists(engine.url):
-        app.logger.debug("New database created")
+    Returns:
+        Flask: The configured Flask application instance.
+
+    Example:
+        app = create_app()
+        app.run()
+    """
+    app = Flask(__name__, instance_relative_config=True)
+    app.wsgi_app = ProxyFix(app.wsgi_app)
+
+    app.config.from_object("config.default")
+    app.config.from_file("../config/schemas/metadata_schema.json", json.load)
+
+    if os.environ.get("TESTING", "").lower() == "true":
+        app.config.from_file("../tests/resources/config.json", json.load)
     else:
-        app.logger.debug("Cannot create database")
-        sys.exit()
-else:
-    # for compatibility with old non-orm version
-    # check if existing db is not versioned
-    if engine.dialect.has_table(engine.connect(), "deployments"):
-        if not engine.dialect.has_table(engine.connect(), "alembic_version"):
-            # create versioning table and assign initial release
-            baseversion = app.config['SQLALCHEMY_VERSION_HEAD']
-            meta = MetaData()
-            alembic_version = Table(
-                'alembic_version',
-                meta,
-                Column('version_num', String(32), primary_key=True),
-            )
-            meta.create_all(engine)
-            ins = alembic_version.insert().values(version_num=baseversion)
-            conn = engine.connect()
-            result = conn.execute(ins)
+        app.config.from_file("config.json", json.load)
 
-# update database, run flask_migrate.upgrade()
-with app.app_context():
-    upgrade()
+    app.secret_key = app.config["SECRET_KEY"]
+    CSRFProtect(app)
 
-# IP of server
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-try:
-    # doesn't even have to be reachable
-    s.connect(('10.255.255.255', 1))
-    app.ip = s.getsockname()[0]
-except:
-    app.ip = '127.0.0.1'
-finally:
-    s.close()
+    settings = Settings(app)
+    app.settings = settings  # attach the Settings object to the app
 
+    orchestrator = Orchestrator(settings.orchestrator_url)
+    app.orchestrator = orchestrator
+
+    app.config["MAX_CONTENT_LENGTH"] = 1024 * 100  # put in the config.py
+
+    if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
+        app.config.from_file("vault-config.json", json.load)
+
+    if app.config.get("FEATURE_S3CREDS_MENU") == "yes":
+        app.config.from_file("s3-config.json", json.load)
+
+    profile = app.config.get("CONFIGURATION_PROFILE")
+    if profile is not None and profile != "default":
+        app.config.from_object("config." + profile)
+
+    db.init_app(app)
+    migrate.init_app(app, db, compare_server_default=True, compare_type=True)
+
+    with app.app_context():
+        upgrade(directory="migrations", revision="head")
+
+    app.config["CACHE_TYPE"] = "RedisCache"
+    app.config["CACHE_REDIS_URL"] = app.config.get("REDIS_URL")
+
+    redis_kwargs = {
+        "socket_timeout": app.config["REDIS_SOCKET_TIMEOUT"],
+    }
+    redis_client.init_app(app, **redis_kwargs)
+    redis_client.ping()
+
+    cache.init_app(app)
+
+    if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
+        vaultservice.init_app(app)
+
+    mail.init_app(app)
+
+    # initialize ToscaInfo
+    tosca.init_app(app, redis_client)
+
+    # initialize iam blueprint
+    app.iam_blueprint = make_iam_blueprint(
+        client_id=app.config["IAM_CLIENT_ID"],
+        client_secret=app.config["IAM_CLIENT_SECRET"],
+        base_url=app.config["IAM_BASE_URL"],
+        redirect_to="home_bp.home",
+    )
+
+    app.jinja_env.filters["tojson_pretty"] = utils.to_pretty_json
+    app.jinja_env.filters["extract_netinterface_ips"] = utils.extract_netinterface_ips
+    app.jinja_env.filters["intersect"] = utils.intersect
+    app.jinja_env.filters["python_eval"] = utils.python_eval
+    app.jinja_env.filters["enum2str"] = utils.enum_to_string
+    app.jinja_env.filters["str2bool"] = utils.str2bool
+
+    register_blueprints(app)
+
+    # Configure logging using dictConfig
+    configure_logging(app)
+
+    return app
+
+
+def register_blueprints(app):
+    """
+    Register Flask blueprints for different application modules.
+
+    Parameters:
+    - app (Flask): The Flask application to which the blueprints will be registered.
+
+    Blueprints:
+    - `errors_bp`: Handles error pages and error-related routes.
+    - `app.iam_blueprint`: Handles IAM routes under "/login".
+    - `home_bp`: Handles routes related to the home page ("/").
+    - `users_bp`: Handles routes related to user management ("/users").
+    - `deployments_bp`: Handles routes related to deployments ("/deployments").
+    - `providers_bp`: Handles routes related to providers ("/providers").
+    - `swift_bp`: Handles routes related to Swift integration ("/swift").
+    - `services_bp`: Handles routes related to services ("/services").
+
+    Conditional Blueprints:
+    - If the Flask app has the "FEATURE_VAULT_INTEGRATION" set to "yes":
+        - `vault_bp`: Handles routes related to Vault integration ("/vault").
+    """
+    app.register_blueprint(errors_bp)
+
+    app.register_blueprint(app.iam_blueprint, url_prefix="/login")
+
+    app.register_blueprint(home_bp, url_prefix="/")
+
+    app.register_blueprint(users_bp, url_prefix="/users")
+
+    app.register_blueprint(deployments_bp, url_prefix="/deployments")
+
+    app.register_blueprint(providers_bp, url_prefix="/providers")
+
+    app.register_blueprint(swift_bp, url_prefix="/swift")
+
+    app.register_blueprint(services_bp, url_prefix="/services")
+
+    if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
+        app.register_blueprint(vault_bp, url_prefix="/vault")
+
+
+def validate_log_level(log_level):
+    """
+    Validates that the provided log level is a valid choice.
+
+    Parameters:
+    - log_level (str): The log level to validate.
+
+    Raises:
+    - ValueError: If the log level is not one of ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'].
+    """
+    valid_log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    if log_level not in valid_log_levels:
+        raise ValueError(f"Invalid log level: {log_level}. Valid log levels are {valid_log_levels}")
+
+
+def configure_logging(app):
+    """
+    Configures logging for a Flask application based on the provided app configuration.
+
+    This function sets up a logging configuration using the provided log level from the app's configuration.
+    It configures a stream handler with a custom formatter for the 'app' logger and the root logger.
+
+    Parameters:
+    - app (Flask): The Flask application instance.
+    """
+    level = app.config.get("LOG_LEVEL")
+    validate_log_level(level)
+
+    if level == "DEBUG":
+        msg_format = (
+            "%(asctime)s - %(levelname)s - %(message)s [%(funcName)s() in %(pathname)s:%(lineno)s]"
+        )
+    else:
+        msg_format = "%(asctime)s - %(levelname)s - %(message)s"
+
+    logging_config = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "stream_handler": {
+                "class": "logging.StreamHandler",
+                "level": level,
+                "formatter": "custom_formatter",
+            },
+        },
+        "formatters": {
+            "custom_formatter": {
+                "format": msg_format,
+            },
+        },
+        "loggers": {
+            "app": {
+                "handlers": ["stream_handler"],
+                "level": level,
+                "propagate": False,  # Do not propagate messages to the root logger
+            },
+            "root": {
+                "handlers": [],
+                "level": level,
+            },
+        },
+        "root": {
+            "handlers": ["stream_handler"],
+            "level": level,
+        },
+    }
+    dictConfig(logging_config)
+
+
+#### TODO
 # add route /info
-from app import info
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0')
+# from app import info

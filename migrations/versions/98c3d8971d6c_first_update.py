@@ -17,26 +17,14 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column('deployments', sa.Column('elastic', sa.Boolean, server_default='0', nullable=False))
-    op.alter_column('deployments', 'status_reason',
-               existing_type=mysql.VARCHAR(length=256),
-               type_=mysql.MEDIUMTEXT)
+    op.add_column('deployments', sa.Column('elastic', sa.Boolean, server_default=sa.sql.False_(), nullable=False))
     op.create_foreign_key(None, 'deployments', 'users', ['sub'], ['sub'])
     op.add_column('users', sa.Column('sshkey', sa.Text(), nullable=True))
-    op.alter_column('users', 'role',
-               existing_type=mysql.VARCHAR(length=32),
-               nullable=False)
     # ### end Alembic commands ###
 
 
 def downgrade():
-    op.alter_column('users', 'role',
-               existing_type=mysql.VARCHAR(length=32),
-               nullable=True)
     op.drop_column('users', 'sshkey')
     op.drop_constraint(None, 'deployments', type_='foreignkey')
-    op.alter_column('deployments', 'status_reason',
-               existing_type=mysql.MEDIUMTEXT,
-               type_=mysql.VARCHAR(256))
     op.drop_column('deployments', 'elastic')
     # ### end Alembic commands ###

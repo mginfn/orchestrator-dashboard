@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from app import app
-from flask import make_response
+from flask import current_app as app, make_response
 
 __version__ = '3.1.0'
 

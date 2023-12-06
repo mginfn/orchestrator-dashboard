@@ -13,9 +13,10 @@
 
         <div class="card-body">
             <form id="depSubmit" action="{{ url_for('deployments_bp.updatedep') }}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <label for="additional_description">Deployment description</label>
-                    <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="description" value="{{instance_description}}" disabled required>
+                    <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="Description" value="{{instance_description}}" disabled required>
                 </div>
                 {% include 'config_form.html' %}
                 <input type="hidden" name="_depid" id="_depid" value="{{depid}}"/>
@@ -97,7 +98,7 @@ $(document).ready(function () {
 
 </script>
 
-{% if enable_vault_integration and ssh_pub_key is none  %}
+{% if config['FEATURE_VAULT_INTEGRATION']|str2bool and ssh_pub_key is none  %}
 <script type="text/javascript">
 
 $('#popupMaintenanceCheckbox').click(function(){

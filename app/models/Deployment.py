@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from app import db
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
+from app.extensions import db
+
 
 class Deployment(db.Model):
-    __tablename__ = 'deployments'
+    __tablename__ = "deployments"
     uuid = db.Column(db.String(36), primary_key=True)
     creation_time = db.Column(db.DateTime, nullable=True)
     update_time = db.Column(db.DateTime, nullable=True)
@@ -43,18 +44,18 @@ class Deployment(db.Model):
     params = db.Column(db.Text, nullable=True)
     deployment_type = db.Column(db.String(16), nullable=True)
     template_type = db.Column(db.String(16), nullable=True)
-    locked = db.Column(db.Integer, nullable=True, default=0)
-    feedback_required = db.Column(db.Integer, nullable=True, default=1)
-    keep_last_attempt = db.Column(db.Integer, nullable=True, default=0)
-    remote = db.Column(db.Integer, nullable=True, default='0')
+    locked = db.Column(db.Boolean, nullable=True, default=0)
+    feedback_required = db.Column(db.Boolean, nullable=True, default=1)
+    keep_last_attempt = db.Column(db.Boolean, nullable=True, default=0)
+    remote = db.Column(db.Boolean, nullable=True, default=0)
     issuer = db.Column(db.String(256), nullable=True)
-    storage_encryption = db.Column(db.Integer, nullable=True, default=0)
+    storage_encryption = db.Column(db.Boolean, nullable=True, default=0)
     vault_secret_uuid = db.Column(db.String(36), nullable=True)
     vault_secret_key = db.Column(db.String(36), nullable=True)
-    elastic = db.Column(db.Integer, nullable=True, default=0)
-    updatable = db.Column(db.Integer, nullable=True, default=0)
-    sub = db.Column(db.String(36), ForeignKey('users.sub'))
+    elastic = db.Column(db.Boolean, nullable=True, default=0)
+    updatable = db.Column(db.Boolean, nullable=True, default=0)
+    sub = db.Column(db.String(36), ForeignKey("users.sub"))
     user = relationship("User", back_populates="deployments")
 
     def __repr__(self):
-        return '<Deployment {}>'.format(self.uuid)
+        return "<Deployment {}>".format(self.uuid)

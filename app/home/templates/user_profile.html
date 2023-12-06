@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid">
+
+    <br>
+
+    <!-- USER -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="dashboard-user-container">
+                <div class="dashboard-user-image">
+                    <img src="{{ session['gravatar'] }}" width="42"/>
+                </div>
+            
+                <div class="dashboard-user-labels">
+                    <div class="dashboard-user-name">
+                        {{ session['username'] }}
+                    </div>
+
+                    <!-- ROLE -->
+                    {% if session['active_usergroup'] != None and 'gets3creds' not in request.path and 'overview' not in request.path %}   
+                        <div class="dashboard-user-role">{{ session['active_usergroup'] }}</div>
+                    {% endif %}
+                </div>
+
+                <a class="dashboard-user-logout" href="{{ url_for('home_bp.logout') }}" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% set s3_groups = ( config['S3_IAM_GROUPS'] | intersect(session['supported_usergroups'])) %}
+    {% if config['FEATURE_VAULT_INTEGRATION']|str2bool or ( config['FEATURE_S3CREDS_MENU']|str2bool and (session['userrole']=='user:s3' or (config['S3_IAM_GROUPS']|length==0 or s3_groups|length >= 1)) )%}
+        {% if config['FEATURE_VAULT_INTEGRATION']|str2bool %}
+        
+            <!-- SSH keys -->
+            {% include 'ssh_keys.html' %}
+        {% endif %}
+
+        {% if (config['FEATURE_S3CREDS_MENU']|str2bool and (session['userrole']=='user:s3' or (config['S3_IAM_GROUPS']|length==0 or s3_groups|length >= 1))) or config['FEATURE_VAULT_INTEGRATION']|str2bool %}
+            <!-- Service Credentials -->
+            {% include 'service_creds.html' %}
+        {% endif %}
+    {% endif %}
+</div>
+
+{% endblock %}

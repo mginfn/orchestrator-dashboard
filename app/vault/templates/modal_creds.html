@@ -5,6 +5,7 @@
     {% set username_label, password_label = "Access Key", "Secret Key" %}
   {% endif %}   
   <form action="{{ url_for('vault_bp.write_service_creds') }}?service_type={{service_type}}&service_id={{service_id}}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
 	<label for="username"><strong>{{username_label}}</strong></label>
         <div>

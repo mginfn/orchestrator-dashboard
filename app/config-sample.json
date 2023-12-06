@@ -12,7 +12,7 @@
     "TOSCA_TEMPLATES_DIR": "/opt/tosca-templates",
     "IAM_GROUP_MEMBERSHIP": [ "group1" ],
     "SUPPORT_EMAIL": "support@example.com",
-    "ENABLE_ADVANCED_MENU": "no",
+    "FEATURE_ADVANCED_MENU": "no",
     "EXTERNAL_LINKS": [ { "url": "https://indigo-paas.cloud.ba.infn.it/status-page", "menu_item_name": "Services status" } ],
     "LOG_LEVEL": "info"
 }
