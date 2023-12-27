@@ -1,31 +1,75 @@
-version: '3.3'
+version: '3.4'
 
 services:
-   db:
-     image: mysql:5.7
-     container_name: dashboard-db
-     volumes:
-       - /data/dashboard-db:/var/lib/mysql
-     ports:
-       - 3306:3306
-     restart: always
-     environment:
-       MYSQL_ROOT_PASSWORD: ****
-       MYSQL_DATABASE: orchestrator_dashboard
-       MYSQL_USER: dashboard
-       MYSQL_PASSWORD: ****
+  orchestratordashboard:
+    image: indigopaas/orchestrator-dashboard
+    ports:
+      - 5001:5001
+    volumes:
+      - "./instance/certs:/certs"  
+      - "./instance/trusted_certs:/trusted_certs"
+      - "./instance/config.json:/app/instance/config.json"  
+      - "./instance/vault-config.json:/app/instance/vault-config.json"
+        #- "./instance/s3-config.json:/app/instance/s3-config.json"        
+      - "./instance/uploads:/opt/uploads"
+      - "./instance/settings:/opt/settings"
+    networks:
+      - dev-network
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started    
 
-   orchestrator-dashboard:
-     depends_on:
-       - db
-     image: indigo-dc/orchestrator-dashboard:stateful
-     container_name: orchestrator-dashboard
-     ports:
-       - "5002:5001"
-     restart: always
-     volumes:
-       - /etc/orchestrator-dashboard/config.json:/app/instance/config.json
-       #- /etc/orchestrator-dashboard/vault-config.json:/app/instance/vault-config.json
-       - /etc/orchestrator-dashboard/tosca-templates:/opt/tosca-templates
-       - /etc/orchestrator-dashboard/tosca-parameters:/opt/tosca-parameters
-       - /etc/orchestrator-dashboard/tosca-metadata:/opt/tosca-metadata
+
+  db:
+    image: mysql:5.7
+    container_name: db
+    restart: always
+    ports:
+      - 3307:3306
+    volumes:
+      - db-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD
+      MYSQL_DATABASE: orchestrator_dashboard
+      MYSQL_USER: dashboard
+      MYSQL_PASSWORD: $MYSQL_PASSWORD
+    networks:
+      - dev-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p$MYSQL_ROOT_PASSWORD", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10        
+
+  redis:
+    image: redis:latest
+    restart: always
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --requirepass $REDIS_PASSWORD
+    networks:
+      - dev-network
+
+  redis_gui:
+    restart: always
+    image: redislabs/redisinsight:latest
+    container_name: redis-gui
+    ports:
+      - "8001:8001"
+    volumes:
+      - redis-db:/db
+    networks:
+      - dev-network
+
+networks:
+  dev-network:
+
+volumes:
+  db-data:
+  redis-data:
+  redis-db:
