@@ -4,26 +4,25 @@
     <input id="id-{{key}}" type="hidden" data-output-type="json" name="{{key}}" value=""/>
 </div>
 
-
-
 <script>
 
 let i = 1;
-document.getElementById('add-new-item').onclick = function () {
-    var tagname = this.getAttribute('data-tag-name');
+
+document.getElementById('add-new-item').onclick = () => {
+    let tagname = this.getAttribute('data-tag-name');
     let template = `
         <div class="form-row" id="${tagname}-${i}">
-          <div enctype='application/json' class="form-group">
-            <label>Key</label>
-            <input type="text" id="${tagname}-${i}-key" name="${tagname}_tmp[${i}][key]" required>
-          </div>
-          <div enctype='application/json' class="form-group">
-            <label>Value</label>
-            <input type="text" id="${tagname}-${i}-value" name="${tagname}_tmp[${i}][value]" required>
-          </div>
-          <div class="ml-2 mt-1">
-            <button type=button class='btn btn-sm btn-danger' href="" onclick="javascript:removePair('${tagname}'+ '-' + ${i} + ''); return false;"><i class="fas fa-trash-alt"></i></button>
-          </div>
+			<div enctype='application/json' class="form-group">
+				<label>Key</label>
+				<input type="text" id="${tagname}-${i}-key" name="${tagname}_tmp[${i}][key]" required>
+			</div>
+			<div enctype='application/json' class="form-group">
+				<label>Value</label>
+				<input type="text" id="${tagname}-${i}-value" name="${tagname}_tmp[${i}][value]" required>
+			</div>
+			<div class="ml-2 mt-1">
+				<button type=button class='btn btn-sm btn-danger' href="" onclick="javascript:removePair('${tagname}'+ '-' + ${i} + ''); return false;"><i class="fas fa-trash-alt"></i></button>
+			</div>
         </div>`;
 
     let container = document.getElementById(tagname + '-container');
@@ -32,24 +31,10 @@ document.getElementById('add-new-item').onclick = function () {
     container.appendChild(div);
 
     i++;
-
-
 }
 
-</script>
-
-<style>
-
-label {
-  margin-bottom: 0;
-  margin-left: 5px;
-}
-
-</style>
-
-<script>
 function removePair(elementId) {
-    var element = document.getElementById(elementId);
+    let element = document.getElementById(elementId);
     console.log("id: " + elementId)
     console.log(element)
     element.parentNode.removeChild(element);
@@ -57,17 +42,17 @@ function removePair(elementId) {
 
 /*
 function validatePair(tagname, i) {
-    var elementId = '' + tagname + '-' + i;
+    let elementId = '' + tagname + '-' + i;
     console.log('elementId: ' + elementId);
-    var element = $('#' + elementId);
-    var keyE = $('#' + elementId + '-key');
-    var key = keyE.val();
-    var valueE = $('#' + elementId + '-value');
-    var value = valueE.val();
+    let element = $('#' + elementId);
+    let keyE = $('#' + elementId + '-key');
+    let key = keyE.val();
+    let valueE = $('#' + elementId + '-value');
+    let value = valueE.val();
     //console.log('key: ' + keyE.val() + ", value: " + valueE.val());
     console.log(element.parent());
 
-    var parent = element.parent();
+    let parent = element.parent();
 
     let template = `
         <div class="form-row" id="${tagname}-${i}">
@@ -88,4 +73,14 @@ function validatePair(tagname, i) {
     container.appendChild(div);
 }
 */
+
 </script>
+
+<style>
+
+label {
+  margin-bottom: 0;
+  margin-left: 5px;
+}
+
+</style>

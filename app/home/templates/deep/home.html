@@ -3,23 +3,24 @@
 {% block content %}
 
 <div class = "jumbotron jumbotron-fluid jumbotron-custom">
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-9">
-        <h1 class="display-4">{{ config['WELCOME_MESSAGE'] }}</h1>
-        <p></p>
-        <p>
-          <a class="btn btn-primary btn-lg" role="button" href="{{ url_for("iam.login") }}">Please login, or register &raquo;</a>
-        </p>
-      </div>
-      <div class="col-lg-3">
-        <img src="static/images/deep/logo.png"></img>
-      </div>
-    </div>
-  </div>
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-9">
+				<h1 class="display-4">{{ config['WELCOME_MESSAGE'] }}</h1>
+				<p></p>
+				<p>
+					<a class="btn btn-primary btn-lg" role="button" href="{{ url_for("iam.login") }}">Please login, or register &raquo;</a>
+				</p>
+			</div>
+			<div class="col-lg-3">
+				<img src="static/images/deep/logo.png"></img>
+			</div>
+		</div>
+	</div>
 </div>
 
 <style>
+	
 .jumbotron-custom {
     background: #1f3151;
     background-image: url(static/images/deep/network.png);
@@ -30,5 +31,6 @@
     font-weight: bold;
     font-family: 'Thasadith', sans-serif;
 }
+
 </style>
 {% endblock %}

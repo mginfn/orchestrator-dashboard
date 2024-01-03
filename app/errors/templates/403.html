@@ -3,18 +3,24 @@
 {% block content %}
 
 <div class="container-fluid">
-  <br>
-  <div class="dashboard-error-container">
-    <div class="dashboard-error-code">403</div>
-    <div class="dashboard-error-title">Oops!</div>
-    <div class="dashboard-error-subtitle">Sorry, you are not authorized</div>
-    {% if message %}
-      <p>{{ message }}</p>
-    {% endif %}
-    <br><br>   
-    <button onclick='location.href="{{ url_for('home_bp.logout') }}"' class="dashboard-button dashboard-button-lg dashboard-button-primary"><span class="fas fa-sign-out-alt"></span>&nbsp;Logout</button>
-    <br><br>
-  </div>
+	<br>
+	<div class="dashboard-error-container">
+		<div class="dashboard-error-code">403</div>
+		<div class="dashboard-error-title">Oops!</div>
+		<div class="dashboard-error-subtitle">Sorry, you are not authorized</div>
+	
+		{% if message %}
+			<p>{{ message }}</p>
+		{% endif %}
+	
+		<br><br>   
+
+		<button onclick='location.href="{{ url_for('home_bp.logout') }}"' class="dashboard-button dashboard-button-lg dashboard-button-primary">
+			<span class="fas fa-sign-out-alt"></span>&nbsp;Logout
+		</button>
+		
+		<br><br>
+	</div>
 </div>
 
 {% endblock %}

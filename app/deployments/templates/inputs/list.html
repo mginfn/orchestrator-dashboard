@@ -4,24 +4,21 @@
     <input id="id-{{key}}" type="hidden" data-output-type="json" name="{{key}}" value=""/>
 </div>
 
-
-
 <script>
 
-
 let i = 1;
+
 document.getElementById('add-new-item').onclick = function () {
     var tagname = this.getAttribute('data-tag-name');
     let template = `
         <div class="form-row" id="${tagname}-${i}">
-
-          <div class="form-group">
-            <!-- label>Option</label> <br-->
-            <input type="text" class="form-control" name="${tagname}_tmp[]" class="form-control" required>
-          </div>
-          <div class="mt-1 mx-2">
-            <button type=button class='dashboard-button dashboard-button-danger-outline' href="" onclick="javascript:removeItem('${tagname}'+ '-' + ${i} + '' ); return false;"><i class="fas fa-trash-alt"></i>&nbsp;Remove</button>
-          </div>
+			<div class="form-group">
+				<!-- label>Option</label> <br-->
+				<input type="text" class="form-control" name="${tagname}_tmp[]" class="form-control" required>
+			</div>
+			<div class="mt-1 mx-2">
+				<button type=button class='dashboard-button dashboard-button-danger-outline' href="" onclick="javascript:removeItem('${tagname}'+ '-' + ${i} + '' ); return false;"><i class="fas fa-trash-alt"></i>&nbsp;Remove</button>
+			</div>
         </div>`;
 
     let container = document.getElementById(tagname + '-container');
@@ -30,7 +27,13 @@ document.getElementById('add-new-item').onclick = function () {
     container.appendChild(div);
 
     i++;
+}
 
+function removeItem(elementId) {
+    var element = document.getElementById(elementId);
+    console.log("id: " + elementId)
+    console.log(element)
+    element.parentNode.removeChild(element);
 }
 
 </script>
@@ -43,12 +46,3 @@ label {
 }
 
 </style>
-
-<script>
-function removeItem(elementId) {
-    var element = document.getElementById(elementId);
-    console.log("id: " + elementId)
-    console.log(element)
-    element.parentNode.removeChild(element);
-}
-</script>

@@ -59,11 +59,13 @@ VAULT_OIDC_AUDIENCE = "ff2c57dc-fa09-43c9-984e-9ad8afc3fb56"
 
 #### LOOK AND FEEL SETTINGS
 WELCOME_MESSAGE = "Welcome! This is the PaaS Orchestrator Dashboard"
-NAVBAR_BRAND_TEXT = "PaaS Orchestrator Dashboard"
+NAVBAR_BRAND_TEXT = "Dashboard"
 NAVBAR_BRAND_ICON = "/static/home/images/indigodc_logo.png"
 FAVICON_PATH = "/static/home/images/favicon_io"
 MAIL_IMAGE_SRC = "https://raw.githubusercontent.com/maricaantonacci/orchestrator-dashboard/stateful/app/home/static/images/orchestrator-logo.png"
 PRIVACY_POLICY_URL = 'http://cookiesandyou.com/'
+BRAND_COLOR_1 = "#4c297a"
+BRAND_COLOR_2 = "#200e35"
 
 ### Template Paths
 HOME_TEMPLATE = 'home.html'

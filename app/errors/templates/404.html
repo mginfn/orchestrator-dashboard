@@ -5,12 +5,16 @@
 <div class="container-fluid">
     <br>
     <div class="dashboard-error-container">
-      <div class="dashboard-error-code">404</div>
-      <div class="dashboard-error-title">Oops!</div>
-      <div class="dashboard-error-subtitle">Sorry, this page doesn't exist</div>
-      <br><br>   
-      <button onclick='location.href="{{ url_for('home_bp.home') }}"' class="dashboard-button dashboard-button-lg dashboard-button-primary"><span class="fa fa-home"></span>&nbsp;Take Me Home </button>
-      <br><br>
+		<div class="dashboard-error-code">404</div>
+		<div class="dashboard-error-title">Oops!</div>
+		<div class="dashboard-error-subtitle">Sorry, this page doesn't exist</div>
+		<br><br>   
+		
+		<button onclick='location.href="{{ url_for('home_bp.home') }}"' class="dashboard-button dashboard-button-lg dashboard-button-primary">
+			<span class="fa fa-home"></span>&nbsp;Take Me Home
+		</button>
+		
+		<br><br>
     </div>
 </div>
 

@@ -1,8 +1,7 @@
 {# {% extends "base.html" %} #}
 {% block content %}
-<br>
-<!-- <div class="container-fluid"> -->
-
+{% if slas|length > 0 %}
+  <br>
     <div class="card shadow mb-4">
         <div class="card-body">
 
@@ -20,7 +19,6 @@
         <table id="tableSLAs" class="table table-bordered table-striped table-hover" width="100%" cellspacing="0">
             <thead>
                 <tr>
-	            <!-- <th>id</th>-->
                     <th>Site</th>
                     <th>Endpoint</th>
                     <th>Manage your credentials</th>
@@ -79,7 +77,6 @@
     </div>
     </div>
     </div>
-<!-- </div> -->
 
 <script>
     $('#tableSLAs').dataTable( {
@@ -138,5 +135,6 @@ $(document).ready(function () {
   });
 });
 </script>
+{% endif %}
 {% endblock %}
 

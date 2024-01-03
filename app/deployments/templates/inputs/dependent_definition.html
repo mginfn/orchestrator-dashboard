@@ -2,72 +2,64 @@
     <input type="hidden" id="{{key}}-ref" name="{{key}}-ref" value="">
 </div>
 
-
 <script>
- $(function () {
-
-    $(".dependent_definition").each(function(i, el) {
-        var elem = $(el);
+$(() => {
+	$(".dependent_definition").each(function(i, el) {
+        let elem = $(el);
 
         // hide this auxiliary input
-        var div = $("#form-group-{{key}}");
+        let div = $("#form-group-{{key}}");
         div.hide();
 
         // link this element to the parent
         if( elem.data('parentId') ){
-          var parentid = "#" + elem.data('parentId');
+        	let parentid = "#" + elem.data('parentId');
 
-          //console.log("parent: " + parentid)
-          //console.log($(parentid).attr('data-children-id'))
+          	//console.log("parent: " + parentid)
+          	//console.log($(parentid).attr('data-children-id'))
 
-          prepareInput($(parentid));
-          $(parentid).on("change", function(event) {
+          	prepareInput($(parentid));
+
+          	$(parentid).on("change", function(event) {
                 prepareInput(this);
-            } );
+            });
         }
     });
 });
 
 function prepareInput(parent){
 
-  var childid = JSON.parse($(parent).data('childrenId').replace(/'/g, '"'));
-  nchildren = childid.length;
+	let childid = JSON.parse($(parent).data('childrenId').replace(/'/g, '"'));
+	let nchildren = childid.length;
 
-  //console.log("childid: " + childid);
+	for (let i = 0; i < nchildren; i++ ) {
 
-  for (i = 0; i < nchildren; i++ ){
+		let data = $("#" + childid[i]).data('inputRef').replace(/'/g, '"');
+		let obj = JSON.parse(data);
 
-    //console.log("childid[i]: " + childid[i]);
+		let parentvalue = $(parent).find('option:selected').val(); // store parent value
+		let iname = childid[i];
 
-    var data = $("#" + childid[i]).data('inputRef').replace(/'/g, '"');
-    var obj = JSON.parse(data);
+		obj.forEach(function(element) {
 
+			let input = $('#' + element['ref']);
+			let div = $("#form-group-" + element['ref']);
 
-    var parentvalue = $(parent).find('option:selected').val(); // store parent value
-    var iname = childid[i];
+			div.hide();
+			div.find('input').prop("disabled", true);
+			div.find('select').prop("disabled", true);
 
-    obj.forEach(function(element) {
+			if(element['parent_value'] == parentvalue){
+				input.attr('name', iname);
+				div.show();
+				div.find('input').prop("disabled", false);
+				div.find('select').prop("disabled", false);
 
-      var input = $('#' + element['ref']);
-      var div = $("#form-group-" + element['ref']);
-
-      div.hide();
-      div.find('input').prop("disabled", true);
-      div.find('select').prop("disabled", true);
-
-      if(element['parent_value'] == parentvalue){
-         input.attr('name', iname);
-         div.show();
-         div.find('input').prop("disabled", false);
-         div.find('select').prop("disabled", false);
-
-         //set ref name
-         $('#' + iname + "-ref").val(element['ref']);
-      }
-
-     });
-  }
-
+				//set ref name
+				$('#' + iname + "-ref").val(element['ref']);
+			}
+		});
+	}
 }
 </script>
 

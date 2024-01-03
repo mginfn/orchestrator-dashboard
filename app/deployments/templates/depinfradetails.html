@@ -7,22 +7,25 @@
         <div class="card-body">
             <div class="dashboard-template-header">
                 <div class="dashboard-template-image">
-                  <i class="fas fa-desktop"></i>
+                	<i class="fas fa-desktop"></i>
                 </div>
 
                 <div class="dashboard-template-title">
-                  Virtual Machines
+                  	Virtual Machines
                 </div>
             
                 <div class="dashboard-template-header-buttons">
-                  <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="location.href='{{ url_for('deployments_bp.showdeployments') }}'"><i class="fas fa-arrow-left"></i>&nbsp;Back</button>
-                  <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick='location.reload()'><i class="fas fa-sync-alt"></i>&nbsp;Refresh</button>
+					<button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="location.href='{{ url_for('deployments_bp.showdeployments') }}'">
+						<i class="fas fa-arrow-left"></i>&nbsp;Back
+					</button>
+					<button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick='location.reload()'>
+						<i class="fas fa-sync-alt"></i>&nbsp;Refresh
+					</button>
                 </div>
             </div>
 
             <div class="table-responsive" style="overflow:inherit;">
-                <table class="table table-bordered table-striped table-hover" id="tableUserDeployments" width="100%"
-                       cellspacing="0">
+                <table class="table table-bordered table-striped table-hover" id="tableUserDeployments" width="100%"cellspacing="0">
                     <!--Table head-->
                     <thead>
                     <tr>
@@ -36,57 +39,56 @@
                     <!--Table body-->
                     <tbody>
                     {% for info in vmsdetails %}
-                    <tr>
-                        <td>{{info.instance_name}}</td>
-                        <td>
-                            <p><strong>cores:</strong> {{info['cpu.count']}}</p>
-                            <p><strong>ram:</strong> {{info['memory.size']/1048576}} MB</p>
-                            {% if 'disk.0.free_size' in info %}
-                            <p><strong>disk:</strong> {{info['disk.0.free_size']/1073741824}} GB</p>
-                            {% endif %}
-                            <p><strong>Operating System:</strong> {{info['disk.0.os.flavour']}}
-                                {{info['disk.0.os.version']}}</p>
-                        </td>
-                        <td>
-                            {% set ips = (info | extract_netinterface_ips) %}
-                            {% for k,v in ips.items() %}
-                            <p><strong>{{k}}:</strong> {{v}}</p>
-                            {% endfor %}
-                        </td>
-                        <td>
-                            {% if info.state == "STARTED" %}
-                            <span class="badge badge-success"/>
-                            {% elif info.state in ["STOPPED", "off"] %}
-                            <span class="badge badge-warning text-white"/>
-                            {% elif info.state in ["failed", "unconfigured", "unknown"] %}
-                            <span class="badge badge-danger"/>
-                            {% else %}
-                            <span class="badge badge-warning text-white"><span
-                                    class="spinner-grow spinner-grow-sm"/></span>
-                            {% endif %}
-                            {{info.state}}
-                        </td>
-                        <td>
-                            <div class="btn-group-vertical">
-                                <!-- Actions -->
-                                {% set start_enable = 'disabled' %}
-                                {% set stop_enable = 'disabled' %}
-                                {% if info.state == "STOPPED" %}{% set start_enable = 'enabled' %}{% endif %}
-                                {% if info.state == "STARTED" %}{% set stop_enable = 'enabled' %}{% endif %}
-                                <a class="dashboard-button dashboard-button-danger {{stop_enable}}" data-toggle="modal" style="color: white"
-                                   data-target="#confirm_action"
-                                   data-text="Do you really want to stop the VM {{ info.instance_name }}?"
-                                   data-url="{{ url_for('deployments_bp.depaction', depid=info.depId, vmid=info.resId, action='stop') }}"><span
+                        <tr>
+                            <td>{{info.instance_name}}</td>
+                            <td>
+                                <p><strong>cores:</strong> {{info['cpu.count']}}</p>
+                                <p><strong>ram:</strong> {{info['memory.size']/1048576}} MB</p>
+                                {% if 'disk.0.free_size' in info %}
+                                <p><strong>disk:</strong> {{info['disk.0.free_size']/1073741824}} GB</p>
+                                {% endif %}
+                                <p><strong>Operating System:</strong> {{info['disk.0.os.flavour']}}
+                                    {{info['disk.0.os.version']}}</p>
+                            </td>
+                            <td>
+                                {% set ips = (info | extract_netinterface_ips) %}
+                                {% for k,v in ips.items() %}
+                                <p><strong>{{k}}:</strong> {{v}}</p>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% if info.state == "STARTED" %}
+                                <span class="badge badge-success"/>
+                                {% elif info.state in ["STOPPED", "off"] %}
+                                <span class="badge badge-warning text-white"/>
+                                {% elif info.state in ["failed", "unconfigured", "unknown"] %}
+                                <span class="badge badge-danger"/>
+                                {% else %}
+                                <span class="badge badge-warning text-white"><span
+                                        class="spinner-grow spinner-grow-sm"/></span>
+                                {% endif %}
+                                {{info.state}}
+                            </td>
+                            <td>
+                                <div class="btn-group-vertical">
+                                    <!-- Actions -->
+                                    {% set start_enable = 'disabled' %}
+                                    {% set stop_enable = 'disabled' %}
+                                    {% if info.state == "STOPPED" %}{% set start_enable = 'enabled' %}{% endif %}
+                                    {% if info.state == "STARTED" %}{% set stop_enable = 'enabled' %}{% endif %}
+                                    <a class="dashboard-button dashboard-button-danger {{stop_enable}}" data-toggle="modal" style="color: white"
+                                        data-target="#confirm_action"
+                                        data-text="Do you really want to stop the VM {{ info.instance_name }}?"
+                                        data-url="{{ url_for('deployments_bp.depaction', depid=info.depId, vmid=info.resId, action='stop') }}"><span
                                         class="fas fa-stop mr-2 grey-text"></span>Stop VM</a>
-                                <a class="dashboard-button dashboard-button-primary {{start_enable}}" data-toggle="modal" style="color: white"
-                                   data-target="#confirm_action"
-                                   data-text="Do you really want to start the VM {{ info.instance_name }}?"
-                                   data-url="{{ url_for('deployments_bp.depaction', depid=info.depId, vmid=info.resId, action='start') }}"><span
+                                    <a class="dashboard-button dashboard-button-primary {{start_enable}}" data-toggle="modal" style="color: white"
+                                        data-target="#confirm_action"
+                                        data-text="Do you really want to start the VM {{ info.instance_name }}?"
+                                        data-url="{{ url_for('deployments_bp.depaction', depid=info.depId, vmid=info.resId, action='start') }}"><span
                                         class="fas fa-play mr-2 grey-text"></span>Start VM</a>
-
-                            </div>
-                        </td>
-                    </tr>
+                                </div>
+                            </td>
+                        </tr>
                     {% endfor %}
                     </tbody>
                     <!--Table body-->
@@ -104,9 +106,13 @@
                             <form id="performActionForm" action="#" method="post">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <div class="dashboard-template-buttons-container">
-                                    <button data-dismiss="modal" type=button class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Cancel">Cancel&nbsp;<i class="fas fa-ban"></i></button>
+                                    <button data-dismiss="modal" type=button class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Cancel">
+                                        Cancel&nbsp;<i class="fas fa-ban"></i>
+                                    </button>
                 
-                                    <button type="submit" class="dashboard-button dashboard-button-lg dashboard-button-primary execActionBtn" role="button" title="Execute">Execute&nbsp;<i class="fas fa-arrow-right"></i></button>
+                                    <button type="submit" class="dashboard-button dashboard-button-lg dashboard-button-primary execActionBtn" role="button" title="Execute">
+                                        Execute&nbsp;<i class="fas fa-arrow-right"></i>
+                                    </button>
                                 </div>
                             </form>
                         </div>
@@ -116,8 +122,6 @@
         </div>
     </div>
     <br><br>
-    <!-- ACTION MODAL -->
-
 </div>
 
 <style>
@@ -135,41 +139,31 @@ $('#tableUserDeployments').dataTable( {
     "responsive": true,
         "columnDefs": [
             {
-            "targets"  : 'no-sort',
-            "orderable": false,
+                "targets"  : 'no-sort',
+                "orderable": false,
             },
         ],
     "order": [[ 2, "desc" ]]
 });
 
-</script>
-
-<script>
 $(document).ready(function () {
     $(".execActionBtn").click(() => {
-        // add spinner to button
-        /* $(this).parent().find(".cancelActionBtn").addClass("disabled", true);
-        $(this).addClass("disabled", true);
-        $(this).html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Executing...` ); */
-
         set_loading(true)
     });
 });
 
-</script>
-
-<script>
-$('.confirm_action').on('show.bs.modal', function (event) {
-    var target = $(event.relatedTarget) // Button that triggered the modal
+$('.confirm_action').on('show.bs.modal', (event) => {
+    let target = $(event.relatedTarget) // Button that triggered the modal
     // Extract info from data-* attributes
-    var title = target.data('text')
-    var url = target.data('url')
+    let title = target.data('text')
+    let url = target.data('url')
 
-    var modal = $(this)
+    let modal = $(this)
     modal.find('.modal-body').prepend(title)
     modal.find('#performActionForm').prop('action', url)
 })
 
 </script>
+
 {% endblock %}
 

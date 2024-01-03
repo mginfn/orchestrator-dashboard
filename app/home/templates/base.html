@@ -47,31 +47,30 @@
     <!-- CSS -->
     <link rel="stylesheet" href="/static/home/css/style-v2.css">
     <script>
-    let link = "{{ config['PRIVACY_POLICY_URL'] }}"
-    window.addEventListener("load", function(){
-        window.cookieconsent.initialise({
-          "palette": {
-            "popup": {
-              "background": "#050101"
-            },
-            "button": {
-              "background": "#337ab7"
-            }
-          },
-          "theme": "classic",
-          "position": "top",
-          "content": {
-            "href": link
-          }
-        })
-    });
+		let link = "{{ config['PRIVACY_POLICY_URL'] }}"
+		window.addEventListener("load", () => {
+			window.cookieconsent.initialise({
+				"palette": {
+					"popup": {
+					"background": "#050101"
+					},
+					"button": {
+					"background": "#337ab7"
+					}
+				},
+				"theme": "classic",
+				"position": "top",
+				"content": {
+					"href": link
+				}
+			})
+		});
     </script>
 </head>
 
 <body>
 
 <div class="App">
-    
     <!-- NAVBAR -->
     {% if session['username'] %}
         <nav class="navbar-left">
@@ -186,40 +185,6 @@
                             </div>
                         </div>
                     {% endif %}
-                    
-                    <!-- USER -->
-                    {# <!-- {% set s3_groups = ( config['S3_IAM_GROUPS'] | intersect(session['supported_usergroups'])) %}
-                    {% if config['FEATURE_VAULT_INTEGRATION']|str2bool or ( config['FEATURE_S3CREDS_MENU']|str2bool and (session['userrole']=='user:s3' or (config['S3_IAM_GROUPS']|length==0 or s3_groups|length >= 1)) )%}
-                        <div class="navbar-left-dropdown">
-                            <div class="navbar-left-dropdown-parent">
-                                <div class="navbar-left-dropdown-parent-text" title="User">User</div>
-                                <div class="navbar-left-dropdown-parent-icon">
-                                    <i class="fas fa-caret-down"></i>
-                                </div>
-                            </div>
-                            <div class="navbar-left-dropdown-children-container">
-                                <div class="navbar-left-dropdown-children">
-                                    {% if config['FEATURE_VAULT_INTEGRATION']|str2bool %}
-                                        <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ url_for("vault_bp.ssh_keys") }}" title="SSH keys">
-                                            <i class="fas fa-key"></i>
-                                            SSH keys
-                                        </a>
-                                        <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ url_for("vault_bp.manage_service_creds") }}" title="Service Credentials">
-                                            <i class="fas fa-asterisk"></i>
-                                            Service Credentials
-                                        </a>
-                                    {% endif %}
-                                    
-                                    {% if config['FEATURE_S3CREDS_MENU']|str2bool and (session['userrole']=='user:s3' or (config['S3_IAM_GROUPS']|length==0 or s3_groups|length >= 1)) %}
-                                        <a class="navbar-left-dropdown-children-item navbar-left-link" href="{{ url_for("vault_bp.manage_service_creds") }}" title="S3 credentials">
-                                            <i class="fas fa-asterisk"></i>
-                                            S3 credentials
-                                        </a>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>    
-                    {% endif %} --> #}
                 </div>
             </div>
 
@@ -245,7 +210,7 @@
                     <div class="navbar-left-user-container">
                         <div class="navbar-left-user-image">
                             <a href="{{ url_for('home_bp.show_user_profile') }}">
-                                <img src="{{ session['gravatar'] }}" width="42"/>
+                                <img src="{{ session['gravatar'] }}" width="50" alt="User Image"/>
                             </a>
                         </div>
                         <div class="navbar-left-user-profile-container">
@@ -296,10 +261,13 @@
     {% else %}
         <main style="margin-left: 0; width: 100%">
     {% endif %}
+
     {% include 'flashed_messages.html' %}
+
     {% block content %}{% endblock %}
-        </main>
-    {% include config['FOOTER_TEMPLATE'] %}
+
+	{% include config['FOOTER_TEMPLATE'] %}
+    </main>
 </div>
 
 <div class="dashboard-loading-container">
@@ -307,7 +275,7 @@
         <div class="dashboard-loading-image">
             <img src="{{ config['NAVBAR_BRAND_ICON'] }}" width="250" alt="INFN Cloud logo">
         </div>
-        <div class="dashboard-loading-bar"></div>
+        <div class="dashboard-loading-bar" style="background: repeating-linear-gradient(to right, {{ config['BRAND_COLOR_1'] }} 0%, {{ config['BRAND_COLOR_2'] }} 30%, {{ config['BRAND_COLOR_2'] }} 70%, {{ config['BRAND_COLOR_1'] }} 100%); background-size: 200% auto; background-position: 0 100%;"></div>
         <div class="dashboard-loading-bar-text">
             This may take few seconds
         </div>
@@ -326,8 +294,6 @@
 </body>
 
 <script src="/static/home/js/script-v2.js"></script>
-
-
 
 </html>
 

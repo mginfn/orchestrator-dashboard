@@ -3,35 +3,43 @@
 {% block content %}
 
 <div class="container">
-
     <br>
-
     <div class="card shadow mb-4">
         <div class="card-body">
-          <div class="dashboard-template-header">
-              <div class="dashboard-template-image">
-                <i class="fas fa-file-alt"></i>
-              </div>
-          
-              <div class="dashboard-template-title">
-                  Deployments log
-              </div>
-          
-              <div class="dashboard-template-header-buttons">
-                <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="history.back()"><i class="fas fa-arrow-left"></i>&nbsp;Back</button>
-                <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick='location.reload(true)'><i class="fas fa-sync-alt"></i>&nbsp;Refresh</button>
-                <button type="button" class="dashboard-button dashboard-button-primary downloadBtn" title="Download">Download<i class="fa fa-download"></i></button>
-              </div>
-          </div>
-          <pre id="text-val">{{ log | safe }}</pre>
-          
-          <br>
-          
-          <div class="dashboard-template-footer-buttons">
-            <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick='location.reload(true)'><i class="fas fa-sync-alt"></i>&nbsp;Refresh</button>
-            <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Top" onclick="topFunction()"><i class="fa fa-angle-double-up"></i>&nbsp;Top</button>
-            <button type="button" class="dashboard-button dashboard-button-primary downloadBtn" title="Download">Download<i class="fa fa-download"></i></button>
-          </div>
+			<div class="dashboard-template-header">
+				<div class="dashboard-template-image">
+					<i class="fas fa-file-alt"></i>
+				</div>
+			
+				<div class="dashboard-template-title">
+					Deployments log
+				</div>
+			
+				<div class="dashboard-template-header-buttons">
+					<button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="history.back()">
+						<i class="fas fa-arrow-left"></i>&nbsp;Back
+					</button>
+					<button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick='location.reload(true)'>
+						<i class="fas fa-sync-alt"></i>&nbsp;Refresh
+					</button>
+					<button type="button" class="dashboard-button dashboard-button-primary downloadBtn" title="Download">
+						Download<i class="fa fa-download"></i>
+					</button>
+				</div>
+			</div>
+			<pre id="text-val">{{ log | safe }}</pre>
+			<br>
+			<div class="dashboard-template-footer-buttons">
+				<button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick='location.reload(true)'>
+					<i class="fas fa-sync-alt"></i>&nbsp;Refresh
+				</button>
+				<button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Top" onclick="topFunction()">
+					<i class="fa fa-angle-double-up"></i>&nbsp;Top
+				</button>
+				<button type="button" class="dashboard-button dashboard-button-primary downloadBtn" title="Download">
+					Download<i class="fa fa-download"></i>
+				</button>
+			</div>
         </div>
     </div>
 </div>
@@ -39,21 +47,21 @@
 <script>
 
 function topFunction() {
-  document.body.scrollTop = 0;
-  document.documentElement.scrollTop = 0;
+	document.body.scrollTop = 0;
+	document.documentElement.scrollTop = 0;
 }
 
 function download(filename, text) {
-  var element = document.createElement('a');
-  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-  element.setAttribute('download', filename);
+	var element = document.createElement('a');
+	element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+	element.setAttribute('download', filename);
 
-  element.style.display = 'none';
-  document.body.appendChild(element);
+	element.style.display = 'none';
+	document.body.appendChild(element);
 
-  element.click();
+	element.click();
 
-  document.body.removeChild(element);
+	document.body.removeChild(element);
 }
 
 $('.downloadBtn').click(function(){
@@ -63,12 +71,6 @@ $('.downloadBtn').click(function(){
     download(filename, text);
 });
 
-/* document.getElementById("downloadBtn").addEventListener("click", function(){
-    var text = document.getElementById("text-val").innerHTML;
-    var filename = "deployment-log.txt";
-
-    download(filename, text);
-}, false);
- */
 </script>
+
 {% endblock %}

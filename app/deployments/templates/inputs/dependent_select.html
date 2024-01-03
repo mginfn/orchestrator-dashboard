@@ -1,38 +1,36 @@
 <select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}" data-parent-id="{{value.parent}}" {{mode}}>
-  {% for constraint in value.constraints %}
-    <option data-parent-value="{{constraint['parent_value']}}" value="{{constraint['value']}}" {% if constraint['value'] in value.default %}selected="selected"{% endif %}>{{constraint['label']}}</option>
-  {% endfor %}
+	{% for constraint in value.constraints %}
+		<option data-parent-value="{{constraint['parent_value']}}" value="{{constraint['value']}}" {% if constraint['value'] in value.default %}selected="selected"{% endif %}>{{constraint['label']}}</option>
+	{% endfor %}
 </select>
 <span id="option-container-{{key}}" style="visibility: hidden; position:absolute;"></span>
 
-
-
 <script>
 
-$(document).ready(function () {
-
-    $(".js-example-basic-single").each(function(i, el) {
-        var elem = $(el);
+$(document).ready(() => {
+    $(".js-example-basic-single").each((i, el) => {
+        let elem = $(el);
         if( elem.data('parentId') ){
-          var parentid = "#" + elem.data('parentId');
-          $(parentid).data('childId', elem.attr("id"));
-          filter($(parentid));
-          $(parentid).on("change", function(event) {
-                filter(this);
-            } );
+			let parentid = "#" + elem.data('parentId');
+			$(parentid).data('childId', elem.attr("id"));
+			filter($(parentid));
+
+			$(parentid).on("change", (event) => {
+				filter(this);
+			} );
         }
     });
 });
 
-function filter(parent){
+function filter(parent) {
 
-  var childid = "#" + $(parent).data('childId');
-  var optionContainerId = "#option-container-" + $(parent).data('childId');
+  let childid = "#" + $(parent).data('childId');
+  let optionContainerId = "#option-container-" + $(parent).data('childId');
 
-  var parentvalue = $(parent).find('option:selected').val(); // stores parent value
+  let parentvalue = $(parent).find('option:selected').val(); // stores parent value
 
   $(optionContainerId).children().appendTo(childid); // moves <option> contained in #option-container back to their <select>
-  var toMove = $(childid).find("option:not([data-parent-value='"+ parentvalue + "'])"); // selects elements to move out
+  let toMove = $(childid).find("option:not([data-parent-value='"+ parentvalue + "'])"); // selects elements to move out
   toMove.appendTo(optionContainerId); // moves elements in #option-container
   //$(childid).removeAttr("disabled"); // enables select
 }

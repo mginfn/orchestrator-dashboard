@@ -3,19 +3,21 @@
 {% block content %}
 
 <div class="container-fluid">
-  <br>
-  <div class="dashboard-error-container">
-    <div class="dashboard-error-code">500</div>
-    <div class="dashboard-error-title">Oops!</div>
-    <div class="dashboard-error-subtitle">Internal Server Error</div>
-    <br>
-    <p class="dashboard-text" style="text-align: center;">
-      Sorry, something went wrong... Please, try again.
-      <br>
-      Contact the support {%if support_email %}(<a href="mailto:{{ support_email }}">{{ support_email }}</a>){%endif %} if the error persists.
-    </p>
-    <br><br>   
-  </div>
+	<br>
+	<div class="dashboard-error-container">
+		<div class="dashboard-error-code">500</div>
+		<div class="dashboard-error-title">Oops!</div>
+		<div class="dashboard-error-subtitle">Internal Server Error</div>
+		<br>
+
+		<p class="dashboard-text" style="text-align: center;">
+			Sorry, something went wrong... Please, try again.
+			<br>
+			Contact the support {%if support_email %}(<a href="mailto:{{ support_email }}">{{ support_email }}</a>){%endif %} if the error persists.
+		</p>
+		
+		<br><br>   
+	</div>
 </div>
 
 {% endblock %}

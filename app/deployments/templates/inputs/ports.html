@@ -13,37 +13,39 @@ let {{key}}_idx = 1;
 
 function addRule(elem, ports_type) {
     j = {{key}}_idx;
-    var tagname = elem.getAttribute('data-tag-name');
-    var enableRemoteCidr = 'disabled';
+    let tagname = elem.getAttribute('data-tag-name');
+    let enableRemoteCidr = 'disabled';
+
     if (ports_type == 'indigo'){
         enableRemoteCidr = 'enabled';
     }
+
     let template = `
         <div class="form-row" id="${tagname}-${j}">
-          <div enctype='application/json' class="form-group">
-            <label>Protocol</label>
-            <select class="js-example-basic-single js-states form-control" name="${tagname}_tmp[${j}][protocol]">
-              <option value="tcp">TCP</option>
-              <option value="udp">UDP</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Port Range</label> <br>
-            <input type="text" class="form-control" name="${tagname}_tmp[${j}][source]" onblur="validatePorts(this)" class="form-control" placeholder="e.g. [8080,8082] or 80" required>
-            <div class="invalid-feedback">
-              Please respect the required format: <strong>[0-9]+</strong> for single port (e.g. 8080);<br> <strong>\[[0-9]+,[0-9]+\]</strong> for port range (e.g. [8080,8082]).
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Source</label> <br>
-            <input type="text" class="form-control" name="${tagname}_tmp[${j}][remote_cidr]" onblur="validateCidr(this)" class="form-control" value="0.0.0.0/0" ${enableRemoteCidr} required>
-            <div class="invalid-feedback">
-              Please respect the CIDR notation: e.g. <strong>192.168.0.0/24</strong>.<br>For single IP: <strong>192.168.22.32/32</strong>.<br><strong>0.0.0.0/0</strong> allows access from all IP addresses.
-            </div>
-          </div>
-          <div style="margin-top: 30px">
-            <button type=button class='dashboard-button dashboard-button-danger-outline' href="" onclick="javascript:removeRule('${tagname}'+ '-' + ${j} + ''); return false;"><i class="fas fa-trash-alt"></i>&nbsp;Remove</button>
-          </div>
+			<div enctype='application/json' class="form-group">
+				<label>Protocol</label>
+				<select class="js-example-basic-single js-states form-control" name="${tagname}_tmp[${j}][protocol]">
+				<option value="tcp">TCP</option>
+				<option value="udp">UDP</option>
+				</select>
+			</div>
+			<div class="form-group">
+				<label>Port Range</label> <br>
+				<input type="text" class="form-control" name="${tagname}_tmp[${j}][source]" onblur="validatePorts(this)" class="form-control" placeholder="e.g. [8080,8082] or 80" required>
+				<div class="invalid-feedback">
+				Please respect the required format: <strong>[0-9]+</strong> for single port (e.g. 8080);<br> <strong>\[[0-9]+,[0-9]+\]</strong> for port range (e.g. [8080,8082]).
+				</div>
+			</div>
+			<div class="form-group">
+				<label>Source</label> <br>
+				<input type="text" class="form-control" name="${tagname}_tmp[${j}][remote_cidr]" onblur="validateCidr(this)" class="form-control" value="0.0.0.0/0" ${enableRemoteCidr} required>
+				<div class="invalid-feedback">
+				Please respect the CIDR notation: e.g. <strong>192.168.0.0/24</strong>.<br>For single IP: <strong>192.168.22.32/32</strong>.<br><strong>0.0.0.0/0</strong> allows access from all IP addresses.
+				</div>
+			</div>
+			<div style="margin-top: 30px">
+				<button type=button class='dashboard-button dashboard-button-danger-outline' href="" onclick="javascript:removeRule('${tagname}'+ '-' + ${j} + ''); return false;"><i class="fas fa-trash-alt"></i>&nbsp;Remove</button>
+			</div>
         </div>`;
 
     let container = document.getElementById(tagname + '-container');
@@ -53,6 +55,13 @@ function addRule(elem, ports_type) {
 
     j++;
     {{key}}_idx = j;
+}
+
+function removeRule(elementId) {
+    let element = document.getElementById(elementId);
+    console.log("id: " + elementId)
+    console.log(element)
+    element.parentNode.removeChild(element);
 }
 
 </script>
@@ -69,12 +78,3 @@ label {
 }
 
 </style>
-
-<script>
-function removeRule(elementId) {
-    var element = document.getElementById(elementId);
-    console.log("id: " + elementId)
-    console.log(element)
-    element.parentNode.removeChild(element);
-}
-</script>

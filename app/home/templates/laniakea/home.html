@@ -1,26 +1,21 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!--style>
-.jumbotron{
- border: 2px solid black;
- padding: 25px;
-}
-</style-->
 
 <div class = "jumbotron jumbotron-fluid">
-  <div class="container">
-    <div class="row">
-     <div class="col-lg-7">
-     <h1 class="display-3">{{ config['WELCOME_MESSAGE'] }}</h1>
-     <p>
-        <a class="btn btn-primary btn-lg" role="button" href="https://laniakea-elixir-it.github.io/laniakea_at_recas">Get access</a>
-        <a class="btn btn-primary btn-lg" role="button" href="{{ url_for("iam.login") }}">Login with IAM &raquo;</a>
-     </p>
-     </div>
-     <div class="col-lg-5">
-        <img src="https://raw.githubusercontent.com/Laniakea-elixir-it/branding/master/laniakea/laniakea_logo_def_mod.png" height="300"></img>
-     </div>
-  </div>
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-7">
+				<h1 class="display-3">{{ config['WELCOME_MESSAGE'] }}</h1>
+				<p>
+					<a class="btn btn-primary btn-lg" role="button" href="https://laniakea-elixir-it.github.io/laniakea_at_recas">Get access</a>
+					<a class="btn btn-primary btn-lg" role="button" href="{{ url_for("iam.login") }}">Login with IAM &raquo;</a>
+				</p>
+			</div>
+			<div class="col-lg-5">
+				<img src="https://raw.githubusercontent.com/Laniakea-elixir-it/branding/master/laniakea/laniakea_logo_def_mod.png" height="300"></img>
+			</div>
+		</div>
+	</div>
 </div>
 {% endblock %}

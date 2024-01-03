@@ -20,7 +20,7 @@
                 <div class="dashboard-card-body-top">
                     <div class="dashboard-card-header">
                         <div class="dashboard-card-title">{{ service.name }}</div>
-                        <div bookmark="{{service.id}}" class="dashboard-card-bookmark exclude-detail-opening" title="Add {{ service.name }} to bookmarks">
+                        <div bookmark="{{service.id}}" class="dashboard-card-small-btn dashboard-card-bookmark exclude-detail-opening" title="Add {{ service.name }} to bookmarks">
                             <i class="far fa-bookmark exclude-detail-opening"></i>
                         </div>
                     </div>
@@ -96,7 +96,7 @@
                         </div>
                     </a>
                 {% endif %}
-                <div bookmark="{{service.id}}" class="dashboard-card-bookmark" title="Add {{ service.name }} to bookmarks" style="margin-right: 4px;">
+                <div bookmark="{{service.id}}" class="dashboard-card-small-btn dashboard-card-bookmark" title="Add {{ service.name }} to bookmarks" style="margin-right: 4px;">
                     <i class="far fa-bookmark"></i>
                 </div>
                 <a href="{{ service.url }}">

@@ -4,8 +4,6 @@
     <input id="id-{{key}}" type="hidden" data-output-type="json" name="{{key}}" value=""/>
 </div>
 
-
-
 <script>
 
 // initialize a unique counter:
@@ -16,18 +14,18 @@ function addItem(elem) {
     var tagname = elem.getAttribute('data-tag-name');
     let template = `
         <div class="form-row" id="${tagname}-${i}">
-          <div class="form-group">
-            <label>Key</label>
-            <input type="text" class="form-control" name="${tagname}_tmp[][key]" class="form-control" required>
-          </div>
-          <div class="form-group">
-            <label>Value</label>
-            <input type="text" class="form-control" name="${tagname}_tmp[][value]" class="form-control" required>
-          </div>
-          <div class="form-group">
-            <label style="visibility: hidden;display: block;">Remove</label>
-            <button type=button class='dashboard-button dashboard-button-danger-outline' href="" onclick="javascript:removeItem('${tagname}'+ '-' + ${i} + '' ); return false;"><i class="fas fa-trash-alt"></i>&nbsp;Remove</button>
-          </div>
+			<div class="form-group">
+				<label>Key</label>
+				<input type="text" class="form-control" name="${tagname}_tmp[][key]" class="form-control" required>
+			</div>
+			<div class="form-group">
+				<label>Value</label>
+				<input type="text" class="form-control" name="${tagname}_tmp[][value]" class="form-control" required>
+			</div>
+			<div class="form-group">
+				<label style="visibility: hidden;display: block;">Remove</label>
+				<button type=button class='dashboard-button dashboard-button-danger-outline' href="" onclick="javascript:removeItem('${tagname}'+ '-' + ${i} + '' ); return false;"><i class="fas fa-trash-alt"></i>&nbsp;Remove</button>
+			</div>
         </div>`;
 
     let container = document.getElementById(tagname + '-container');
@@ -39,22 +37,20 @@ function addItem(elem) {
     {{key}}_idx = i;
 }
 
-</script>
-
-<style>
-
-label {
-  margin-bottom: 0;
-  margin-left: 5px;
-}
-
-</style>
-
-<script>
 function removeItem(elementId) {
     var element = document.getElementById(elementId);
     console.log("id: " + elementId)
     console.log(element)
     element.parentNode.removeChild(element);
 }
+
 </script>
+
+<style>
+
+label {
+	margin-bottom: 0;
+	margin-left: 5px;
+}
+
+</style>

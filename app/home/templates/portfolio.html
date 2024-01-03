@@ -36,15 +36,6 @@
                 {{ s_values[1] if s_values[1] != undefined else 0 }}
             </div>
         </div>
-
-        <div class="dashboard-report" title="Services: {{ services|length }}">
-            <div class="dashboard-report-text">
-                <i class="fas fa-cogs"></i>&nbsp;&nbsp;Services
-            </div>
-            <div class="dashboard-report-count">
-                {{ services|length }}
-            </div>
-        </div>
     </div>
 
     <!-- BOOKMARKS -->
@@ -171,8 +162,17 @@
                         <div class="dashboard-card-body-top">
                             <div class="dashboard-card-header">
                                 <div class="dashboard-card-title">{% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}</div>
-                                <div bookmark="{{tosca['metadata']['bookmark_id']}}" class="dashboard-card-bookmark exclude-detail-opening {{tosca['metadata']['bookmark_id']}}_bookmark_btn" title="Add {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} to bookmarks">
-                                    <i class="far fa-bookmark exclude-detail-opening"></i>
+                                <div class="dashboard-card-buttons">
+                                    {% if tosca['metadata']['guide_url'] != '' %}
+                                        <a href="{{tosca['metadata']['guide_url']}}" target="_blank">
+                                            <div class="dashboard-card-small-btn exclude-detail-opening" title="Guide for {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}">
+                                                <i class="fas fa-book exclude-detail-opening"></i>
+                                            </div>
+                                        </a>
+                                    {% endif %}
+                                    <div bookmark="{{tosca['metadata']['bookmark_id']}}" class="dashboard-card-small-btn dashboard-card-bookmark exclude-detail-opening {{tosca['metadata']['bookmark_id']}}_bookmark_btn" title="Add {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} to bookmarks">
+                                        <i class="far fa-bookmark exclude-detail-opening"></i>
+                                    </div>
                                 </div>
                             </div>
                             <div class="dashboard-card-text">
@@ -254,7 +254,14 @@
                         {{tosca['description'] | safe}}
                     </div>
                     <div class="dashboard-card-info-buttons">
-                        <div bookmark="{{tosca['metadata']['bookmark_id']}}" class="dashboard-card-bookmark" title="Add {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} to bookmarks" style="margin-right: 4px;">
+                        {% if tosca['metadata']['guide_url'] != '' %}
+                            <a href="{{tosca['metadata']['guide_url']}}" target="_blank">
+                                <div class="dashboard-card-small-btn" title="Guide for {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %}">
+                                    <i class="fas fa-book"></i>
+                                </div>
+                            </a>
+                        {% endif %}
+                        <div bookmark="{{tosca['metadata']['bookmark_id']}}" class="dashboard-card-small-btn dashboard-card-bookmark" title="Add {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} to bookmarks" style="margin-right: 4px;">
                             <i class="far fa-bookmark"></i>
                         </div>
                         {% if tosca['metadata']['access_locked'] %}
@@ -304,7 +311,7 @@
     <div class="modal fade" id="requestAccess" tabindex="-1" role="dialog" aria-labelledby="requestAccess" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
-                <div class="modal-header px-lg-5">
+                <div class="modal-header">
                     <h5 class="modal-title" id="listingModalLabel">Request Access</h5>
                     <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">×</span>
@@ -317,51 +324,49 @@
                             <label for="username">
                                 <strong>User</strong>
                             </label>
-                            <div>
-                                <input type="text" class="form-control" name="username" id="username" value="{{ session['username'] }}" disabled>
-                            </div>
+                            <input type="text" class="form-control" name="username" id="username" value="{{ session['username'] }}" disabled>
                         </div>
                         <div class="form-group">
                             <label for="email">
                                 <strong>Mail</strong>
                             </label>
-                            <div>
-                                <input type="email" class="form-control" name="email" id="email" value="{{ session['useremail'] }}" data-toggle="email">
-                            </div>
+                            <input type="email" class="form-control" name="email" id="email" value="{{ session['useremail'] }}" data-toggle="email">
                         </div>
                         <div class="form-group">
                             <label for="message">Message</label>
                             <textarea required class="form-control" name="message" id="message" placeholder="Please, provide a detailed motivation for your request." rows="3"></textarea>
                         </div>
                         <input type="hidden" name="service_type" value="">
-                        <div class="form-group">
-                            <div>
-                                <button type="submit" class="btn btn-success">Submit</button>
-                            </div>
+                        <div class="dashboard-template-buttons-container">
+                            <button type=button class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Cancel" data-dismiss="modal">
+                            Cancel&nbsp;<i class="fas fa-ban"></i></button>
+              
+                            <button type="submit" class="dashboard-button dashboard-button-lg dashboard-button-primary" title="Continue" onclick="set_loading(true)">Continue&nbsp;<i class="fas fa-arrow-right"></i></button>
                         </div>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
     </div>
     <!--  end Modal -->
-</div> <!-- close container -->
+</div>
+<!-- close container -->
 <script src="/static/js/catalogue.js"></script>
 <link rel="stylesheet" href="/static/css/catalogue.css">
 
 <script>
-    $('#requestAccess').on('show.bs.modal', function(event) {
-        var target = $(event.relatedTarget) // Button that triggered the modal
-        // Extract info from data-* attributes
-        var service = target.data('id')
-        var url = target.data('action')
-        var modal = $(this)
-        modal.find('.modal-title').text('Request access to service \"' + service + '\"')
-        modal.find('input[name="service_type"]').val(service)
-        modal.find('#requestform').prop('action', url)
-    })
+
+$('#requestAccess').on('show.bs.modal', (event) => {
+	let target = $(event.relatedTarget) // Button that triggered the modal
+	// Extract info from data-* attributes
+	let service = target.data('id')
+	let url = target.data('action')
+	let modal = $(this)
+	modal.find('.modal-title').text('Request access to service \"' + service + '\"')
+	modal.find('input[name="service_type"]').val(service)
+	modal.find('#requestform').prop('action', url)
+})
+
 </script>
+
 {% endblock %}

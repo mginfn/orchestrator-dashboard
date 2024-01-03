@@ -1,261 +1,236 @@
 <!DOCTYPE html>
-<html lang="en" >
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>INDIGO PaaS Orchestrator</title>
-      <!-- SEO -->
+	<meta charset="UTF-8">
+	<title>INDIGO PaaS Orchestrator</title>
+	<!-- SEO -->
 
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-    <!-- Mobile friendly -->
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+	<!-- Mobile friendly -->
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- Title -->
-    <title>INDIGO-DataCloud PaaS Orchestrator</title>
+	<!-- Title -->
+	<title>INDIGO-DataCloud PaaS Orchestrator</title>
 
-		<!-- Favicon -->
-		<link rel="shortcut icon" type="image/png" href="static/images/favicon_io/favicon.ico"/>
+	<!-- Favicon -->
+	<link rel="shortcut icon" type="image/png" href="static/images/favicon_io/favicon.ico"/>
 
-		<!-- Import Font Awesome -->
-        <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+	<!-- Import Font Awesome -->
+	<link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
 
-		<!-- Import Google Font -->
-		<link href='https://fonts.googleapis.com/css?family=Raleway:400,100' rel='stylesheet' type='text/css'>
-        <!-- Bootstrap -->
-        <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css'><link rel="stylesheet" href="static/css/style.css">
-
-
+	<!-- Import Google Font -->
+	<link href='https://fonts.googleapis.com/css?family=Raleway:400,100' rel='stylesheet' type='text/css'>
+	<!-- Bootstrap -->
+	<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css'><link rel="stylesheet" href="static/css/style.css">
 </head>
+
 <body>
 <!-- Jumbotron Feature -->
-<div class="jumbotron">
-  <div class="container">
-    <br>
-    <img src="static/images/background2.jpeg" class="parallax-img">
-    <!--img src="static/images/indigodc_logo.png" alt="INDIGO-DataCloud" class="profile-img"-->
-    <h1>INDIGO-DC PaaS Orchestrator</h1>
-    <hr class="style-seven" />
-    <h4>High level orchestration of heterogeneous Cloud resources</h4>
-    <p>
-      <a class="btn btn-lg login-btn" style="border-radius: 0;background: #38A1DB;" href="{{ url_for("iam.login") }}" role="button" target="_blank"><i class="fa fa-sign-in"> Login</i></a>
-    </p>
-  </div>
-</div>
+	<div class="jumbotron">
+		<div class="container">
+			<br>
+			<img src="static/images/background2.jpeg" class="parallax-img">
+			<!--img src="static/images/indigodc_logo.png" alt="INDIGO-DataCloud" class="profile-img"-->
+			<h1>INDIGO-DC PaaS Orchestrator</h1>
+			<hr class="style-seven" />
+			<h4>High level orchestration of heterogeneous Cloud resources</h4>
+			<p>
+				<a class="btn btn-lg login-btn" style="border-radius: 0;background: #38A1DB;" href="{{ url_for("iam.login") }}" role="button" target="_blank"><i class="fa fa-sign-in"> Login</i></a>
+			</p>
+		</div>
+	</div>
 
-<!------------------------------------
-		--     Begin Main Page Content      --
-		------------------------------------->
-<div class="container-fluid">
+	<!------------------------------------
+	--     Begin Main Page Content      --
+	------------------------------------->
+	<div class="container-fluid">
+		<!-- Fixed Navbar -->
+		<nav class="navbar navbar-default navbar-fixed-top">
+			<div class="container-fluid">
+				<div class="container">
+					<!-- Mobile menu button -->
+					<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
 
-  <!-- Fixed Navbar -->
-  <nav class="navbar navbar-default navbar-fixed-top">
-    <div class="container-fluid">
+					<!-- Site Branding -->
+					<div class="navbar-header">
+						<a class="navbar-brand" href="#">
+							<img src="static/images/indigodc_logo.png" class="site-logo">
+							<p>INDIGO PaaS Orchestrator</p>
+						</a>
+					</div>
 
-      <div class="container">
+					<!-- Collect the nav links, forms, and other content for toggling -->
+					<div class="collapse navbar-collapse navbar-right" id="bs-example-navbar-collapse-1">
+						<ul class="nav navbar-nav">
+							<li><a href="#portfolio">Services</a></li>
+							<li><a href="#about">About</a></li>
+							<li><a href="#projects">Projects</a></li>
+							<li><a href="#contact">Contact</a></li>
+							<li><button class="btn btn-info navbar-btn" onclick="window.location.href='{{ url_for("iam.login") }}';">Sign in</button></li>
+						</ul>
+					</div>
+					<!-- END .navbar-collapse -->
+				</div>
+			<!-- END .container -->
+			</div>
+			<!-- END .container-fluid -->
+		</nav>
 
-        <!-- Mobile menu button -->
-        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-							<span class="sr-only">Toggle navigation</span>
-							<span class="icon-bar"></span>
-							<span class="icon-bar"></span>
-							<span class="icon-bar"></span>
-						</button>
+		<!---------------------------
+					--  Portfolio Image Links  --
+					---------------------------->
+		<section id="portfolio">
+			<div class="container">
+				<h1>Services</h1>
+				<hr class="style-seven" />
 
-        <!-- Site Branding -->
-        <div class="navbar-header">
-          <a class="navbar-brand" href="#">
-            <img src="static/images/indigodc_logo.png" class="site-logo">
-            <p>INDIGO PaaS Orchestrator</p>
-          </a>
-        </div>
+				<!-- Row #1 -->
+				<div class="row">
+					<div class="col-md-4 soft-transition">
+						<div class="project-overlay teall-bg"></div>
+						<img src="static/images/logo/slurm.png" alt="cube art thumbnail" class="project-thumb">
+						<h3>Slurm cluster</h3>
+					</div>
+					<div class="col-md-4">
+						<div class="project-overlay teall-bg"></div>
+						<img src="static/images/logo/mesos.png" class="project-thumb">
+						<h3>Apache Mesos cluster</h3>
+					</div>
+					<div class="col-md-4">
+						<div class="project-overlay teall-bg"></div>
+						<img src="static/images/logo/kubernetes.png" class="project-thumb">
+						<h3>Kubernetes cluster</h3>
+					</div>
+				</div>
 
-        <!-- Collect the nav links, forms, and other content for toggling -->
-        <div class="collapse navbar-collapse navbar-right" id="bs-example-navbar-collapse-1">
-          <ul class="nav navbar-nav">
-            <li><a href="#portfolio">Services</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#projects">Projects</a></li>
-            <li><a href="#contact">Contact</a></li>
-            <li><button class="btn btn-info navbar-btn" onclick="window.location.href='{{ url_for("iam.login") }}';">Sign in</button></li>
-          </ul>
-        </div>
-        <!-- END .navbar-collapse -->
-      </div>
-      <!-- END .container -->
-    </div>
-    <!-- END .container-fluid -->
-  </nav>
+				<br />
 
-  <!---------------------------
-			--  Portfolio Image Links  --
-			---------------------------->
-  <section id="portfolio">
+				<!-- Row #2 -->
+				<div class="row">
+					<div class="col-md-4 soft-transition">
+						<div class="project-overlay teall-bg"></div>
+						<img src="static/images/logo/rstudio.png" alt="rock, paper, scissors thumbnail" class="project-thumb">
+						<h3>Rstudio</h3>
+					</div>
+					<div class="col-md-4">
+						<div class="project-overlay teall-bg"></div>
+						<img src="static/images/logo/docker-compose.png" alt="gravity square thumbnail" class="project-thumb">
+						<h3>Docker compose</h3>
+					</div>
+					<div class="col-md-4">
+						<br><br><br><br><br>
+						<div class="col-md-12 soft-transition">
+							<p>and more...</p>
+						</div>
+					</div>
+					<!-- END row -->
+					<div class="row">
+						<div class="col-md-12 soft-transition">
+							<br>
+							<a class="btn btn-lg btn-info" role="button" href="{{url_for('iam.login')}}">Try it now!</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
 
-    <div class="container">
-
-      <h1>Services</h1>
-      <hr class="style-seven" />
-
-      <!-- Row #1 -->
-      <div class="row">
-        <div class="col-md-4 soft-transition">
-          <div class="project-overlay teall-bg"></div>
-          <img src="static/images/logo/slurm.png" alt="cube art thumbnail" class="project-thumb">
-          <h3>Slurm cluster</h3>
-        </div>
-        <div class="col-md-4">
-            <div class="project-overlay teall-bg"></div>
-            <img src="static/images/logo/mesos.png" class="project-thumb">
-            <h3>Apache Mesos cluster</h3>
-        </div>
-        <div class="col-md-4">
-          <div class="project-overlay teall-bg"></div>
-          <img src="static/images/logo/kubernetes.png" class="project-thumb">
-          <h3>Kubernetes cluster</h3>
-        </div>
-      </div>
-
-      <br />
-
-      <!-- Row #2 -->
-      <div class="row">
-        <div class="col-md-4 soft-transition">
-          <div class="project-overlay teall-bg"></div>
-          <img src="static/images/logo/rstudio.png" alt="rock, paper, scissors thumbnail" class="project-thumb">
-          <h3>Rstudio</h3>
-        </div>
-        <div class="col-md-4">
-          <div class="project-overlay teall-bg"></div>
-          <img src="static/images/logo/docker-compose.png" alt="gravity square thumbnail" class="project-thumb">
-          <h3>Docker compose</h3>
-        </div>
-        <div class="col-md-4">
-          <br><br><br><br><br>
-          <div class="col-md-12 soft-transition">
-            <p>and more...</p>
-          </div>
-        </div>
-        <!-- END row -->
-        <div class="row">
-          <div class="col-md-12 soft-transition">
-            <br>
-            <a class="btn btn-lg btn-info" role="button" href="{{url_for('iam.login')}}">Try it now!</a>
-          </div>
-        </div>
-
-
-      </div>
-      <!-- END .container -->
-
-    </div>
-
-  </section>
-
-    <!--------------------------
-                        --     Projects Section     --
-                        --------------------------->
-  <section id="projects">
-
-    <div class="container">
-
-      <h1>Projects</h1>
-      <hr class="style=seven" />
-
-      <ul class="list-inline">
-          <li><a href="https://www.indigo-datacloud.eu/" target="_blank"><img src="static/images/logo/indigo-dc.png" alt="indigo-dc"></a></li>
-          <li><a href="https://deep-hybrid-datacloud.eu/" target="_blank"><img src="static/images/logo/deep-hdc.png" alt="deep-hdc"></a></li>
-          <li><a href="https://www.extreme-datacloud.eu/" target="_blank"><img src="static/images/logo/xdc.png" alt="xdc"></a></li>
-          <li><a href="https://www.eosc-hub.eu/" target="_blank"><img src="static/images/logo/eosc-hub.png" alt="eosc-hub"></a></li>
-      </ul>
-
-    </div>
-  </section>
-
-
-  <!--------------------------
-			--     About Section      --
-			--------------------------->
-  <section id="about" class="teall-bg">
-
-    <div class="container">
-
-      <h1>About</h1>
-      <hr class="style-seven" />
-      <p>
-        The PaaS Orchestrator allows to coordinate the provisioning of virtualized compute and storage resources on Cloud Management Frameworks, both private and public (like OpenStack, OpenNebula, AWS, etc.), and the deployment of dockerized long-running services and batch jobs on Apache Mesos clusters.
-        It receives the deployment requests, expressed through templates written in TOSCA (Simple Profile in YAML version 1.0), and orchestrates the deployments on the best available cloud sites. In order to select the best site, the Orchestrator implements a complex workflow: it gathers information about the SLAs signed by the providers with the user, the monitoring data about the availability of the compute and storage services, the location of the data requested by the user (if any). Hybrid deployments spanning multiple sites are supported.
-        Using the PaaS Orchestrator and the TOSCA templates, the end users can exploit computational resources without any knowledge about the IaaS details.
-      </p>
-
-      <p>
-        <a class="btn btn-lg btn-clear-light soft-transition" href="https://github.com/indigo-dc/orchestrator" role="button" target="_blank"><i class="fa fa-github"> Github</i></a>
-        <a class="btn btn-lg btn-clear-light soft-transition" href="https://hub.docker.com/r/indigodatacloud/orchestrator/" role="button" target="_blank"><i class="fa fa-th"> Dockerhub</i></a>
-        <a class="btn btn-lg btn-clear-light soft-transition" href="https://github.com/indigo-dc/orchestrator#guides" role="button" target="_blank"><i class="fa fa-book"> Documentation</i></a>
-      </p>
-
-      <br>
-      <h1>Technologies</h1>
-      <hr>
-      <ul class="list-inline">
-        <li><a href="https://www.grycap.upv.es/im/index.php" target="_blank"><img class="tech-thumb-light" src="static/images/logo/im.png" alt="im"></a></li>
-        <li><a href="https://www.grycap.upv.es/im/index.php" target="_blank"><img class="tech-thumb-light" src="static/images/logo/mesos-full.png" alt="mesos"></a></li>
-        <li><a href="https://www.grycap.upv.es/im/index.php" target="_blank"><img class="tech-thumb-light" src="static/images/logo/openstack.png" alt="openstack"></a></li>
-        <li><a href="https://www.grycap.upv.es/im/index.php" target="_blank"><img class="tech-thumb-light" src="static/images/logo/docker.png" alt="docker"></a></li>
-        <li><a href="https://www.grycap.upv.es/im/index.php" target="_blank"><img class="tech-thumb-light" src="static/images/logo/ansible.png" alt="ansible"></a></li>
-        <li><a href="https://www.grycap.upv.es/im/index.php" target="_blank"><img class="tech-thumb-light" src="static/images/logo/tosca.png" alt="tosca"></a></li>
-
-      </ul>
-
-    </div>
-
-  </section>
-
-
-  <!--------------------------
-			--      Contact Form      --
-			--------------------------->
-  <section id="contact" class="teall-bg">
-
-    <div class="container">
-
-      <h1>Contact</h1>
-      <hr class="style-seven" />
-
-      <!-- Form HTML -->
-      <form action="{{url_for('home_bp.contact')}}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <fieldset class="form-group">
-          <input type="name" class="form-control" id="input_name" placeholder="Enter your Name" name="name">
-        </fieldset>
-        <fieldset class="form-group">
-          <input type="email" class="form-control" id="input_email" placeholder="Enter your E-mail Address" name="email">
-        </fieldset>
-        <fieldset class="form-group">
-          <textarea class="form-control" id="input_project_info" rows="3" placeholder="Tell us about your project!" name="message"></textarea>
-        </fieldset>
-    </div>
-    <input type="submit" id="submit" class="btn btn-clear-light soft-transition" name="submit" value="Send">
-    </form>
-
-</div>
-
-</section>
-
-</div>
-<!-- END Main page content -->
-
-<!--------------------------
-		--         Footer         --
+		<!--------------------------
+		--     Projects Section   --
 		--------------------------->
-<footer>
-  <div class="container-fluid text-center affix-bottom">
-    Copyright &copy 2020
-  </DIV>
-</footer>
-<!-- partial -->
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.min.js'></script>
-<script src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script><script  src="static/js/script.js"></script>
 
+		<section id="projects">
+			<div class="container">
+				<h1>Projects</h1>
+				<hr class="style=seven" />
+
+				<ul class="list-inline">
+					<li><a href="https://www.indigo-datacloud.eu/" target="_blank"><img src="static/images/logo/indigo-dc.png" alt="indigo-dc"></a></li>
+					<li><a href="https://deep-hybrid-datacloud.eu/" target="_blank"><img src="static/images/logo/deep-hdc.png" alt="deep-hdc"></a></li>
+					<li><a href="https://www.extreme-datacloud.eu/" target="_blank"><img src="static/images/logo/xdc.png" alt="xdc"></a></li>
+					<li><a href="https://www.eosc-hub.eu/" target="_blank"><img src="static/images/logo/eosc-hub.png" alt="eosc-hub"></a></li>
+				</ul>
+			</div>
+		</section>
+
+		<!--------------------------
+		--     About Section      --
+		--------------------------->
+
+		<section id="about" class="teall-bg">
+			<div class="container">
+				<h1>About</h1>
+				<hr class="style-seven" />
+				<p>
+					The PaaS Orchestrator allows to coordinate the provisioning of virtualized compute and storage resources on Cloud Management Frameworks, both private and public (like OpenStack, OpenNebula, AWS, etc.), and the deployment of dockerized long-running services and batch jobs on Apache Mesos clusters.
+					It receives the deployment requests, expressed through templates written in TOSCA (Simple Profile in YAML version 1.0), and orchestrates the deployments on the best available cloud sites. In order to select the best site, the Orchestrator implements a complex workflow: it gathers information about the SLAs signed by the providers with the user, the monitoring data about the availability of the compute and storage services, the location of the data requested by the user (if any). Hybrid deployments spanning multiple sites are supported.
+					Using the PaaS Orchestrator and the TOSCA templates, the end users can exploit computational resources without any knowledge about the IaaS details.
+				</p>
+				<p>
+					<a class="btn btn-lg btn-clear-light soft-transition" href="https://github.com/indigo-dc/orchestrator" role="button" target="_blank"><i class="fa fa-github"> Github</i></a>
+					<a class="btn btn-lg btn-clear-light soft-transition" href="https://hub.docker.com/r/indigodatacloud/orchestrator/" role="button" target="_blank"><i class="fa fa-th"> Dockerhub</i></a>
+					<a class="btn btn-lg btn-clear-light soft-transition" href="https://github.com/indigo-dc/orchestrator#guides" role="button" target="_blank"><i class="fa fa-book"> Documentation</i></a>
+				</p>
+				<br>
+				<h1>Technologies</h1>
+				<hr>
+				<ul class="list-inline">
+					<li><a href="https://www.grycap.upv.es/im/index.php" target="_blank"><img class="tech-thumb-light" src="static/images/logo/im.png" alt="im"></a></li>
+					<li><a href="https://www.grycap.upv.es/im/index.php" target="_blank"><img class="tech-thumb-light" src="static/images/logo/mesos-full.png" alt="mesos"></a></li>
+					<li><a href="https://www.grycap.upv.es/im/index.php" target="_blank"><img class="tech-thumb-light" src="static/images/logo/openstack.png" alt="openstack"></a></li>
+					<li><a href="https://www.grycap.upv.es/im/index.php" target="_blank"><img class="tech-thumb-light" src="static/images/logo/docker.png" alt="docker"></a></li>
+					<li><a href="https://www.grycap.upv.es/im/index.php" target="_blank"><img class="tech-thumb-light" src="static/images/logo/ansible.png" alt="ansible"></a></li>
+					<li><a href="https://www.grycap.upv.es/im/index.php" target="_blank"><img class="tech-thumb-light" src="static/images/logo/tosca.png" alt="tosca"></a></li>
+
+				</ul>
+			</div>
+		</section>
+
+		<!--------------------------
+		--      Contact Form      --
+		--------------------------->
+
+		<section id="contact" class="teall-bg">
+			<div class="container">
+				<h1>Contact</h1>
+				<hr class="style-seven" />
+
+				<!-- Form HTML -->
+				<form action="{{url_for('home_bp.contact')}}" method="post">
+					<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+					<fieldset class="form-group">
+						<input type="name" class="form-control" id="input_name" placeholder="Enter your Name" name="name">
+					</fieldset>
+					<fieldset class="form-group">
+						<input type="email" class="form-control" id="input_email" placeholder="Enter your E-mail Address" name="email">
+					</fieldset>
+					<fieldset class="form-group">
+						<textarea class="form-control" id="input_project_info" rows="3" placeholder="Tell us about your project!" name="message"></textarea>
+					</fieldset>
+					<input type="submit" id="submit" class="btn btn-clear-light soft-transition" name="submit" value="Send">
+				</form>
+			</div>
+		</section>
+	</div>
+	<!-- END Main page content -->
+
+	<!--------------------------
+	--         Footer         --
+	--------------------------->
+	
+	<footer>
+	<div class="container-fluid text-center affix-bottom">
+		Copyright &copy 2020
+	</div>
+	</footer>
+	<!-- partial -->
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.min.js'></script>
+	<script src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script><script  src="static/js/script.js"></script>
 </body>
 </html>

@@ -2,9 +2,7 @@
 {% block content %}
 
 <div class="container-fluid">
-
     <br>
-
     <div class="card shadow mb-4">
         <div class="card-body">
             <div class="dashboard-template-header">
@@ -19,8 +17,9 @@
 
             <ul class="nav nav-tabs">
                 <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#conf_endpoints">Configured endpoints</a></li>
-                {% if session['userrole'] == 'admin' %}
-                <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#dash_conf">Dashboard Configuration</a></li>
+                
+				{% if session['userrole'] == 'admin' %}
+                	<li class="nav-item"><a class="nav-link" data-toggle="tab" href="#dash_conf">Dashboard Configuration</a></li>
                 {% endif %}
             </ul>
 
@@ -62,104 +61,105 @@
                     </div>
                 </div>
                 {% if session['userrole'] == 'admin' %}
-                <div class="tab-pane fade show" id=dash_conf>
-                    <br>
-                    <p class="text-success">Last update at: {{ tosca_settings.updated_at }}</p>
-                    <form id="settingsform" action="{{ url_for('home_bp.submit_settings')}}" method="post">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <fieldset>
-                            <br>
-                            <div class="dashboard-text"><h5>TOSCA templates</h5></div>
-                            <p class="text-success">Current settings:
-                            {% if tosca_settings.tosca_templates_url %}
-                                    {{ tosca_settings.tosca_templates_url }} (branch/tag: {{ tosca_settings.tosca_templates_tag_or_branch }})
-                                {% else %} Not Available{% endif %}</p>
-                            <div class="form-row">
-                                <div class="form-group col">
-                                    <label for="tosca_templates_url">Repository URL</label>
-                                    <input type="url" class="form-control" id="tosca_templates_url" name="tosca_templates_url">
-                                </div>
+					<div class="tab-pane fade show" id=dash_conf>
+						<br>
+						<p class="text-success">Last update at: {{ tosca_settings.updated_at }}</p>
+						<form id="settingsform" action="{{ url_for('home_bp.submit_settings')}}" method="post">
+							<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+							<fieldset>
+								<br>
+								<div class="dashboard-text"><h5>TOSCA templates</h5></div>
+								<p class="text-success">Current settings:
+									{% if tosca_settings.tosca_templates_url %}
+										{{ tosca_settings.tosca_templates_url }} (branch/tag: {{ tosca_settings.tosca_templates_tag_or_branch }})
+									{% else %} Not Available{% endif %}
+								</p>
+								<div class="form-row">
+									<div class="form-group col">
+										<label for="tosca_templates_url">Repository URL</label>
+										<input type="url" class="form-control" id="tosca_templates_url" name="tosca_templates_url">
+									</div>
 
-                                <div class="form-group col">
-                                    <label for="tosca_templates_tag_or_branch">Tag/Branch (optional)</label>
-                                    <input type="text" class="form-control" id="tosca_templates_tag_or_branch" name="tosca_templates_tag_or_branch">
-                                </div>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="tosca_templates_private" name="tosca_templates_private">
-                                <label class="form-check-label" for="tosca_templates_private">Private Repository</label>
-                            </div>
-                            <div class="form-row" id="privateRepoFields1" style="display: none;">
-                                <div class="form-group col">
-                                    <label for="tosca_templates_username">Username</label>
-                                    <input type="text" class="form-control" id="tosca_templates_username" name="tosca_templates_username">
-                                </div>
-                                <div class="form group col">
-                                    <label for="tosca_templates_token">Token</label>
-                                    <input type="password" class="form-control" id="tosca_templates_token" name="tosca_templates_token">
-                                </div>
-                            </div>
-                        </fieldset>
-                        <fieldset>
-                            <br><br>
-                            <div class="dashboard-text"><h5>Dashboard configuration</h5></div>
-                            <p class="text-muted">the repo containing the folders "tosca-parameters" and "tosca-metadata"</p>
-                            <p class="text-success">Current settings:
-                                {% if tosca_settings.dashboard_configuration_url %}
-                                    {{ tosca_settings.dashboard_configuration_url }} (branch/tag: {{ tosca_settings.dashboard_configuration_tag_or_branch }})
-                                {% else %} Not Available{% endif %}</p>
-                            <div class="form-row">
-                                <div class="form-group col">
-                                    <label for="dashboard_configuration_url">Repository URL</label>
-                                    <input type="url" class="form-control" id="dashboard_configuration_url" name="dashboard_configuration_url">
-                                </div>
+									<div class="form-group col">
+										<label for="tosca_templates_tag_or_branch">Tag/Branch (optional)</label>
+										<input type="text" class="form-control" id="tosca_templates_tag_or_branch" name="tosca_templates_tag_or_branch">
+									</div>
+								</div>
+								<div class="form-check">
+									<input class="form-check-input" type="checkbox" id="tosca_templates_private" name="tosca_templates_private">
+									<label class="form-check-label" for="tosca_templates_private">Private Repository</label>
+								</div>
+								<div class="form-row" id="privateRepoFields1" style="display: none;">
+									<div class="form-group col">
+										<label for="tosca_templates_username">Username</label>
+										<input type="text" class="form-control" id="tosca_templates_username" name="tosca_templates_username">
+									</div>
+									<div class="form group col">
+										<label for="tosca_templates_token">Token</label>
+										<input type="password" class="form-control" id="tosca_templates_token" name="tosca_templates_token">
+									</div>
+								</div>
+							</fieldset>
+							<fieldset>
+								<br><br>
+								<div class="dashboard-text"><h5>Dashboard configuration</h5></div>
+								<p class="text-muted">the repo containing the folders "tosca-parameters" and "tosca-metadata"</p>
+								<p class="text-success">Current settings:
+									{% if tosca_settings.dashboard_configuration_url %}
+										{{ tosca_settings.dashboard_configuration_url }} (branch/tag: {{ tosca_settings.dashboard_configuration_tag_or_branch }})
+									{% else %} Not Available{% endif %}</p>
+								<div class="form-row">
+									<div class="form-group col">
+										<label for="dashboard_configuration_url">Repository URL</label>
+										<input type="url" class="form-control" id="dashboard_configuration_url" name="dashboard_configuration_url">
+									</div>
 
-                                <div class="form-group col">
-                                    <label for="dashboard_configuration_tag_or_branch">Tag/Branch (optional)</label>
-                                    <input type="text" class="form-control" id="dashboard_configuration_tag_or_branch" name="dashboard_configuration_tag_or_branch">
-                                </div>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="dashboard_configuration_private" name="dashboard_configuration_private">
-                                <label class="form-check-label" for="dashboard_configuration_private">Private Repository</label>
-                            </div>
-                            <div class="form-row" id="privateRepoFields2" style="display: none;">
-                                <div class="form-group col">
-                                    <label for="dashboard_configuration_username">Username</label>
-                                    <input type="text" class="form-control" id="dashboard_configuration_username" name="dashboard_configuration_username">
-                                </div>
-                                <div class="form group col">
-                                    <label for="dashboard_configuration_token">Token</label>
-                                    <input type="password" class="form-control" id="dashboard_configuration_token" name="dashboard_configuration_token">
-                                </div>
-                            </div>
-                        </fieldset>
-                        <fieldset>
-                            <br><br>
-                            <div class="dashboard-text"><h5>Notifications</h5></div>
-                            <div class="form-row">
-                                <div class="form-check m-2">
-                                    <input type="checkbox" class="form-check-input" id="notify_admins" name="notify_admins" checked="checked">
-                                    <label class="form-check-label" for="notify_admins">Notify admins</label>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group col">
-                                    <label for="notify_email">CC to (optional)</label>
-                                    <select class="js-example-basic-multiple js-example-tags form-control" id="notify_email" name="notify_email" multiple="multiple"></select>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="message">Comment (optional)</label>
-                                <textarea class="form-control" name="message" id="message" placeholder="Motivation for updating the dashboard settings." rows="3"></textarea>
-                            </div>
-                        </fieldset>
-                        <br>
-                        <div class="dashboard-template-buttons-container">
-                            <button type="submit" class="dashboard-button dashboard-button-primary dashboard-button-lg submitBtn" style="margin-left: auto;">Apply<i class="fas fa-save"></i></button>
-                        </div>
-                    </form>
-                </div>
+									<div class="form-group col">
+										<label for="dashboard_configuration_tag_or_branch">Tag/Branch (optional)</label>
+										<input type="text" class="form-control" id="dashboard_configuration_tag_or_branch" name="dashboard_configuration_tag_or_branch">
+									</div>
+								</div>
+								<div class="form-check">
+									<input class="form-check-input" type="checkbox" id="dashboard_configuration_private" name="dashboard_configuration_private">
+									<label class="form-check-label" for="dashboard_configuration_private">Private Repository</label>
+								</div>
+								<div class="form-row" id="privateRepoFields2" style="display: none;">
+									<div class="form-group col">
+										<label for="dashboard_configuration_username">Username</label>
+										<input type="text" class="form-control" id="dashboard_configuration_username" name="dashboard_configuration_username">
+									</div>
+									<div class="form group col">
+										<label for="dashboard_configuration_token">Token</label>
+										<input type="password" class="form-control" id="dashboard_configuration_token" name="dashboard_configuration_token">
+									</div>
+								</div>
+							</fieldset>
+							<fieldset>
+								<br><br>
+								<div class="dashboard-text"><h5>Notifications</h5></div>
+								<div class="form-row">
+									<div class="form-check m-2">
+										<input type="checkbox" class="form-check-input" id="notify_admins" name="notify_admins" checked="checked">
+										<label class="form-check-label" for="notify_admins">Notify admins</label>
+									</div>
+								</div>
+								<div class="form-row">
+									<div class="form-group col">
+										<label for="notify_email">CC to (optional)</label>
+										<select class="js-example-basic-multiple js-example-tags form-control" id="notify_email" name="notify_email" multiple="multiple"></select>
+									</div>
+								</div>
+								<div class="form-group">
+									<label for="message">Comment (optional)</label>
+									<textarea class="form-control" name="message" id="message" placeholder="Motivation for updating the dashboard settings." rows="3"></textarea>
+								</div>
+							</fieldset>
+							<br>
+							<div class="dashboard-template-buttons-container">
+								<button type="submit" class="dashboard-button dashboard-button-primary dashboard-button-lg submitBtn" style="margin-left: auto;">Apply<i class="fas fa-save"></i></button>
+							</div>
+						</form>
+					</div>
                 {% endif %}
             </div>
         </div>
@@ -183,15 +183,16 @@
 </div>
 
 <script>
-$(document).ready(function() {
-  $("#tosca_templates_private").change(function() {
+
+$(document).ready(() => {
+  $("#tosca_templates_private").change(() => {
     $("#privateRepoFields1").toggle(this.checked);
   });
-  $("#dashboard_configuration_private").change(function() {
+  $("#dashboard_configuration_private").change(() => {
     $("#privateRepoFields2").toggle(this.checked);
   });
 
-  $("#settingsform").submit(function(event) {
+  $("#settingsform").submit((event) => {
     event.preventDefault();
 
     // Show loading modal
@@ -221,16 +222,17 @@ $('#tableServices').dataTable( {
     "order": [[ 1, "asc" ]]
 });
 
-$(document).ready(function() {
+$(document).ready(() => {
     $('.js-example-basic-multiple').select2({
-      width: '100%' // https://github.com/select2/select2/issues/4220
+      	width: '100%' // https://github.com/select2/select2/issues/4220
     });
     $(".js-example-tags").select2({
-      tags: true,
-      tokenSeparators: [' '],
-      width: '100%'
+		tags: true,
+		tokenSeparators: [' '],
+		width: '100%'
     });
 });
+
 </script>
 
 {% endblock %}

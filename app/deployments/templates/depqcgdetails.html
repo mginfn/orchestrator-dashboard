@@ -3,63 +3,60 @@
 {% block content %}
 
 <div class="container mt-4">
-
-
-{% if job %}
-  <div class="card border-secondary mb-2">
-    <div class="card-header" id="heading">
-        <div class="row">
-            <div class="col-md-6">
-                <span>
-                  Job ID:&nbsp;{{job.id}}
-                </span>
-               {% if job.state == "FINISHED" %}
-               <span class="badge badge-success"/>
-               {% elif job.state in ["SUBMITTED", "PENDING", "EXECUTING", "COMPLETING"] %}
-               <span class="badge badge-warning text-white"/>
-               {% elif job.state in ["FAILED", "UNKNOWN"] %}
-               <span class="badge badge-danger"/>
-               {% else %}
-               <span class="badge badge-warning text-white"><span class="spinner-grow spinner-grow-sm"></span>
-               {% endif %}
-               {{ job.state }}
-               </span>
-            </div>
-            <div class="col-md-6 text-right">
-              <!-- Button -->
-              <button type=button class="btn btn-small btn-outline-secondary" onclick="history.back()"><span class="fas fa-arrow-left mr-2"></span> Back</button>
-            </div>
-        </div> <!-- / .row -->
-    </div>
-    <div class="card-body">
-        <p><strong>description:</strong> {{job.description.note}}</p>
-        <p><strong>executable:</strong> {{job.description.execution.executable}}</p>
-        <p><strong>directory:</strong> {{job.description.execution.directory}}</p>
-        <br/>
-        <p><strong>stdin:</strong> {{job.description.execution.stdin}}</p>
-        <p><strong>stdout:</strong> {{job.description.execution.stdout}}</p>
-        <p><strong>stderr:</strong> {{job.description.execution.stderr}}</p>
-        <p><strong>std_outerr:</strong> {{job.description.execution.std_outerr}}</p>
-        <br/>
-        <p><strong>total cores:</strong> {{job.description.resources.components[0].total_cores}}</p>
-        <p><strong>total nodes:</strong> {{job.description.resources.components[0].total_nodes}}</p>
-        <p><strong>memory per node:</strong> {{job.description.resources.components[0].memory_per_node}}</p>
-        <p><strong>memory per core:</strong> {{job.description.resources.components[0].memory_per_core}}</p>
-        <br/>
-        <p><strong>submit time:</strong> {{job.submit_time}}</p>
-        <p><strong>start time:</strong> {{job.start_time}}</p>
-        <p><strong>finish time:</strong> {{job.finish_time}}</p>
-        <p><strong>update time:</strong> {{job.updated_time}}</p>
-        <br/>
-        <p><strong>exit code:</strong> {{job.exit_code}}</p>
-    </div>
-  {% else %}
-  No details available
-  {% endif %}
-  </div>
-
-
-
+	{% if job %}
+		<div class="card border-secondary mb-2">
+			<div class="card-header" id="heading">
+				<div class="row">
+					<div class="col-md-6">
+						<span>Job ID:&nbsp;{{job.id}}</span>
+						
+						{% if job.state == "FINISHED" %}
+							<span class="badge badge-success"/>
+						{% elif job.state in ["SUBMITTED", "PENDING", "EXECUTING", "COMPLETING"] %}
+							<span class="badge badge-warning text-white"/>
+						{% elif job.state in ["FAILED", "UNKNOWN"] %}
+							<span class="badge badge-danger"/>
+						{% else %}
+							<span class="badge badge-warning text-white"><span class="spinner-grow spinner-grow-sm"></span>
+						{% endif %}
+						
+						{{ job.state }}
+						</span>
+					</div>
+					<div class="col-md-6 text-right">
+						<!-- Button -->
+						<button type=button class="btn btn-small btn-outline-secondary" onclick="history.back()">
+							<span class="fas fa-arrow-left mr-2"></span> Back
+						</button>
+					</div>
+				</div> <!-- / .row -->
+			</div>
+			<div class="card-body">
+				<p><strong>description:</strong> {{job.description.note}}</p>
+				<p><strong>executable:</strong> {{job.description.execution.executable}}</p>
+				<p><strong>directory:</strong> {{job.description.execution.directory}}</p>
+				<br/>
+				<p><strong>stdin:</strong> {{job.description.execution.stdin}}</p>
+				<p><strong>stdout:</strong> {{job.description.execution.stdout}}</p>
+				<p><strong>stderr:</strong> {{job.description.execution.stderr}}</p>
+				<p><strong>std_outerr:</strong> {{job.description.execution.std_outerr}}</p>
+				<br/>
+				<p><strong>total cores:</strong> {{job.description.resources.components[0].total_cores}}</p>
+				<p><strong>total nodes:</strong> {{job.description.resources.components[0].total_nodes}}</p>
+				<p><strong>memory per node:</strong> {{job.description.resources.components[0].memory_per_node}}</p>
+				<p><strong>memory per core:</strong> {{job.description.resources.components[0].memory_per_core}}</p>
+				<br/>
+				<p><strong>submit time:</strong> {{job.submit_time}}</p>
+				<p><strong>start time:</strong> {{job.start_time}}</p>
+				<p><strong>finish time:</strong> {{job.finish_time}}</p>
+				<p><strong>update time:</strong> {{job.updated_time}}</p>
+				<br/>
+				<p><strong>exit code:</strong> {{job.exit_code}}</p>
+			</div>
+		</div>
+	{% else %}
+		No details available
+	{% endif %}
 </div>
 
 {% endblock %}

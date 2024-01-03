@@ -3,27 +3,28 @@
 {% block content %}
 
 <div class="container">
-
     <br>
-
     <div class="card shadow mb-4">
         <div class="card-body">
-          <div class="dashboard-template-header">
-              <div class="dashboard-template-image">
-                <i class="fas fa-file-code"></i>
-              </div>
-          
-              <div class="dashboard-template-title">
-                Template
-              </div>
-          
-              <div class="dashboard-template-header-buttons">
-                <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="history.back()"><i class="fas fa-arrow-left"></i>&nbsp;Back</button>
-              </div>
-          </div>
+			<div class="dashboard-template-header">
+				<div class="dashboard-template-image">
+					<i class="fas fa-file-code"></i>
+				</div>
+			
+				<div class="dashboard-template-title">
+					Template
+				</div>
+			
+				<div class="dashboard-template-header-buttons">
+					<button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="history.back()">
+						<i class="fas fa-arrow-left"></i>&nbsp;Back
+					</button>
+				</div>
+			</div>
 
-          <pre>{{ template | safe }}</pre>
+          	<pre>{{ template | safe }}</pre>
         </div>
     </div>
 </div>
+
 {% endblock %}

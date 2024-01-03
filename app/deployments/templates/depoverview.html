@@ -3,10 +3,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.6.2/dist/chart.min.js"></script>
 
 <div class="container-fluid">
-{% set ar = namespace(found=false) %}
-  <br>
-    <div class="card shadow mb-4">
-        
+	{% set ar = namespace(found=false) %}
+  	<br>
+    <div class="card shadow mb-4">    
         <div class="card-body">
             <div class="dashboard-template-header">
                 <div class="dashboard-template-image">
@@ -18,13 +17,19 @@
                 </div>
             
                 <div class="dashboard-template-header-buttons">
-                  <button type="button" class="dashboard-button dashboard-button-outline-no-border" onclick='location.href="{{ url_for('deployments_bp.showdeploymentsoverview') }}"'><i class="fas fa-sync-alt"></i>&nbsp;Refresh</button>
-                  <button type="button" class="dashboard-button dashboard-button-small dashboard-button-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"><span class='fas fa-list mr-2'></span>Details&nbsp;</button>
-                  <div class="dropdown-menu">
-                        {% for group in session['supported_usergroups'] %}
-                        <a class="dropdown-item" href="{{ url_for('deployments_bp.showdeploymentsingroup', group=group) }}">{{group}}</a>
-                        {% endfor %}
-                  </div>
+					<button type="button" class="dashboard-button dashboard-button-outline-no-border" onclick='location.href="{{ url_for('deployments_bp.showdeploymentsoverview') }}"'>
+						<i class="fas fa-sync-alt"></i>&nbsp;Refresh
+					</button>
+					<button type="button" class="dashboard-button dashboard-button-small dashboard-button-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
+						<span class='fas fa-list mr-2'></span>Details&nbsp;
+					</button>
+					<div class="dropdown-menu">
+						{% for group in session['supported_usergroups'] %}
+							<a class="dropdown-item" href="{{ url_for('deployments_bp.showdeploymentsingroup', group=group) }}">
+								{{group}}
+							</a>
+						{% endfor %}
+					</div>
                 </div>
             </div>
             <div class="row">
@@ -87,18 +92,18 @@ function drawchart(chartid, title, subtitle, labels, values, colors) {
         }
     }
  });
-
 }
+
 console.log("{{s_text}}");
 drawchart("status_chart", "{{s_title}}", "", {{ s_labels | safe}}, {{ s_values }}, {{s_colors | safe}});
 drawchart("projects_chart", "{{p_title}}", "deployments distribution per project",  {{ p_labels | safe}}, {{ p_values }}, {{p_colors | safe}});
 drawchart("providers_chart", "{{pr_title}}", "deployments distribution per provider", {{ pr_labels | safe}}, {{ pr_values }}, {{pr_colors | safe}});
+
 </script>
 
-
-
 {% if ar.found %}
-<script>setTimeout(function(){location.reload();},30000);</script>
+	<script>setTimeout(function(){location.reload();},30000);</script>
 {% endif %}
+
 {% endblock %}
 

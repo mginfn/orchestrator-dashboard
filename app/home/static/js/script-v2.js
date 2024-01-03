@@ -239,7 +239,7 @@ function add_loading_on_redirect() {
         // loading if not ID to a section
         if(link_redirect.charAt(0) != '#') {
             // remove loading for external link
-            if(this.origin !== window.location.origin) {
+            if(this.origin !== window.location.origin || $(e.currentTarget).attr('target') == '_blank') {
                 set_loading(false);
             } else {
                 set_loading(true, 'You are being redirected to the requested page.<br>Wait on this page without reloading.');
@@ -370,17 +370,26 @@ function bookmark_show_on_load() {
     for(let i = 0; i < localStorage.length; i++) {
         if(localStorage.key(i).includes('_bookmark_visibility')) {
             let name = localStorage.key(i).replace('_bookmark_visibility', '');
+            let btn = $('[bookmark="'+ name +'"]');
+            let icon = $('[bookmark="'+ name +'"] > i');
+            let title = btn.prop('title');
             
-            if(localStorage.getItem(localStorage.key(i)) == 1) {
-                visible++;
-
-                $('#'+ name +'_shortcut').show();
-        
-                $('[bookmark="'+ name +'"] > i').removeClass('far');
-                $('[bookmark="'+ name +'"] > i').addClass('fas');
-            } else {
-                $('[bookmark="'+ name +'"] > i').removeClass('fas');
-                $('[bookmark="'+ name +'"] > i').addClass('far');
+            if(btn.length > 0) {
+                if(localStorage.getItem(localStorage.key(i)) == 1) {
+                    visible++;
+    
+                    $('#'+ name +'_shortcut').show();
+            
+                    icon.removeClass('far');
+                    icon.addClass('fas');
+    
+                    btn.prop('title', title.replace('Add', 'Remove').replace('to bookmarks', 'from bookmarks'))
+                } else {
+                    icon.removeClass('fas');
+                    icon.addClass('far');
+    
+                    btn.prop('title', title.replace('Remove', 'Add').replace('from bookmarks', 'to bookmarks'))
+                }
             }
         }
 
@@ -400,13 +409,16 @@ function bookmark_add_on_click() {
     bookmarks.on('click', (e) => {
         let name = e.currentTarget.getAttribute('bookmark');
         let storageItem = name + '_bookmark_visibility'
+        let btn = $('[bookmark="'+ name +'"]');
         let icon = $('[bookmark="'+ name +'"] > i');
+        let title = btn.prop('title');
 
         if(localStorage[storageItem] == undefined || localStorage[storageItem] == 0) {
             localStorage[storageItem] = 1
             
             icon.removeClass('far');
             icon.addClass('fas');
+            btn.prop('title', title.replace('Add', 'Remove').replace('to bookmarks', 'from bookmarks'))
 
             $('#'+ name +'_shortcut').fadeIn();
         } else {
@@ -414,6 +426,7 @@ function bookmark_add_on_click() {
 
             icon.removeClass('fas');
             icon.addClass('far');
+            btn.prop('title', title.replace('Remove', 'Add').replace('from bookmarks', 'to bookmarks'))
 
             $('#'+ name +'_shortcut').fadeOut();
         }   

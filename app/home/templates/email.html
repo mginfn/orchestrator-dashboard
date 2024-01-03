@@ -12,43 +12,42 @@
                         <tr>
                             <img src="{{config['MAIL_IMAGE_SRC']}}" width="200" align="center"></img>
                             <td valign="top" >
-				{% if status == "CREATE_COMPLETE" %}
-                                Dear User,<BR>
-                                This is an automatically generated notification mail<BR>
-                                YOU DO NOT NEED TO ANSWER THIS MESSAGE.<BR>
-                                <p>
-                                Your deployment {{uuid}} is complete.
-                                <p>
-                                Kind Regards. <BR>
+								{% if status == "CREATE_COMPLETE" %}
+									Dear User,<BR>
+									This is an automatically generated notification mail<BR>
+									YOU DO NOT NEED TO ANSWER THIS MESSAGE.<BR>
+									<p>
+									Your deployment {{uuid}} is complete.
+									<p>
+									Kind Regards. <BR>
 
-				{% elif status == "CREATE_FAILED" %}
-				Dear User,<BR>
-                                This is an automatically generated notification mail<BR>
-                                YOU DO NOT NEED TO ANSWER THIS MESSAGE<BR>
-                                <p>
-				Your deployment {{uuid}} is failed.
-                                <p>
-                                Kind Regards. <BR>
+								{% elif status == "CREATE_FAILED" %}
+									Dear User,<BR>
+									This is an automatically generated notification mail<BR>
+									YOU DO NOT NEED TO ANSWER THIS MESSAGE<BR>
+									<p>
+										Your deployment {{uuid}} is failed.
+									<p>
+                                	Kind Regards. <BR>
 
-				{% elif status == "UPDATE_COMPLETE" %}
- 			        Dear User,<BR>
-                                This is an automatically generated notification mail<BR>
-                                YOU DO NOT NEED TO ANSWER THIS MESSAGE<BR>
-                                <p>
- 				Your deployment {{uuid}} has been updated successfully.
-                                <p>
-                                Kind Regards. <BR>
+								{% elif status == "UPDATE_COMPLETE" %}
+									Dear User,<BR>
+									This is an automatically generated notification mail<BR>
+									YOU DO NOT NEED TO ANSWER THIS MESSAGE<BR>
+									<p>
+										Your deployment {{uuid}} has been updated successfully.
+									<p>
+                                	Kind Regards. <BR>
 
                                 {% elif status == "UPDATE_FAILED" %}
- 			        Dear User,<BR>
-                                This is an automatically generated notification mail<BR>
-                                YOU DO NOT NEED TO ANSWER THIS MESSAGE<BR>
-                                <p>
-                                Your deployment {{uuid}} update is failed.
-                                <p>
-                                Kind Regards. <BR>
-
-				{% endif %}
+									Dear User,<BR>
+									This is an automatically generated notification mail<BR>
+									YOU DO NOT NEED TO ANSWER THIS MESSAGE<BR>
+									<p>
+										Your deployment {{uuid}} update is failed.
+									<p>
+									Kind Regards. <BR>
+								{% endif %}
                             </td>
                         </tr>
                     </table>
@@ -57,4 +56,4 @@
         </table>
     </body>
 </html>
-~        
+~

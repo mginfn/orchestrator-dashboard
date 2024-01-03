@@ -3,126 +3,118 @@
 {% block content %}
 
 <div class="container">
+	<br>
+	<div class="card shadow mb-4">
+		<div class="card-body">
+			<div class="dashboard-template-header">
+				<div class="dashboard-template-title">
+					{{ deployment.uuid }}
+				</div>
+			
+				<div class="dashboard-template-header-buttons">
+					<button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="history.back()">
+						<i class="fas fa-arrow-left"></i>&nbsp;Back
+					</button>
+				</div>
+			</div>
 
-  <br>
+			<p><b>Description:</b> {{deployment.description}} </p>
 
-  <div class="card shadow mb-4">
-    <div class="card-body">
-
-      <div class="dashboard-template-header">
-          <div class="dashboard-template-title">
-            {{ deployment.uuid }}
-          </div>
-    
-          <div class="dashboard-template-header-buttons">
-            <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="history.back()"><i class="fas fa-arrow-left"></i>&nbsp;Back</button>
-          </div>
-      </div>
-
-      <p><b>Description:</b> {{deployment.description}} </p>
-
-      <!-- start tabs creation section -->
-      <ul class="nav nav-tabs">
-        <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#DeploymentStatus">Overview</a></li>
-        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#InputValues">Input values</a></li>
-        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#OutputValues">Output values</a></li>
-      </ul>
+			<!-- start tabs creation section -->
+			<ul class="nav nav-tabs">
+				<li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#DeploymentStatus">Overview</a></li>
+				<li class="nav-item"><a class="nav-link" data-toggle="tab" href="#InputValues">Input values</a></li>
+				<li class="nav-item"><a class="nav-link" data-toggle="tab" href="#OutputValues">Output values</a></li>
+			</ul>
 
 
-      <div class="tab-content">
-        <div class="tab-pane fade show active" id=DeploymentStatus>
-          <br>
-          <p><b>STATUS:</b> {{deployment.status}}</p>
-          {% if deployment.status_reason %}
-          <p style="white-space: pre-line;"><b>ERROR MSG:</b> {{deployment.status_reason}}</p>
-          {% endif %}
-          <p><b>CREATED AT:</b> {{deployment.creation_time}}</p>
-          <p><b>UPDATED AT:</b> {{deployment.update_time}}</p>
-          <p><b>DEPLOYED AT:</b> {{deployment.provider_name}}</p>
-	  {% if deployment.endpoint != '' %}
-          <p><b>ENDPOINT:</b> {{deployment.endpoint}}</p>
-	  {% endif %}
+			<div class="tab-content">
+				<div class="tab-pane fade show active" id=DeploymentStatus>
+					<br>
+					<p><b>STATUS:</b> {{deployment.status}}</p>
+					{% if deployment.status_reason %}
+					<p style="white-space: pre-line;"><b>ERROR MSG:</b> {{deployment.status_reason}}</p>
+					{% endif %}
+					<p><b>CREATED AT:</b> {{deployment.creation_time}}</p>
+					<p><b>UPDATED AT:</b> {{deployment.update_time}}</p>
+					<p><b>DEPLOYED AT:</b> {{deployment.provider_name}}</p>
 
-          {% if deployment.status == 'CREATE_COMPLETE' %} <!-- Display these options only if the deployment is complete -->
-            {% if session['userid'] == deployment.sub %} <!-- Show encryption info only if the deployment belong to user (thus avoiding admin) -->
-              <!-- Vault integration  if -->
-              {% if 'storage_encryption' in inputs and inputs['storage_encryption'] == 'True' %}
-              <hr/>
-              <button type=button id="retrieveBtn" class="btn btn-small btn-outline-success" onclick="getVaultSecret( href='{{ url_for('vault_bp.read_secret', depid=deployment.uuid) }}' )">
-                <span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase
-              </button>
-              <!-- Modal Retrieve luks passphrase-->
-              <div class="modal fade" id="newModal">
-                <div class="modal-dialog">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <h5 class="modal-title" id="get_luks_passwd_label_{{deployment.uuid}}">LUKS passphrase</h5>
-                      <button type="button" class="close" data-dismiss="modal">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                    <input id="luksPassphrase" class="form-control" type="password">
-                    </div>
-                    <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                      <!--button type="button" class="btn btn-success" onclick="copyToClipboard()" data-dismiss="modal"><span class="fas fa-copy"></span> Copy to clipboard</button-->
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {% endif %} <!-- End encryption volume status if -->
-            {% endif %} <!-- end if user session -->
-          {% endif %} <!-- End instance status if -->
-        </div>
-        <div class="tab-pane fade" id="InputValues">
-          <br>
-	      {% for k,v in inputs.items() %}
-          {% if "password" in k or "token" in k %}
-          <div>
-          <p><strong>{{k}}</strong>: <input type="password" id="{{k}}" disabled value="{{v}}">
-          <input type="checkbox" onclick="toggle({{k}})"> Show
-          </p>
-          </div>
-          {% else %}
-          <p><strong>{{k}}</strong>: {{v}}</p>
-          {% endif %}
-          {% endfor %}
-        </div>
-        <div class="tab-pane fade" id="OutputValues">
-        {% include "output_values.html" %}		
-        </div>
-      </div>
+					{% if deployment.endpoint != '' %}
+						<p><b>ENDPOINT:</b> {{deployment.endpoint}}</p>
+					{% endif %}
 
-    </div>
-  </div>
+					{% if deployment.status == 'CREATE_COMPLETE' %} <!-- Display these options only if the deployment is complete -->
+						{% if session['userid'] == deployment.sub %} <!-- Show encryption info only if the deployment belong to user (thus avoiding admin) -->
+							<!-- Vault integration  if -->
+							{% if 'storage_encryption' in inputs and inputs['storage_encryption'] == 'True' %}
+								<hr/>
+								<button type=button id="retrieveBtn" class="btn btn-small btn-outline-success" onclick="getVaultSecret( href='{{ url_for('vault_bp.read_secret', depid=deployment.uuid) }}' )">
+									<span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase
+								</button>
+								<!-- Modal Retrieve luks passphrase-->
+								<div class="modal fade" id="newModal">
+									<div class="modal-dialog">
+										<div class="modal-content">
+											<div class="modal-header">
+												<h5 class="modal-title" id="get_luks_passwd_label_{{deployment.uuid}}">LUKS passphrase</h5>
+												<button type="button" class="close" data-dismiss="modal">&times;</button>
+											</div>
+											<div class="modal-body">
+												<input id="luksPassphrase" class="form-control" type="password">
+											</div>
+											<div class="modal-footer">
+												<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+												<!--button type="button" class="btn btn-success" onclick="copyToClipboard()" data-dismiss="modal"><span class="fas fa-copy"></span> Copy to clipboard</button-->
+											</div>
+										</div>
+									</div>
+								</div>
+							{% endif %} <!-- End encryption volume status if -->
+						{% endif %} <!-- end if user session -->
+					{% endif %} <!-- End instance status if -->
+				</div>
+				<div class="tab-pane fade" id="InputValues">
+					<br>
+					{% for k,v in inputs.items() %}
+						{% if "password" in k or "token" in k %}
+							<div>
+								<p><strong>{{k}}</strong>: <input type="password" id="{{k}}" disabled value="{{v}}">
+								<input type="checkbox" onclick="toggle({{k}})"> Show
+								</p>
+							</div>
+						{% else %}
+							<p><strong>{{k}}</strong>: {{v}}</p>
+						{% endif %}
+					{% endfor %}
+				</div>
+				<div class="tab-pane fade" id="OutputValues">
+					{% include "output_values.html" %}		
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 
 
 <script>
-  $('#luksPassphrase').password();
-</script>
 
-<script>
-function copyToClipboard() {
-  var copyText = document.getElementById("luksPassphrase");
-  copyText.select();
-  document.execCommand("copy");
-}
-</script>
-
-<script>
-$(document).ready(function () {
-    $("#retrieveBtn").click(function () {
+$(document).ready( () => {
+    $("#retrieveBtn").click( () => {
         // add spinner to button
         $(this).html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...` );
         return true;
     });
 });
-</script>
 
-<script>
+$('#luksPassphrase').password();
 
-async function getVaultSecret(url)
-{
+function copyToClipboard() {
+	var copyText = document.getElementById("luksPassphrase");
+	copyText.select();
+	document.execCommand("copy");
+}
+
+async function getVaultSecret(url) {
   let secret = "secret placeholder";
 
   let  response = await fetch(url)
@@ -133,8 +125,7 @@ async function getVaultSecret(url)
   stopSpinner();
 };
 
-function fillModal(secret)
-{
+function fillModal(secret) {
     $(document).ready(function(){
       $("#newModal").on('show.bs.modal', function () {
         var modal = $(this)
@@ -144,20 +135,18 @@ function fillModal(secret)
     });
 }
 
-function stopSpinner()
-{
+function stopSpinner() {
   $("#retrieveBtn").html( `<span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase` );
 }
-</script>
 
-<script>
-  function toggle(x) {
-  if (x.type === "password") {
-    x.type = "text";
-  } else {
-    x.type = "password";
-  }
+function toggle(x) {
+	if (x.type === "password") {
+		x.type = "text";
+	} else {
+		x.type = "password";
+	}
 }
+
 </script>
 
 {% endblock %}

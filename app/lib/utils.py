@@ -158,17 +158,17 @@ def genstatuscolors(statuses):
     colors = []
     for status in statuses:
         if status == "CREATE_COMPLETE":
-            colors.append("green")
+            colors.append("#22cf22")    # green
         elif status == "CREATE_IN_PROGRESS":
-            colors.append("lightgreen")
+            colors.append("#ffdf4d")    # yellow
         elif status == "DELETE_IN_PROGRESS":
-            colors.append("salmon")
+            colors.append("#db6d00")    # orange
         elif status == "CREATE_FAILED":
-            colors.append("red")
+            colors.append("#920000")    # red
         elif status == "DELETE_FAILED":
-            colors.append("firebrick")
+            colors.append("#252525")    # dark grey
         else:
-            colors.append("lightgrey")
+            colors.append("#676767")    # light grey
     return colors
 
 

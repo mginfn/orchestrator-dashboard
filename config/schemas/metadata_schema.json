@@ -33,13 +33,14 @@
             "properties": {
                 "display_name": { "type": "string" },
                 "bookmark_id": { "type": "string" },
+                "guide_url": { "type": "string" },
                 "icon": { "type": "string", "format": "uri" },
                 "visibility": {
                     "$ref": "#/$defs/visibility"
                 },
                 "authorization_required" : {"$ref": "#/$defs/authorization_required" }
             },
-            "required": ["display_name", "bookmark_id", "icon", "visibility"],
+            "required": ["display_name", "bookmark_id", "guide_url", "icon", "visibility"],
             "additionalProperties": false
         },
         "visibility": {

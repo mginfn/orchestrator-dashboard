@@ -3,75 +3,74 @@
 {% block content %}
 
 <div class = "jumbotron jumbotron-fluid jumbotron-custom">
-  <div class="container">
-    <div class="row">
-      <div class="col">
-        <h1 class="display-4"><strong>Welcome to the INFN Cloud Dashboard!</strong></h1>
-        <p></p>
-        <p>
-          <a class="btn btn-primary btn-lg" role="button" href="{{ url_for("iam.login") }}">Please login, or register &raquo;</a>
-        </p>
-      </div>
-    </div>	  
-  </div>
+	<div class="container">
+		<div class="row">
+			<div class="col">
+				<h1 class="display-4"><strong>Welcome to the INFN Cloud Dashboard!</strong></h1>
+				<p></p>
+				<p>
+					<a class="btn btn-primary btn-lg" role="button" href="{{ url_for("iam.login") }}">Please login, or register &raquo;</a>
+				</p>
+			</div>
+		</div>	  
+	</div>
 </div>
 
 
 <!-- Modal begin -->
 <div class="modal fade" id="gettingStarted" tabindex="-1" role="dialog" aria-labelledby="gettingStartedModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title text-danger" id="gettingStartedModalLabel"><strong>Please, check the prerequisites before proceeding</strong></h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        This portal allows <b>system administrators to instantiate services</b> on the INFN Cloud Infrastructure.
+	<div class="modal-dialog modal-lg" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title text-danger" id="gettingStartedModalLabel"><strong>Please, check the prerequisites before proceeding</strong></h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				This portal allows <b>system administrators to instantiate services</b> on the INFN Cloud Infrastructure.
 
-        <br/><br/>In order to be able to <b>use INFN Cloud resources</b>, the following
-         <b>mandatory conditions</b> need to be fulfilled:
+				<br/><br/>In order to be able to <b>use INFN Cloud resources</b>, the following
+				<b>mandatory conditions</b> need to be fulfilled:
 
-
-        <ul>
-          <li>You have a verified digital identity (LoA2) on INFN-AAI:
-            <ul>
-              <li>if you don’t have a verified digital identity, connect to <a href="https://signup.app.infn.it/">https://signup.app.infn.it/</a> to self-register and to get an account on INFN-AAI. Documentation (unfortunately only in Italian) on this process is available <a href="https://wiki.infn.it/cn/ccr/aai/doc/rid/istruzioni"> here</a>.
-                <br/>After this self-registration process, connect to the <a href="https://userportal.app.infn.it/">INFN-AAI User Portal</a> using your INFN-AAI account to complete the digital identity registration. In this process you will have to choose where (the INFN site) you want to be identified, and the person that will have to approve your request. Documentation (unfortunately only in Italian) on this process is available <a href="https://wiki.infn.it/cn/ccr/aai/doc/rid/istruzioni">here</a>. You will then be contacted by an INFN secretariat person for your identification.
-              </li>
-            </ul>
-          </li>
-          <li>You have attended the “Corso di Sicurezza Informatica - BASE”. To attend the “Corso di Sicurezza Informatica - BASE”, please use this <a href="https://elearning.infn.it/login/index.php">link</a>.</li>
-          <li>You declare to have read and accepted the INFN rules for the use of IT resources:
-            <ul>
-              <li><a href="https://dpo.infn.it/wp-content/uploads/2019/01/Informativa_generale_INFN_181204.pdf">Rules for the processing of personal data</a></li>
-              <li><a href="https://web.infn.it/CCR/images/stories/upload_file/sicurezza_informatica/Sicurezza_Informatica_aggiornata/Disciplinare_2020_IT.pdf">Disciplinary for the use of INFN IT resources</a></li>
-            </ul>
-          </li>
-       
-          <li>You have received the <b>system administrator designation</b> from the Director of your INFN Section or 
-            Laboratory, mentioning the following scope of operation: <b>“INFN-CLOUD (as administrator user)”</b>
-            <ul>
-              <li>if you don’t have it, please follow the procedure described in 
-                the <a href="https://guides.cloud.infn.it/docs/users-guides/en/latest/users_guides/workflow_sys_admin_nomination_letter.html">"How To: Request the nomination to be system administrator"</a> guide
-                (see <a href="https://guides.cloud.infn.it/docs/users-guides/en/latest/users_guides/workflow_sys_admin_nomination_letter_it.html"> HERE</a> for the italian version) 
-            </ul>
-          </li>
-          <li>You need to apply <a href="https://iam.cloud.infn.it">here</a> for an INFN Cloud IAM account (your registration request will be approved upon verification of the above-mentioned requirements)
-          </li>
-        </ul>
-      </div>
-      <div class="modal-footer">
-        <div class="d-flex flex-grow-1 justify-content-start custom-control custom-checkbox">
-          <input type="checkbox" class="custom-control-input" id="gettingStartedCheckbox" name="checkbox-gettingstarted"/>
-          <label class="custom-control-label checkbox-gettingstarted" for="gettingStartedCheckbox">Don't show me again</label>
-        </div>
-        <a type="button" href="https://guides.cloud.infn.it/docs/users-guides/en/latest/users_guides/getting_started/getting_started.html" class="btn btn-warning">Go to the Getting Started Guide</a>
-        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
+				<ul>
+					<li>You have a verified digital identity (LoA2) on INFN-AAI:
+						<ul>
+							<li>if you don’t have a verified digital identity, connect to <a href="https://signup.app.infn.it/">https://signup.app.infn.it/</a> to self-register and to get an account on INFN-AAI. Documentation (unfortunately only in Italian) on this process is available <a href="https://wiki.infn.it/cn/ccr/aai/doc/rid/istruzioni"> here</a>.
+								<br/>After this self-registration process, connect to the <a href="https://userportal.app.infn.it/">INFN-AAI User Portal</a> using your INFN-AAI account to complete the digital identity registration. In this process you will have to choose where (the INFN site) you want to be identified, and the person that will have to approve your request. Documentation (unfortunately only in Italian) on this process is available <a href="https://wiki.infn.it/cn/ccr/aai/doc/rid/istruzioni">here</a>. You will then be contacted by an INFN secretariat person for your identification.
+							</li>
+						</ul>
+					</li>
+					<li>You have attended the “Corso di Sicurezza Informatica - BASE”. To attend the “Corso di Sicurezza Informatica - BASE”, please use this <a href="https://elearning.infn.it/login/index.php">link</a>.</li>
+					<li>You declare to have read and accepted the INFN rules for the use of IT resources:
+						<ul>
+							<li><a href="https://dpo.infn.it/wp-content/uploads/2019/01/Informativa_generale_INFN_181204.pdf">Rules for the processing of personal data</a></li>
+							<li><a href="https://web.infn.it/CCR/images/stories/upload_file/sicurezza_informatica/Sicurezza_Informatica_aggiornata/Disciplinare_2020_IT.pdf">Disciplinary for the use of INFN IT resources</a></li>
+						</ul>
+					</li>
+				
+					<li>You have received the <b>system administrator designation</b> from the Director of your INFN Section or 
+						Laboratory, mentioning the following scope of operation: <b>“INFN-CLOUD (as administrator user)”</b>
+						<ul>
+							<li>if you don’t have it, please follow the procedure described in 
+								the <a href="https://guides.cloud.infn.it/docs/users-guides/en/latest/users_guides/workflow_sys_admin_nomination_letter.html">"How To: Request the nomination to be system administrator"</a> guide
+								(see <a href="https://guides.cloud.infn.it/docs/users-guides/en/latest/users_guides/workflow_sys_admin_nomination_letter_it.html"> HERE</a> for the italian version) 
+							</li>
+						</ul>
+					</li>
+					<li>You need to apply <a href="https://iam.cloud.infn.it">here</a> for an INFN Cloud IAM account (your registration request will be approved upon verification of the above-mentioned requirements)</li>
+				</ul>
+			</div>
+			<div class="modal-footer">
+				<div class="d-flex flex-grow-1 justify-content-start custom-control custom-checkbox">
+					<input type="checkbox" class="custom-control-input" id="gettingStartedCheckbox" name="checkbox-gettingstarted"/>
+					<label class="custom-control-label checkbox-gettingstarted" for="gettingStartedCheckbox">Don't show me again</label>
+				</div>
+					<a type="button" href="https://guides.cloud.infn.it/docs/users-guides/en/latest/users_guides/getting_started/getting_started.html" class="btn btn-warning">Go to the Getting Started Guide</a>
+					<button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+			</div>
+		</div>
+	</div>
 </div>
 
 
@@ -87,18 +86,19 @@
 </style>
 
 <script type="text/javascript">
-    if (!localStorage.DoNotShowGettingStartedMessageAgain || localStorage.DoNotShowGettingStartedMessageAgain != "true") {
-      $(window).on('load',function(){
-          $('#gettingStarted').modal('show');
-    });
 
-    $('#gettingStartedCheckbox').click(function(){
-      if ($('#gettingStartedCheckbox').attr('checked', true)) {
-          localStorage.DoNotShowGettingStartedMessageAgain = "true";
-      }
-    });
-};
+if (!localStorage.DoNotShowGettingStartedMessageAgain || localStorage.DoNotShowGettingStartedMessageAgain != "true") {
+	$(window).on('load',() => {
+		$('#gettingStarted').modal('show');
+	});
+
+	$('#gettingStartedCheckbox').click(() => {
+		if ($('#gettingStartedCheckbox').attr('checked', true)) {
+			localStorage.DoNotShowGettingStartedMessageAgain = "true";
+		}
+	});
+}
+
 </script>
 
 {% endblock %}
-

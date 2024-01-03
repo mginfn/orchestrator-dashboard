@@ -1,117 +1,117 @@
 {% extends "base.html" %}
 {% block content %}
-<style>
-.panel {
-  /* Add shadows to create the "card" effect */
-  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-  transition: 0.3s;
-}
-
-.panel-body {
-  font-family: Tahoma;
-}
-
-.table-condensed{
-  font-size: 14px;
-}
-
-.table tbody td, th {
-  vertical-align: middle !important;
-}
-
-</style>
 
 <div class="container-fluid">
-
     <br>
-
     <div class="card shadow mb-4">
         <div class="card-body">
+			<div class="dashboard-template-header">
+				<div class="dashboard-template-image">
+					<i class="fas fa-server"></i>
+				</div>
+			
+				<div class="dashboard-template-title">
+					Deployments for:&nbsp;{{user.name}}
+				</div>
+			
+				<div class="dashboard-template-header-buttons">
+					<button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="location.href='{{ url_for('users_bp.show_users') }}'">
+						<i class="fas fa-arrow-left"></i>&nbsp;Back
+					</button>
+					<button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick="location.href='{{ url_for('users_bp.show_deployments', subject=user.sub) }}'">
+						<i class="fas fa-sync-alt"></i>&nbsp;Refresh
+					</button>
+				</div>
+			</div>
 
-          <div class="dashboard-template-header">
-              <div class="dashboard-template-image">
-                <i class="fas fa-server"></i>
-              </div>
-          
-              <div class="dashboard-template-title">
-                Deployments for:&nbsp;{{user.name}}
-              </div>
-          
-              <div class="dashboard-template-header-buttons">
-                <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="location.href='{{ url_for('users_bp.show_users') }}'"><i class="fas fa-arrow-left"></i>&nbsp;Back</button>
-                <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick="location.href='{{ url_for('users_bp.show_deployments', subject=user.sub) }}'"><i class="fas fa-sync-alt"></i>&nbsp;Refresh</button>
-              </div>
-          </div>
-
-<!--Table-->
-<div class="table-responsive">
-<table id="tableDeployments" class="table table-bordered" width="100%" cellspacing="0">
-<!--Table head-->
-  <thead>
-    <tr>
-      <th>uuid</th>
-      <th>Status</th>
-      <th>Description</th>
-      <th>Created At</th>
-      <th>Updated At</th>
-      <th>Deployed At</th>
-      <th>Physical ID</th>
-      <th>Project</th>
-      <th class="no-sort"></th>
-      <th class="no-sort"></th>
-      <th class="no-sort"></th>
-    </tr>
-  </thead>
-  <!--Table head-->
-  <!--Table body-->
-  <tbody>
-    {% for deployment in deployments%}
-    <tr>
-        <th scope="row">{{deployment.uuid}}</th>
-        <td
-        {% if "COMPLETE" in deployment.status %}
-        class="success"
-        {% elif "FAIL" in deployment.status %}
-        class="danger"
-        {% else %}
-        class="warning"
-        {% endif %}
-        >{{deployment.status}}</td>
-        <td>{{deployment.description}}</td>
-        <td>{{deployment.creation_time}}</td>
-        <td>{{deployment.update_time}}</td>
-        <td>{{deployment.provider_name}}</td>
-        <td>{{deployment.physicalId}}</td>
-        <td>{{deployment.user_group}}</td>
-        <td style='text-align:center'><button class='btn' onclick='set_loading(true); location.href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}"'><i class='fas fa-folder-open mr-2 grey-text' aria-hidden='true' title="Show outputs"></i>Details</button></td>
-        <td style='text-align:center'><button class='btn' onclick='set_loading(true); location.href="{{ url_for('deployments_bp.deptemplatedb', depid=deployment.uuid) }}"'><i class='fas fa-search mr-2 grey-text' aria-hidden='true' title="Show template"></i>Show template</button></td>
-        <td style='text-align:center'>
-        {% if deployment.remote == 1 %}
-            <i class='fas fa-cloud mr-2 grey-text' aria-hidden='true' title="Remote deployment">
-        {% endif %}
-        </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-  <!--Table body-->
-</table>
+			<!--Table-->
+			<div class="table-responsive">
+				<table id="tableDeployments" class="table table-bordered" width="100%" cellspacing="0">
+					<!--Table head-->
+					<thead>
+						<tr>
+						<th>uuid</th>
+						<th>Status</th>
+						<th>Description</th>
+						<th>Created At</th>
+						<th>Updated At</th>
+						<th>Deployed At</th>
+						<th>Physical ID</th>
+						<th>Project</th>
+						<th class="no-sort"></th>
+						<th class="no-sort"></th>
+						<th class="no-sort"></th>
+						</tr>
+					</thead>
+					<!--Table head-->
+					<!--Table body-->
+					<tbody>
+						{% for deployment in deployments%}
+							<tr>
+								<th scope="row">{{deployment.uuid}}</th>
+								<td
+									{% if "COMPLETE" in deployment.status %}
+										class="success"
+									{% elif "FAIL" in deployment.status %}
+										class="danger"
+									{% else %}
+										class="warning"
+									{% endif %}
+								>{{deployment.status}}</td>
+								<td>{{deployment.description}}</td>
+								<td>{{deployment.creation_time}}</td>
+								<td>{{deployment.update_time}}</td>
+								<td>{{deployment.provider_name}}</td>
+								<td>{{deployment.physicalId}}</td>
+								<td>{{deployment.user_group}}</td>
+								<td style='text-align:center'><button class='btn' onclick='set_loading(true); location.href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}"'><i class='fas fa-folder-open mr-2 grey-text' aria-hidden='true' title="Show outputs"></i>Details</button></td>
+								<td style='text-align:center'><button class='btn' onclick='set_loading(true); location.href="{{ url_for('deployments_bp.deptemplatedb', depid=deployment.uuid) }}"'><i class='fas fa-search mr-2 grey-text' aria-hidden='true' title="Show template"></i>Show template</button></td>
+								<td style='text-align:center'>
+									
+								{% if deployment.remote == 1 %}
+									<i class='fas fa-cloud mr-2 grey-text' aria-hidden='true' title="Remote deployment">
+								{% endif %}
+								</td>
+							</tr>
+						{% endfor %}
+					</tbody>
+					<!--Table body-->
+				</table>
+			</div>
+		</div>
+	</div>
 </div>
-</div>
-</div>
-</div>
-</div>
-
 
 <script>
-    $('#tableDeployments').DataTable({
-        "responsive": true,
-        "order": [],
-        "columnDefs": [ {
-            "targets"  : 'no-sort',
-            "orderable": false,
-         }],
-        "order": [[ 3, "desc" ]]
-    });
+
+$('#tableDeployments').DataTable({
+	"responsive": true,
+	"order": [],
+	"columnDefs": [ {
+		"targets"  : 'no-sort',
+		"orderable": false,
+	}],
+	"order": [[ 3, "desc" ]]
+});
+
 </script>
+
+<style>
+
+  .panel {
+    /* Add shadows to create the "card" effect */
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    transition: 0.3s;
+  }
+  
+  .table-condensed{
+    font-size: 14px;
+  }
+  
+  .table tbody td, th {
+    vertical-align: middle !important;
+  }
+  
+</style>
 
 {% endblock %}

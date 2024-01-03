@@ -12,23 +12,23 @@
                         <tr>
                             <img src="https://raw.githubusercontent.com/Laniakea-elixir-it/resources/master/logos/elixir_italy_white_background.png" width="200" height="150" align="center"></img>
                             <td valign="top" >
-				{% if status == "CREATE_COMPLETE" %}
-                                Dear User,<BR>
-                                This is an automatically generated notification mail<BR>
-                                YOU DO NOT NEED TO ANSWER THIS MESSAGE<BR>
-                                <p>
-                                Your Galaxy instance is up and running at URL_ADDRESS
-                                <p>
-                                Please login using your credentials<BR>
-				username: "{{ session['username'] }} "<BR>
-                                password: "galaxy_admin_password"
-                                <p>
-                                Remember to change Galaxy password and the API key as soon as possible!
-                                <p>
-                                Kind Regards. <BR>
-				{% elif status == "CREATE_FAILED" %}
-				your reployment is failed
-				{% endif %}
+								{% if status == "CREATE_COMPLETE" %}
+									Dear User,<BR>
+									This is an automatically generated notification mail<BR>
+									YOU DO NOT NEED TO ANSWER THIS MESSAGE<BR>
+									<p>
+									Your Galaxy instance is up and running at URL_ADDRESS
+									<p>
+									Please login using your credentials<BR>
+									username: "{{ session['username'] }} "<BR>
+									password: "galaxy_admin_password"
+									<p>
+									Remember to change Galaxy password and the API key as soon as possible!
+									<p>
+									Kind Regards. <BR>
+								{% elif status == "CREATE_FAILED" %}
+									your reployment is failed
+								{% endif %}
                             </td>
                         </tr>
                     </table>
@@ -37,4 +37,4 @@
         </table>
     </body>
 </html>
-~        
+~
