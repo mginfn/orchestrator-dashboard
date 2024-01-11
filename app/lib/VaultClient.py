@@ -17,6 +17,7 @@ import json
 import hvac
 import requests
 import urllib3
+from hvac.api.auth_methods import Token
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -33,9 +34,7 @@ class VaultClient:
 
         if not response.ok:
             raise Exception(
-                "Error getting Vault token: {} - {}".format(
-                    response.status_code, response.text
-                )
+                "Error getting Vault token: {} - {}".format(response.status_code, response.text)
             )
 
         deserialized_response = json.loads(response.text)
@@ -46,9 +45,7 @@ class VaultClient:
         self.client = hvac.Client(url=vault_url, token=self.vault_auth_token)
         if not self.client.is_authenticated():
             raise Exception(
-                "Error authenticating against Vault with token: {}".format(
-                    self.vault_auth_token
-                )
+                "Error authenticating against Vault with token: {}".format(self.vault_auth_token)
             )
 
         # ______________________________________
@@ -58,16 +55,14 @@ class VaultClient:
         Get Vault token with specific policy
         POST '/v1/auth/token/create'
         """
-        token = self.client.create_token(policies=[policy], ttl=ttl, period=period)
+        token = Token(self.client.adapter).create(policies=[policy], ttl=ttl, period=period)
 
         return token["auth"]["client_token"]
 
     def set_token(self, vault_token):
         self.client.token = vault_token
         if not self.client.is_authenticated():
-            raise Exception(
-                "Error authenticating against Vault with token: {}".format(vault_token)
-            )
+            raise Exception("Error authenticating against Vault with token: {}".format(vault_token))
 
     def read_service_creds(self, path):
         vault_secret_path = "data/" + self.vault_entity_id + "/" + path
@@ -90,9 +85,7 @@ class VaultClient:
     def delete_service_creds(self, path):
         vault_secret_path = "data/" + self.vault_entity_id + "/" + path
 
-        self.client.secrets.kv.v1.delete_secret(
-            path=vault_secret_path, mount_point="secret"
-        )
+        self.client.secrets.kv.v1.delete_secret(path=vault_secret_path, mount_point="secret")
 
     def v1_read_secret(self, path):
         vault_secret_path = "data/" + self.vault_entity_id + "/" + path
@@ -117,7 +110,7 @@ class VaultClient:
         Get Vault wrapping token with specific policy
         POST '/v1/auth/token/create'
         """
-        token = self.client.create_token(
+        token = Token(self.client.adapter).create(
             policies=[policy], ttl=ttl, period=period, wrap_ttl=wrap_ttl
         )
 
@@ -171,4 +164,4 @@ class VaultClient:
         Revoke (self) token
         revoke_url = self.vault_url + '/v1/auth/token/revoke-self'
         """
-        self.client.revoke_self_token()
+        Token(self.client.adapter).revoke_self()

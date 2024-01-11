@@ -88,7 +88,6 @@ def create_ssh_key(subject):
 
     dbhelpers.update_user(subject, dict(sshkey=pubkey.decode("utf-8")))
 
-    """ return redirect(url_for('vault_bp.ssh_keys')) """
     return redirect(url_for("home_bp.show_user_profile"))
 
 
