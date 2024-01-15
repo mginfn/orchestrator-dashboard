@@ -281,14 +281,6 @@ def logexception(err):
         )
     )
 
-
-def getorchestratorversion(orchestrator_url):
-    url = orchestrator_url + "/info"
-    response = requests.get(url)
-
-    return response.json()["build"]["version"]
-
-
 def getorchestratorconfiguration(orchestrator_url, access_token):
     headers = {"Authorization": "bearer %s" % access_token}
 

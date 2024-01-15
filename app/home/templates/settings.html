@@ -156,7 +156,7 @@
 							</fieldset>
 							<br>
 							<div class="dashboard-template-buttons-container">
-								<button type="submit" class="dashboard-button dashboard-button-primary dashboard-button-lg submitBtn" style="margin-left: auto;">Apply<i class="fas fa-save"></i></button>
+								<button type="submit" onclick="set_loading(true)" class="dashboard-button dashboard-button-primary dashboard-button-lg submitBtn" style="margin-left: auto;">Apply<i class="fas fa-save"></i></button>
 							</div>
 						</form>
 					</div>
@@ -164,22 +164,6 @@
             </div>
         </div>
     </div>
-</div>
-
-<!-- Loading modal -->
-<div class="modal" id="loadingModal" tabindex="-1" role="dialog">
-  <div class="modal-dialog modal-sm" role="document">
-    <div class="modal-content">
-      <div class="modal-body">
-        <div class="text-center">
-          <div class="spinner-border text-primary" role="status">
-            <span class="sr-only">Loading...</span>
-          </div>
-        </div>
-        <p class="text-center mt-2">Loading...</p>
-      </div>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -190,25 +174,6 @@ $(document).ready(() => {
   });
   $("#dashboard_configuration_private").change(() => {
     $("#privateRepoFields2").toggle(this.checked);
-  });
-
-  $("#settingsform").submit((event) => {
-    event.preventDefault();
-
-    // Show loading modal
-    set_loading(true)
-
-    var actionUrl = "{{ url_for('home_bp.submit_settings')}}";
-    // Perform asynchronous form submission
-    $.post(actionUrl, $(this).serialize(), function(response) {
-      // Hide loading modal
-      set_loading(false)
-
-      // Replace the entire content of the current page with the response
-      document.open();
-      document.write(response);
-      document.close();
-    });
   });
 });
 

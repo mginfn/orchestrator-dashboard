@@ -12,16 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
 import json
+import re
 from datetime import datetime
-from markupsafe import Markup
-from flask import current_app as app, Blueprint, render_template, request
-from flask import redirect, url_for, session, make_response, flash
 
+from flask import (
+    Blueprint,
+    flash,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
+from flask import current_app as app
+from markupsafe import Markup
+
+from app.extensions import redis_client, tosca
 from app.iam import iam
-from app.extensions import tosca, redis_client
-from app.lib import utils, auth, dbhelpers, openstack
+from app.lib import auth, dbhelpers, openstack, utils
 from app.models.User import User
 
 home_bp = Blueprint(
@@ -71,9 +81,7 @@ def submit_settings():
         deploy_token = request.form.get("tosca_templates_token")
 
         serialised_value = redis_client.get("last_configuration_info")
-        dashboard_configuration_info = (
-            json.loads(serialised_value) if serialised_value else {}
-        )
+        dashboard_configuration_info = json.loads(serialised_value) if serialised_value else {}
 
         if repo_url:
             app.logger.debug("Cloning TOSCA templates")
@@ -91,9 +99,7 @@ def submit_settings():
                 if repo_url:
                     dashboard_configuration_info["tosca_templates_url"] = repo_url
                 if tag_or_branch:
-                    dashboard_configuration_info[
-                        "tosca_templates_tag_or_branch"
-                    ] = tag_or_branch
+                    dashboard_configuration_info["tosca_templates_tag_or_branch"] = tag_or_branch
 
         repo_url = request.form.get("dashboard_configuration_url")
         tag_or_branch = request.form.get("dashboard_configuration_tag_or_branch")
@@ -115,9 +121,7 @@ def submit_settings():
             flash(message2, "success" if ret else "danger")
             if ret:
                 if repo_url:
-                    dashboard_configuration_info[
-                        "dashboard_configuration_url"
-                    ] = repo_url
+                    dashboard_configuration_info["dashboard_configuration_url"] = repo_url
                 if tag_or_branch:
                     dashboard_configuration_info[
                         "dashboard_configuration_tag_or_branch"
@@ -132,13 +136,13 @@ def submit_settings():
                 "danger",
             )
 
-        app.logger.debug("Configuration reloaded")
+        reload_message = "Configuration reloaded"
+        flash(reload_message, "info")
+        app.logger.debug(reload_message)
 
         now = datetime.now()
         dashboard_configuration_info["updated_at"] = now.strftime("%d/%m/%Y %H:%M:%S")
-        redis_client.set(
-            "last_configuration_info", json.dumps(dashboard_configuration_info)
-        )
+        redis_client.set("last_configuration_info", json.dumps(dashboard_configuration_info))
 
         if message1 or message2:
             comment = request.form.get("message")
@@ -184,16 +188,14 @@ def set_template_access(tosca, user_groups, active_group):
             regex = False if "groups_regex" not in visibility else True
 
             if regex:
-                access_locked = not re.match(
-                    visibility.get("groups_regex"), active_group
-                )
+                access_locked = not re.match(visibility.get("groups_regex"), active_group)
             else:
                 allowed_groups = visibility.get("groups")
                 access_locked = True if active_group not in allowed_groups else False
 
-            if (
-                visibility.get("type") == "private" and not access_locked
-            ) or visibility.get("type") == "protected":
+            if (visibility.get("type") == "private" and not access_locked) or visibility.get(
+                "type"
+            ) == "protected":
                 v["metadata"]["access_locked"] = access_locked
                 info[k] = v
         else:
@@ -224,15 +226,15 @@ def home():
 
 @home_bp.route("/portfolio")
 def portfolio():
-    """ GET STATUSES """
+    """GET STATUSES"""
     deps = dbhelpers.get_user_deployments(session["userid"])
     statuses = {}
     for dep in deps:
         status = dep.status if dep.status else "UNKNOWN"
-        if status != 'DELETE_COMPLETE' and dep.remote == 1:
+        if status != "DELETE_COMPLETE" and dep.remote == 1:
             statuses[status] = 1 if status not in statuses else statuses[status] + 1
 
-    if session.get('userid'):
+    if session.get("userid"):
         # check database
         # if user not found, insert
         user = dbhelpers.get_user(session["userid"])
@@ -259,17 +261,19 @@ def portfolio():
 
         services = dbhelpers.get_services(visibility="public")
         services.extend(
-            dbhelpers.get_services(
-                visibility="private", groups=[session["active_usergroup"]]
-            )
+            dbhelpers.get_services(visibility="private", groups=[session["active_usergroup"]])
         )
         templates_info, enable_template_groups = check_template_access(
             session["usergroups"], session["active_usergroup"]
         )
 
-        return render_template(app.config.get('PORTFOLIO_TEMPLATE'), services=services, templates_info=templates_info,
-                               enable_template_groups=enable_template_groups,                             
-                               s_values=list(statuses.values()))
+        return render_template(
+            app.config.get("PORTFOLIO_TEMPLATE"),
+            services=services,
+            templates_info=templates_info,
+            enable_template_groups=enable_template_groups,
+            s_values=list(statuses.values()),
+        )
 
     return redirect(url_for("home_bp.login"))
 
@@ -297,9 +301,7 @@ def callback():
     status = payload["status"]
     task = payload["task"]
     uuid = payload["uuid"]
-    providername = (
-        payload["cloudProviderName"] if "cloudProviderName" in payload else ""
-    )
+    providername = payload["cloudProviderName"] if "cloudProviderName" in payload else ""
     status_reason = payload["statusReason"] if "statusReason" in payload else ""
     rf = 0
 
@@ -340,7 +342,7 @@ def callback():
                     "Deployment complete", mail_sender, [user_email], uuid, status
                 )
             except Exception as error:
-                utils.logexception("sending email:".format(error))
+                utils.logexception("sending email: {}".format(error))
 
         if status == "CREATE_FAILED":
             try:
@@ -348,7 +350,7 @@ def callback():
                     "Deployment failed", mail_sender, [user_email], uuid, status
                 )
             except Exception as error:
-                utils.logexception("sending email:".format(error))
+                utils.logexception("sending email: {}".format(error))
 
         if status == "UPDATE_COMPLETE":
             try:
@@ -360,7 +362,7 @@ def callback():
                     status,
                 )
             except Exception as error:
-                utils.logexception("sending email:".format(error))
+                utils.logexception("sending email: {}".format(error))
 
         if status == "UPDATE_FAILED":
             try:
@@ -368,7 +370,7 @@ def callback():
                     "Deployment update failed", mail_sender, [user_email], uuid, status
                 )
             except Exception as error:
-                utils.logexception("sending email:".format(error))
+                utils.logexception("sending email: {}".format(error))
 
     resp = make_response("")
     resp.status_code = 200
@@ -418,7 +420,7 @@ def sendaccessrequest():
         )
 
     except Exception as error:
-        utils.logexception("sending email:".format(error))
+        utils.logexception("sending email: {}".format(error))
         flash(
             "Sorry, an error occurred while sending your request. Please retry.",
             "danger",
@@ -447,7 +449,7 @@ def contact():
         )
 
     except Exception as error:
-        utils.logexception("sending email:".format(error))
+        utils.logexception("sending email: {}".format(error))
         return Markup(
             "<div class='alert alert-danger' role='alert'>Oops, error sending message.</div>"
         )

@@ -31,7 +31,6 @@ from flask import (
     url_for,
 )
 from flask import current_app as app
-from packaging import version
 from werkzeug.exceptions import Forbidden
 from werkzeug.utils import secure_filename
 
@@ -604,12 +603,7 @@ def remove_sla_from_template(template):
 def add_sla_to_template(template, sla_id):
     # Add or replace the placement policy
 
-    if version.parse(utils.getorchestratorversion(app.settings.orchestrator_url)) >= version.parse(
-        "2.2.0-SNAPSHOT"
-    ):
-        tosca_sla_placement_type = "tosca.policies.indigo.SlaPlacement"
-    else:
-        tosca_sla_placement_type = "tosca.policies.Placement"
+    tosca_sla_placement_type = "tosca.policies.indigo.SlaPlacement"
     template["topology_template"]["policies"] = [
         {
             "deploy_on_specific_site": {
