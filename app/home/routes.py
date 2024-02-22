@@ -72,10 +72,13 @@ def submit_settings():
     if request.method == "POST" and session["userrole"].lower() == "admin":
         current_config = get_current_configuration()
         _, tosca_update_msg = update_configuration(
-            current_config, "tosca_templates", "Cloning TOSCA templates"
+            current_config, "tosca_templates", app.settings.tosca_dir, "Cloning TOSCA templates"
         )
         _, conf_update_msg = update_configuration(
-            current_config, "dashboard_configuration", "Cloning dashboard configuraton"
+            current_config,
+            "dashboard_configuration",
+            app.settings.settings_dir,
+            "Cloning dashboard configuraton",
         )
 
         try:
@@ -93,14 +96,14 @@ def get_current_configuration():
     return json.loads(serialised_value) if serialised_value else {}
 
 
-def update_configuration(current_config, field_prefix, message):
+def update_configuration(current_config, field_prefix, repo_dir, message):
     repo_url = request.form.get(f"{field_prefix}_url")
     tag_or_branch = request.form.get(f"{field_prefix}_tag_or_branch")
 
     private, username, deploy_token = get_repository_params(field_prefix)
 
     ret, message = process_repository(
-        app.settings.tosca_dir, repo_url, tag_or_branch, private, username, deploy_token, message
+        repo_dir, repo_url, tag_or_branch, private, username, deploy_token, message
     )
     if ret:
         current_config[f"{field_prefix}_url"] = repo_url
