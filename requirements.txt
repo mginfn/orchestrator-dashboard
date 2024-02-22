@@ -1,7 +1,7 @@
-Flask==3.0.0
+Flask==3.0.2
 Werkzeug==3.0.1
 Flask-Caching==2.1.0
-Flask_Dance==7.0.0
+Flask_Dance==7.0.1
 Flask-Mail==0.9.1
 Flask-Redis==0.4.0
 PyYAML
@@ -13,7 +13,7 @@ packaging
 SQLAlchemy-Utils==0.41.1
 Flask-SQLAlchemy==3.1.1
 Flask-Migrate==4.0.5
-Flask-Alembic==2.0.1
+Flask-Alembic==3.0.0
 Flask-Script==2.0.6
 Flask-WTF==1.2.1
 tzlocal
