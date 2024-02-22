@@ -70,103 +70,122 @@ def show_settings():
 @auth.authorized_with_valid_token
 def submit_settings():
     if request.method == "POST" and session["userrole"].lower() == "admin":
-        message1 = ""
-        message2 = ""
-
-        repo_url = request.form.get("tosca_templates_url")
-        tag_or_branch = request.form.get("tosca_templates_tag_or_branch")
-
-        private = request.form.get("tosca_templates_private") == "on"
-        username = request.form.get("tosca_templates_username")
-        deploy_token = request.form.get("tosca_templates_token")
-
-        serialised_value = redis_client.get("last_configuration_info")
-        dashboard_configuration_info = json.loads(serialised_value) if serialised_value else {}
-
-        if repo_url:
-            app.logger.debug("Cloning TOSCA templates")
-            ret, message1 = utils.download_git_repo(
-                repo_url,
-                app.settings.tosca_dir,
-                tag_or_branch,
-                private,
-                username,
-                deploy_token,
-            )
-            flash(message1, "success" if ret else "danger")
-
-            if ret:
-                if repo_url:
-                    dashboard_configuration_info["tosca_templates_url"] = repo_url
-                if tag_or_branch:
-                    dashboard_configuration_info["tosca_templates_tag_or_branch"] = tag_or_branch
-
-        repo_url = request.form.get("dashboard_configuration_url")
-        tag_or_branch = request.form.get("dashboard_configuration_tag_or_branch")
-
-        private = request.form.get("dashboard_configuration_private") == "on"
-        username = request.form.get("dashboard_configuration_username")
-        deploy_token = request.form.get("dashboard_configuration_token")
-
-        if repo_url:
-            app.logger.debug("Cloning dashboard configuration")
-            ret, message2 = utils.download_git_repo(
-                repo_url,
-                app.settings.settings_dir,
-                tag_or_branch,
-                private,
-                username,
-                deploy_token,
-            )
-            flash(message2, "success" if ret else "danger")
-            if ret:
-                if repo_url:
-                    dashboard_configuration_info["dashboard_configuration_url"] = repo_url
-                if tag_or_branch:
-                    dashboard_configuration_info[
-                        "dashboard_configuration_tag_or_branch"
-                    ] = tag_or_branch
+        current_config = get_current_configuration()
+        _, tosca_update_msg = update_configuration(
+            current_config, "tosca_templates", "Cloning TOSCA templates"
+        )
+        _, conf_update_msg = update_configuration(
+            current_config, "dashboard_configuration", "Cloning dashboard configuraton"
+        )
 
         try:
             tosca.reload()
         except Exception as error:
-            app.logger.error(f"Error reloading configuration: {error}")
-            flash(
-                f"Error reloading configuration: { type(error).__name__ }. Please check the logs.",
-                "danger",
-            )
+            handle_configuration_reload_error(error)
 
-        reload_message = "Configuration reloaded"
-        flash(reload_message, "info")
-        app.logger.debug(reload_message)
-
-        now = datetime.now()
-        dashboard_configuration_info["updated_at"] = now.strftime("%d/%m/%Y %H:%M:%S")
-        redis_client.set("last_configuration_info", json.dumps(dashboard_configuration_info))
-
-        if message1 or message2:
-            comment = request.form.get("message")
-            message = Markup(
-                "{} has requested the update of the dashboard configuration: "
-                "<br><br>{} <br>{} <br><br>Comment: {}".format(
-                    session["username"], message1, message2, comment
-                )
-            )
-
-            recipients = []
-            if request.form.get("notify_admins"):
-                recipients = dbhelpers.get_admins_email()
-            recipients.extend(request.form.getlist("notify_email"))
-
-            if recipients:
-                utils.send_email(
-                    "Dashboard Configuration update",
-                    sender=app.config.get("MAIL_SENDER"),
-                    recipients=recipients,
-                    html_body=message,
-                )
+        handle_configuration_reload(current_config, tosca_update_msg, conf_update_msg)
 
     return redirect(url_for("home_bp.show_settings"))
+
+
+def get_current_configuration():
+    serialised_value = redis_client.get("last_configuration_info")
+    return json.loads(serialised_value) if serialised_value else {}
+
+
+def update_configuration(current_config, field_prefix, message):
+    repo_url = request.form.get(f"{field_prefix}_url")
+    tag_or_branch = request.form.get(f"{field_prefix}_tag_or_branch")
+
+    private, username, deploy_token = get_repository_params(field_prefix)
+
+    ret, message = process_repository(
+        app.settings.tosca_dir, repo_url, tag_or_branch, private, username, deploy_token, message
+    )
+    if ret:
+        current_config[f"{field_prefix}_url"] = repo_url
+        current_config[f"{field_prefix}_tag_or_branch"] = tag_or_branch
+
+    return ret, message
+
+
+def process_repository(
+    repository_dir, repo_url, tag_or_branch, private, username, deploy_token, log_message
+):
+    ret = False
+    message = ""
+
+    if repo_url:
+        app.logger.debug(log_message)
+        ret, message = utils.download_git_repo(
+            repo_url,
+            repository_dir,
+            tag_or_branch,
+            private,
+            username,
+            deploy_token,
+        )
+        flash(message, "success" if ret else "danger")
+
+    return ret, message
+
+
+def get_repository_params(prefix):
+    private = request.form.get(f"{prefix}_private") == "on"
+    username = request.form.get(f"{prefix}_username")
+    deploy_token = request.form.get(f"{prefix}_token")
+
+    return private, username, deploy_token
+
+
+def handle_configuration_reload_error(error):
+    app.logger.error(f"Error reloading configuration: {error}")
+    flash(
+        f"Error reloading configuration: { type(error).__name__ }. \
+          Please check the logs.",
+        "danger",
+    )
+
+
+def handle_configuration_reload(current_config, message1, message2):
+    reload_message = "Configuration reloaded"
+    flash(reload_message, "info")
+    app.logger.debug(reload_message)
+
+    now = datetime.now()
+    current_config["updated_at"] = now.strftime("%d/%m/%Y %H:%M:%S")
+    redis_client.set("last_configuration_info", json.dumps(current_config))
+
+    notify_admins_and_users(message1, message2)
+
+
+def notify_admins_and_users(message1, message2):
+    comment = request.form.get("message")
+    message = Markup(
+        "{} has requested the update of the dashboard configuration: \
+                     <br><br>{} <br>{} <br><br>Comment: {}".format(
+            session["username"], message1, message2, comment
+        )
+    )
+
+    recipients = get_recipients()
+
+    if recipients:
+        utils.send_email(
+            "Dashboard Configuration update",
+            sender=app.config.get("MAIL_SENDER"),
+            recipients=recipients,
+            html_body=message,
+        )
+
+
+def get_recipients():
+    recipients = []
+    if request.form.get("notify_admins"):
+        recipients = dbhelpers.get_admins_email()
+    recipients.extend(request.form.getlist("notify_email"))
+
+    return recipients
 
 
 @home_bp.route("/login")
@@ -177,41 +196,39 @@ def login():
 
 def set_template_access(tosca, user_groups, active_group):
     info = {}
+
     for k, v in tosca.items():
-        visibility = (
-            v.get("metadata").get("visibility")
-            if "visibility" in v.get("metadata")
-            else {"type": "public"}
-        )
+        metadata = v.get("metadata", {})
+        visibility = metadata.get("visibility", {"type": "public"})
 
-        if visibility.get("type") != "public":
-            regex = False if "groups_regex" not in visibility else True
-
-            if regex:
-                access_locked = not re.match(visibility.get("groups_regex"), active_group)
-            else:
-                allowed_groups = visibility.get("groups")
-                access_locked = True if active_group not in allowed_groups else False
-
-            if (visibility.get("type") == "private" and not access_locked) or visibility.get(
-                "type"
-            ) == "protected":
-                v["metadata"]["access_locked"] = access_locked
-                info[k] = v
-        else:
+        if not active_group and visibility["type"] != "private":
+            metadata["access_locked"] = True
             info[k] = v
+        elif active_group:
+            is_locked = is_access_locked(visibility, active_group)
+            if not (visibility["type"] == "private" and is_locked):
+                metadata["access_locked"] = is_locked
+                info[k] = v
 
     return info
 
 
-def check_template_access(user_groups, active_group):
-    tosca_info, tosca_templates, tosca_gmetadata = tosca.get()
-    if tosca_gmetadata:
-        templates_info = set_template_access(tosca_gmetadata, user_groups, active_group)
-        enable_template_groups = True
+def is_access_locked(visibility, active_group):
+    regex = "groups_regex" in visibility
+    if regex:
+        return not re.match(visibility["groups_regex"], active_group)
     else:
-        templates_info = set_template_access(tosca_info, user_groups, active_group)
-        enable_template_groups = False
+        allowed_groups = visibility.get("groups", [])
+        return active_group not in allowed_groups
+
+
+def check_template_access(user_groups, active_group):
+    tosca_info, _, tosca_gmetadata = tosca.get()
+    templates_data = tosca_gmetadata if tosca_gmetadata else tosca_info
+    enable_template_groups = bool(tosca_gmetadata)
+
+    templates_info = set_template_access(templates_data, user_groups, active_group)
+
     return templates_info, enable_template_groups
 
 
@@ -298,85 +315,80 @@ def callback():
     payload = request.get_json()
     app.logger.info("Callback payload: " + json.dumps(payload))
 
-    status = payload["status"]
-    task = payload["task"]
-    uuid = payload["uuid"]
-    providername = payload["cloudProviderName"] if "cloudProviderName" in payload else ""
-    status_reason = payload["statusReason"] if "statusReason" in payload else ""
-    rf = 0
+    dep = update_deployment(payload)
 
-    user = dbhelpers.get_user(payload["createdBy"]["subject"])
-    user_email = user.email
-
-    dep = dbhelpers.get_deployment(uuid)
-
-    if dep is not None:
-        rf = dep.feedback_required
-        pn = dep.provider_name if dep.provider_name is not None else ""
-        if (
-            dep.status != status
-            or dep.task != task
-            or pn != providername
-            or status_reason != dep.status_reason
-        ):
-            if "endpoint" in payload["outputs"]:
-                dep.endpoint = payload["outputs"]["endpoint"]
-            dep.update_time = payload["updateTime"]
-            if "physicalId" in payload:
-                dep.physicalId = payload["physicalId"]
-            dep.status = status
-            dep.outputs = json.dumps(payload["outputs"])
-            dep.task = task
-            dep.provider_name = providername
-            dep.status_reason = status_reason
-            dbhelpers.add_object(dep)
-    else:
-        app.logger.info("Deployment with uuid:{} not found!".format(uuid))
-
-    # send email to user
-    mail_sender = app.config.get("MAIL_SENDER")
-    if mail_sender and user_email != "" and rf == 1:
-        if status == "CREATE_COMPLETE":
-            try:
-                utils.create_and_send_email(
-                    "Deployment complete", mail_sender, [user_email], uuid, status
-                )
-            except Exception as error:
-                utils.logexception("sending email: {}".format(error))
-
-        if status == "CREATE_FAILED":
-            try:
-                utils.create_and_send_email(
-                    "Deployment failed", mail_sender, [user_email], uuid, status
-                )
-            except Exception as error:
-                utils.logexception("sending email: {}".format(error))
-
-        if status == "UPDATE_COMPLETE":
-            try:
-                utils.create_and_send_email(
-                    "Deployment update complete",
-                    mail_sender,
-                    [user_email],
-                    uuid,
-                    status,
-                )
-            except Exception as error:
-                utils.logexception("sending email: {}".format(error))
-
-        if status == "UPDATE_FAILED":
-            try:
-                utils.create_and_send_email(
-                    "Deployment update failed", mail_sender, [user_email], uuid, status
-                )
-            except Exception as error:
-                utils.logexception("sending email: {}".format(error))
+    if dep and dep.feedback_required == 1:
+        send_email_notifications(payload)
 
     resp = make_response("")
     resp.status_code = 200
     resp.mimetype = "application/json"
 
     return resp
+
+
+def update_deployment(payload):
+    uuid = payload["uuid"]
+    dep = dbhelpers.get_deployment(uuid)
+
+    if dep is not None:
+        update_deployment_attributes(dep, payload)
+    else:
+        app.logger.info("Deployment with uuid:{} not found!".format(uuid))
+
+    return dep
+
+
+def update_deployment_attributes(dep, payload):
+    status = payload["status"]
+    task = payload["task"]
+    uuid = payload["uuid"]
+    providername = payload.get("cloudProviderName", "")
+    status_reason = payload.get("statusReason", "")
+
+    pn = dep.provider_name if dep.provider_name is not None else ""
+    if (
+        dep.status != status
+        or dep.task != task
+        or pn != providername
+        or status_reason != dep.status_reason
+    ):
+        if "endpoint" in payload["outputs"]:
+            dep.endpoint = payload["outputs"]["endpoint"]
+        dep.update_time = payload["updateTime"]
+        if "physicalId" in payload:
+            dep.physicalId = payload["physicalId"]
+        dep.status = status
+        dep.outputs = json.dumps(payload["outputs"])
+        dep.task = task
+        dep.provider_name = providername
+        dep.status_reason = status_reason
+        dbhelpers.add_object(dep)
+    else:
+        app.logger.info("Deployment with uuid:{} not found!".format(uuid))
+
+
+def send_email_notifications(payload):
+    user = dbhelpers.get_user(payload["createdBy"]["subject"])
+    user_email = user.email
+    uuid = payload["uuid"]
+    status = payload["status"]
+
+    mail_sender = app.config.get("MAIL_SENDER")
+
+    if mail_sender and user_email != "":
+        email_subjects = {
+            "CREATE_COMPLETE": "Deployment complete",
+            "CREATE_FAILED": "Deployment failed",
+            "UPDATE_COMPLETE": "Deployment update complete",
+            "UPDATE_FAILED": "Deployment update failed",
+        }
+        try:
+            email_subject = email_subjects.get(status, "")
+            if email_subject:
+                utils.create_and_send_email(email_subject, mail_sender, [user_email], uuid, status)
+        except Exception as error:
+            utils.logexception("sending email: {}".format(error))
 
 
 @home_bp.route("/getauthorization", methods=["POST"])

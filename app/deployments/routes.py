@@ -654,7 +654,8 @@ def createdep():
 
     additionaldescription = form_data["additional_description"]
 
-    inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.")}
+    inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.") 
+              and k != "csrf_token"}
 
     stinputs = copy.deepcopy(source_template["inputs"])
 
