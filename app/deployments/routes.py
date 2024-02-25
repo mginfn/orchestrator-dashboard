@@ -15,7 +15,6 @@
 import copy
 import io
 import os
-import re
 import uuid as uuid_generator
 from urllib.parse import urlparse
 
@@ -32,17 +31,15 @@ from flask import (
 )
 from flask import current_app as app
 from werkzeug.exceptions import Forbidden
-from werkzeug.utils import secure_filename
 
 from app.extensions import tosca, vaultservice
 from app.iam import iam
-from app.lib import auth, dbhelpers, s3, utils, yourls
+from app.lib import auth, dbhelpers, s3, utils
 from app.lib import openstack as keystone
 from app.lib import tosca_info as tosca_helpers
 from app.lib.ldap_user import LdapUserManager
 from app.models.Deployment import Deployment
 from app.providers import sla
-from app.swift.swift import Swift
 
 deployments_bp = Blueprint(
     "deployments_bp", __name__, template_folder="templates", static_folder="static"
@@ -200,34 +197,18 @@ def editdeployment():
     return redirect(url_for("deployments_bp.showdeployments"))
 
 
-def preprocess_outputs(browser, outputs, stoutputs, inputs):
+def preprocess_outputs(outputs, stoutputs, inputs):
+    """
+    Preprocesses the outputs based on the given inputs and stoutputs.
+
+    :param outputs: The outputs to be preprocessed.
+    :param stoutputs: The stoutputs containing conditions for preprocessing.
+    :param inputs: The inputs used to evaluate the output conditions.
+    """
     # note: inputs parameter is made available in this function
     # for evaluating output conditions (see below)
 
     for key, value in stoutputs.items():
-        if value.get("type") == "download-url":
-            if key in outputs:
-                if value.get("action") == "shorturl":
-                    origin_url = urlparse(outputs[key])
-                    try:
-                        shorturl = yourls.url_shorten(outputs[key])
-                        if shorturl:
-                            outputs[key] = shorturl
-                    except Exception as e:
-                        app.logger.debug("Error creating short url: {}".format(str(e)))
-
-                    if (
-                        origin_url.scheme == "http"
-                        and browser["name"] == "chrome"
-                        and browser["version"] >= 86
-                    ):
-                        message = stoutputs[key]["warning"] if "warning" in stoutputs[key] else ""
-                        stoutputs[key]["warning"] = "{}<br>{}".format(
-                            "The download will be blocked by Chrome. \
-                                Please, use Firefox for a full user experience.",
-                            message,
-                        )
-
         if "condition" in value:
             try:
                 if not eval(value.get("condition")):
@@ -240,10 +221,14 @@ def preprocess_outputs(browser, outputs, stoutputs, inputs):
 @deployments_bp.route("/<depid>/details")
 @auth.authorized_with_valid_token
 def depoutput(depid=None):
-    if (
-        not session["userrole"].lower() == "admin"
-        and depid not in session["deployments_uuid_array"]
-    ):
+    """
+    A function to render the details of a deployment, including inputs, outputs, and structured outputs.
+    Parameters:
+    - depid: str, the ID of the deployment
+    Returns:
+    - rendered template with deployment details, inputs, outputs, and structured outputs
+    """
+    if session["userrole"].lower() != "admin" and depid not in session["deployments_uuid_array"]:
         flash("You are not allowed to browse this page!", "danger")
         return redirect(url_for("deployments_bp.showdeployments"))
 
@@ -251,32 +236,53 @@ def depoutput(depid=None):
     dep = dbhelpers.get_deployment(depid)
     if dep is None:
         return redirect(url_for("deployments_bp.showdeployments"))
-    else:
-        i = json.loads(dep.inputs.strip('"')) if dep.inputs else {}
-        stinputs = json.loads(dep.stinputs.strip('"')) if dep.stinputs else {}
-        outputs = json.loads(dep.outputs.strip('"')) if dep.outputs else {}
-        stoutputs = json.loads(dep.stoutputs.strip('"')) if dep.stoutputs else {}
-        inputs = {}
-        for k, v in i.items():
-            if (
-                (stinputs[k]["printable"] if "printable" in stinputs[k] else True)
-                if k in stinputs
-                else True
-            ):
-                inputs[k] = v
 
-        browser = request.user_agent.browser
-        version = request.user_agent.version and int(request.user_agent.version.split(".")[0])
+    inputs, outputs, stoutputs = process_deployment_data(dep)
 
-        preprocess_outputs(dict(name=browser, version=version), outputs, stoutputs, inputs)
+    return render_template(
+        "depoutput.html",
+        deployment=dep,
+        inputs=inputs,
+        outputs=outputs,
+        stoutputs=stoutputs,
+    )
 
-        return render_template(
-            "depoutput.html",
-            deployment=dep,
-            inputs=inputs,
-            outputs=outputs,
-            stoutputs=stoutputs,
-        )
+
+def is_input_printable(stinputs, k):
+    """
+    Check if the input is printable
+    Args:
+        stinputs: The input dictionary.
+        k: The key to check in the input dictionary.
+    Returns:
+        A boolean indicating whether the input is printable
+        or True if the key is not in the input dictionary.
+    """
+    return stinputs.get(k, {}).get("printable", True) if k in stinputs else True
+
+
+def process_deployment_data(dep):
+    """
+    Process deployment data and return inputs, outputs, and stoutputs.
+
+    Parameters:
+    dep: The deployment data to process.
+
+    Returns:
+    inputs: The processed inputs.
+    outputs: The processed outputs.
+    stoutputs: The processed stoutputs.
+    """
+    i = json.loads(dep.inputs.strip('"')) if dep.inputs else {}
+    stinputs = json.loads(dep.stinputs.strip('"')) if dep.stinputs else {}
+    outputs = json.loads(dep.outputs.strip('"')) if dep.outputs else {}
+    stoutputs = json.loads(dep.stoutputs.strip('"')) if dep.stoutputs else {}
+
+    inputs = inputs = {k: v for k, v in i.items() if is_input_printable(stinputs, k)}
+
+    preprocess_outputs(outputs, stoutputs, inputs)
+
+    return inputs, outputs, stoutputs
 
 
 @deployments_bp.route("/<depid>/templatedb")
@@ -654,15 +660,15 @@ def createdep():
 
     additionaldescription = form_data["additional_description"]
 
-    inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.") 
-              and k != "csrf_token"}
+    inputs = {
+        k: v
+        for (k, v) in form_data.items()
+        if not k.startswith("extra_opts.") and k != "csrf_token"
+    }
 
     stinputs = copy.deepcopy(source_template["inputs"])
 
     doprocess = True
-    swift = None
-    swift_filename = []
-    swift_map = {}
 
     uuidgen_deployment = str(uuid_generator.uuid1())
 
@@ -739,28 +745,6 @@ def createdep():
                         "danger",
                     )
                     doprocess = False
-
-        # Manage Swift-related fields
-        if value["type"] == "swift_autouuid":
-            if key in inputs:
-                swift_uuid = inputs[key] = str(uuid_generator.uuid1())
-
-        if value["type"] == "hidden":
-            try:
-                if re.match(r"^swift_[avuktc]$", value["default"]):
-                    if key in inputs:
-                        swift_map[value["default"]] = key
-            except:
-                pass
-
-        if value["type"] == "swift_token":
-            if key in inputs:
-                swift = Swift(token=inputs[key])
-                del inputs[key]
-
-        if value["type"] == "swift_upload":
-            if key in request.files:
-                swift_filename.append(key)
 
         if value["type"] == "random_password":
             inputs[key] = utils.generate_password()
@@ -900,58 +884,6 @@ def createdep():
                     )
                     doprocess = False
 
-    if swift and swift_map:
-        for k, v in swift_map.items():
-            val = swift.mapvalue(k)
-            if val is not None:
-                inputs[v] = val
-
-    swiftprocess = False
-    containername = filename = None
-
-    if swift_filename:
-        for f in swift_filename:
-            file = request.files[f]
-            if file:
-                upload_folder = app.config["UPLOAD_FOLDER"]
-                upload_folder = os.path.join(upload_folder, swift_uuid)
-                filename = secure_filename(file.filename)
-                fullfilename = os.path.join(upload_folder, filename)
-                if not os.path.exists(upload_folder):
-                    os.makedirs(upload_folder)
-                file.save(fullfilename)
-
-                if f not in inputs:
-                    inputs[f] = file.filename
-
-                basecontainername = swift.basecontainername
-                containers = swift.getownedcontainers()
-                basecontainer = next(
-                    filter(lambda x: x["name"] == basecontainername, containers), None
-                )
-                if basecontainer is None:
-                    swift.createcontainer(basecontainername)
-
-                containername = basecontainername + "/" + swift_uuid
-
-                with open(fullfilename, "rb") as f:
-                    calchash = swift.md5hash(f)
-                with open(fullfilename, "rb") as f:
-                    objecthash = swift.createobject(containername, filename, contents=f.read())
-
-                if hash is not None and objecthash != swift.emptyMd5:
-                    swiftprocess = True
-
-                os.remove(fullfilename)
-                os.rmdir(upload_folder)
-
-                if calchash != objecthash:
-                    doprocess = False
-                    flash("Wrong swift file checksum!", "danger")
-            else:
-                doprocess = False
-                flash("Missing file object!", "danger")
-
     if doprocess:
         (
             storage_encryption,
@@ -991,8 +923,7 @@ def createdep():
             )
         except Exception as e:
             flash(str(e), "danger")
-            if swiftprocess is True:
-                swift.removeobject(containername, filename)
+            app.logger.error("Error creating deployment: {}".format(e))
             return redirect(url_for("deployments_bp.showdeployments"))
 
         # store data into database
