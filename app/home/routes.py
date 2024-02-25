@@ -46,6 +46,10 @@ home_bp = Blueprint(
 @home_bp.route("/user")
 @auth.authorized_with_valid_token
 def show_user_profile():
+    """
+    Route for showing the user profile. Access requires a valid token.
+    Retrieves the user's SSH public key from the database and renders the user profile.
+    """
     sshkey = dbhelpers.get_ssh_pub_key(session["userid"])
 
     return render_template("user_profile.html", sshkey=sshkey)
@@ -54,6 +58,9 @@ def show_user_profile():
 @home_bp.route("/settings")
 @auth.authorized_with_valid_token
 def show_settings():
+    """
+    Route for displaying the settings page.
+    """
     dashboard_last_conf = redis_client.get("last_configuration_info")
     last_settings = json.loads(dashboard_last_conf) if dashboard_last_conf else {}
     return render_template(
@@ -69,6 +76,11 @@ def show_settings():
 @home_bp.route("/setsettings", methods=["POST"])
 @auth.authorized_with_valid_token
 def submit_settings():
+    """
+    A function to update settings.
+    It checks the user's role, then updates the current configuration
+    and handles configuration reload.
+    """
     if request.method == "POST" and session["userrole"].lower() == "admin":
         current_config = get_current_configuration()
         _, tosca_update_msg = update_configuration(
@@ -92,11 +104,30 @@ def submit_settings():
 
 
 def get_current_configuration():
+    """
+    Retrieve the current configuration from the redis client.
+
+    Returns:
+        dict: The current configuration information, deserialized from JSON,
+        or an empty dictionary if no configuration is found.
+    """
     serialised_value = redis_client.get("last_configuration_info")
     return json.loads(serialised_value) if serialised_value else {}
 
 
 def update_configuration(current_config, field_prefix, repo_dir, message):
+    """
+    Update the configuration with the provided field prefix, repository directory, and message.
+
+    Args:
+        current_config (dict): The current configuration dictionary.
+        field_prefix (str): The prefix for the fields to update in the configuration.
+        repo_dir (str): The directory of the repository.
+        message (str): The message to be processed.
+
+    Returns:
+        tuple: A tuple containing the result of the update (bool) and the processing message (str).
+    """
     repo_url = request.form.get(f"{field_prefix}_url")
     tag_or_branch = request.form.get(f"{field_prefix}_tag_or_branch")
 
@@ -115,6 +146,20 @@ def update_configuration(current_config, field_prefix, repo_dir, message):
 def process_repository(
     repository_dir, repo_url, tag_or_branch, private, username, deploy_token, log_message
 ):
+    """
+    Process the given repository by downloading it from the provided URL.
+
+    :param repository_dir: The directory in which the repository will be stored
+    :param repo_url: The URL of the repository to be downloaded
+    :param tag_or_branch: The tag or branch of the repository to be downloaded
+    :param private: Boolean indicating whether the repository is private
+    :param username: The username for authentication
+    :param deploy_token: The deployment token for authentication
+    :param log_message: The message to be logged
+
+    :return: A tuple containing a boolean indicating the success of the repository processing
+    and a message describing the result
+    """
     ret = False
     message = ""
 
@@ -134,6 +179,10 @@ def process_repository(
 
 
 def get_repository_params(prefix):
+    """
+    This function takes a prefix as a parameter and retrieves the private flag, username,
+    and deploy token from the request form. It returns the private flag, username, and deploy token.
+    """
     private = request.form.get(f"{prefix}_private") == "on"
     username = request.form.get(f"{prefix}_username")
     deploy_token = request.form.get(f"{prefix}_token")
@@ -142,6 +191,15 @@ def get_repository_params(prefix):
 
 
 def handle_configuration_reload_error(error):
+    """
+    Function to handle configuration reload error.
+
+    Args:
+        error: The error that occurred during configuration reload.
+
+    Returns:
+        None
+    """
     app.logger.error(f"Error reloading configuration: {error}")
     flash(
         f"Error reloading configuration: { type(error).__name__ }. \
@@ -151,6 +209,19 @@ def handle_configuration_reload_error(error):
 
 
 def handle_configuration_reload(current_config, message1, message2):
+    """
+    Handles the reloading of the configuration.
+    Updates the current configuration with the current timestamp,
+    and notifies admins and users with the given messages.
+
+    Args:
+        current_config (dict): The current configuration settings.
+        message1 (str): The first message to be sent to admins and users.
+        message2 (str): The second message to be sent to admins and users.
+
+    Returns:
+        None
+    """
     reload_message = "Configuration reloaded"
     flash(reload_message, "info")
     app.logger.debug(reload_message)
@@ -163,6 +234,16 @@ def handle_configuration_reload(current_config, message1, message2):
 
 
 def notify_admins_and_users(message1, message2):
+    """
+    Notify admins and users about the dashboard configuration update request.
+
+    Args:
+        message1 (str): The first message for the update request.
+        message2 (str): The second message for the update request.
+
+    Returns:
+        None
+    """
     comment = request.form.get("message")
     message = Markup(
         "{} has requested the update of the dashboard configuration: \
@@ -183,6 +264,10 @@ def notify_admins_and_users(message1, message2):
 
 
 def get_recipients():
+    """
+    Get the recipients for notifications based on the request form data.
+    Returns a list of email addresses.
+    """
     recipients = []
     if request.form.get("notify_admins"):
         recipients = dbhelpers.get_admins_email()
@@ -193,11 +278,17 @@ def get_recipients():
 
 @home_bp.route("/login")
 def login():
+    """
+    Route for handling login functionality.
+    """
     session.clear()
     return render_template(app.config.get("HOME_TEMPLATE"))
 
 
 def set_template_access(tosca, user_groups, active_group):
+    """
+    Set template access based on user groups and active group.
+    """
     info = {}
 
     for k, v in tosca.items():
@@ -217,6 +308,13 @@ def set_template_access(tosca, user_groups, active_group):
 
 
 def is_access_locked(visibility, active_group):
+    """
+    Check if access is locked based on visibility and active group.
+
+    :param visibility: dict, visibility settings
+    :param active_group: str, the active group
+    :return: bool, whether access is locked
+    """
     regex = "groups_regex" in visibility
     if regex:
         return not re.match(visibility["groups_regex"], active_group)
@@ -226,6 +324,17 @@ def is_access_locked(visibility, active_group):
 
 
 def check_template_access(user_groups, active_group):
+    """
+    This function checks template access for a user within specific groups.
+
+    Parameters:
+    - user_groups: a list of user groups
+    - active_group: the active group
+
+    Returns:
+    - templates_info: information about the accessible templates
+    - enable_template_groups: a boolean indicating whether template groups are enabled
+    """
     tosca_info, _, tosca_gmetadata = tosca.get()
     templates_data = tosca_gmetadata if tosca_gmetadata else tosca_info
     enable_template_groups = bool(tosca_gmetadata)
@@ -237,6 +346,9 @@ def check_template_access(user_groups, active_group):
 
 @home_bp.route("/")
 def home():
+    """
+    A function to handle the home route, performing authorization check and redirecting accordingly.
+    """
     if not iam.authorized:
         return redirect(url_for("home_bp.login"))
     if not session.get("userid"):
@@ -246,7 +358,14 @@ def home():
 
 @home_bp.route("/portfolio")
 def portfolio():
-    """GET STATUSES"""
+    """
+    A route function for the "/portfolio" endpoint.
+    Retrieves user deployments from the database and processes their statuses.
+    If the user is logged in, it checks the database for the user, inserts the user if not found,
+    and updates the user role, retrieves public and private services, checks template access,
+    and renders the portfolio template with the retrieved data.
+    If the user is not logged in, it redirects to the login page.
+    """
     deps = dbhelpers.get_user_deployments(session["userid"])
     statuses = {}
     for dep in deps:
@@ -300,6 +419,9 @@ def portfolio():
 
 @home_bp.route("/set_active")
 def set_active_usergroup():
+    """
+    Route for setting the active user group.
+    """
     group = request.args["group"]
     session["active_usergroup"] = group
     flash("Project switched to {}".format(group), "info")
@@ -308,6 +430,9 @@ def set_active_usergroup():
 
 @home_bp.route("/logout")
 def logout():
+    """
+    Route for logging out the user.
+    """
     session.clear()
     iam.get("/logout")
     return redirect(url_for("home_bp.login"))
@@ -315,6 +440,12 @@ def logout():
 
 @home_bp.route("/callback", methods=["POST"])
 def callback():
+    """
+    Callback function for handling POST requests to /callback endpoint.
+    Parses the JSON payload from the request, updates the deployment,
+    and sends email notifications if feedback is required.
+    Returns a response with status code 200 and mimetype "application/json".
+    """
     payload = request.get_json()
     app.logger.info("Callback payload: " + json.dumps(payload))
 
@@ -331,6 +462,15 @@ def callback():
 
 
 def update_deployment(payload):
+    """
+    Updates a deployment using the provided payload.
+
+    Args:
+        payload (dict): The payload containing the information to update the deployment.
+
+    Returns:
+        dict: The updated deployment.
+    """
     uuid = payload["uuid"]
     dep = dbhelpers.get_deployment(uuid)
 
@@ -343,6 +483,16 @@ def update_deployment(payload):
 
 
 def update_deployment_attributes(dep, payload):
+    """
+    Updates deployment attributes based on the provided payload.
+
+    Args:
+        dep: The deployment object to be updated.
+        payload: The payload containing the update information.
+
+    Returns:
+        None
+    """
     status = payload["status"]
     task = payload["task"]
     uuid = payload["uuid"]
@@ -372,6 +522,15 @@ def update_deployment_attributes(dep, payload):
 
 
 def send_email_notifications(payload):
+    """
+    Send email notifications to the user based on the payload provided.
+
+    Args:
+    - payload: A dictionary containing information about the notification to be sent.
+
+    Returns:
+    - None
+    """
     user = dbhelpers.get_user(payload["createdBy"]["subject"])
     user_email = user.email
     uuid = payload["uuid"]
@@ -396,6 +555,12 @@ def send_email_notifications(payload):
 
 @home_bp.route("/getauthorization", methods=["POST"])
 def getauthorization():
+    """
+    This function handles the POST request to '/getauthorization'.
+    It parses the 'pre_tasks' from the request form, then iterates through the tasks
+    and executes the corresponding functions from the 'functions' dictionary.
+    It finally returns a rendered success message template.
+    """
     tasks = json.loads(request.form.to_dict()["pre_tasks"].replace("'", '"'))
 
     functions = {
@@ -419,6 +584,10 @@ def getauthorization():
 
 @home_bp.route("/sendaccessreq", methods=["POST"])
 def sendaccessrequest():
+    """
+    A function to handle sending an access request, which takes form data as input
+    and sends an authorization request email.
+    """
     form_data = request.form.to_dict()
 
     try:
@@ -446,6 +615,9 @@ def sendaccessrequest():
 
 @home_bp.route("/contact", methods=["POST"])
 def contact():
+    """
+    A route for handling contact form submission via POST method.
+    """
     app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
 
     form_data = request.form.to_dict()
