@@ -34,7 +34,7 @@
 
 		<!-- number types -->
 		{% elif value.type == "integer" %}
-			<input type="number" min="0" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
+			<input type="number" min="0" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" {{ value.function }} {{ value.function_params }} aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
 		{% elif value.type == "float" %}
 			<input type="number" step="any" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
 		<!-- end number types -->
@@ -54,9 +54,9 @@
 			</fieldset>
 		<!-- end list text type -->
 
-		<!-- list text type -->
+		<!-- list of map type -->
 		{% elif value.type == "list" and value.entry_schema.type|lower == "map" %}
-			<fieldset class="border p-2" {{mode}}>
+			<fieldset id="{{key}}" class="border p-2" {{mode}}>
 				<!--legend class="w-auto">{{key}}</legend-->
 				{% include 'inputs/list_map_string.html' %}
 			</fieldset>
@@ -205,24 +205,6 @@
 		{% elif value.type == "dependent_definition" %}
 			{% include 'inputs/dependent_definition.html' %}
 		<!-- end dependent_definition special input field -->
-
-		<!-- swift_upload special input field -->
-		{% elif value.type == "swift_upload" %}
-			<div class="custom-file">
-				<input type="file" class="custom-file-input" data-type="{{value.type}}" id="{{key}}" name="{{key}}" {% if value.required %}required{%endif%} {{mode}}>
-				<label class="custom-file-label" for="{{key}}">Choose file</label>
-			</div>
-		<!-- end swift_upload special input type -->
-
-		<!-- swift_autouuid special input type -->
-		{% elif value.type == "swift_autouuid" %}
-			<input type="hidden" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" >
-		<!-- end swift_autouuid special input type -->
-
-		<!-- swift_token special input type -->
-		{% elif value.type == "swift_token" %}
-			<input type="hidden" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" >
-		<!-- end swift_token special input type -->
 
 		{% else %}
 			<!-- select type if constraints are defined -->
