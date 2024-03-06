@@ -29,9 +29,6 @@
 					<label class="custom-control-label checkbox-maintenance" for="popupMaintenanceCheckbox">Don't show me again</label>
 				</div>
 				{% endif %}
-				<!-- <div class="modal-footer">
-					<button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
-				</div> -->
 				</div>
 			</div>
         </div>
@@ -52,11 +49,6 @@
                   Step&nbsp;{{ steps['current'] }}/{{ steps['total'] }}
                 </div>
             </div>
-        
-            <!-- <div class="alert alert-info">
-                <strong>Description:</strong> {{template['description'] | safe}}
-            </div> -->
-
             {% if template['metadata']['disclaimer'] is defined %}
             <div class="alert alert-danger">
 				<span>
@@ -130,6 +122,25 @@
 </style>
 
 <script>
+function findElementsByNamePrefix(array, prefix) {
+ return array.filter(item => item.name.startsWith(prefix) && item.value != "");
+}
+
+function findElementByName(array, name) {
+ return array.find(item => item.name === name);
+}
+
+function findMatchingElements(array, name) {
+ return array.filter(item => item.name == name);
+}
+
+function extractIdentifier(name) {
+    // Split the name by '[' and ']' to get the identifier
+    const parts = name.split('[');
+    const identifier = parts[1].split(']')[0];
+    return identifier;
+}
+
 $(document).ready(function() {
     $('.js-example-basic-single').select2({
       	width: '100%' // https://github.com/select2/select2/issues/4220
@@ -149,167 +160,116 @@ $(document).ready(function() {
 			template_inputs = template_inputs.replace(/="([^"]*)"/g, "='$1'").replace(/\n/g, "\\n").replaceAll('False', 'false').replaceAll('True', 'true')
 
 			let inputs = JSON.parse(template_inputs);
-			let append = ''; 
-			let map_array = [];
-			let list_array = [];
-			let multi_array = [];
+			let html_value= ''; 
 
-			// console.log(inputs)
-	
-			for(let i = 0; i < data.length; i++) {
-				for(let j = 0; j < Object.keys(inputs).length; j++) {
-					let key = Object.keys(inputs)[j];
-		
-					if(data[i].name == key) {
-					let input = inputs[key];
-					let html_value = '';
+			//console.log(inputs)
+			//console.log(data)
 
-					// console.log(data)
+			// DESCRIPTION
+			let dataItem = findElementByName(data, "additional_description");
+			html_value += '<div class="form-group" style="margin-bottom: 4px;"><label>Deployment description:</label>&nbsp;';
+			html_value += dataItem.value;
+			html_value += '</div>';
 
-					// console.log(input, data[i].value)
-		
-					if(input.type !== 'hidden') {
-						
-						switch(input.type) {
-						// COMBINED
-						case 'combined':
-							let selected = input.constraints.filter(e => { return e.value == data[i].value });
+			for(let key of Object.keys(inputs)){
 
+				let input = inputs[key];
+
+				if(input.type !== 'hidden') {
+					switch(input.type) {
+						case 'combined': {
+							let dataItem = findElementByName(data, key);
+							let selected = input.constraints.filter(e => e.value == dataItem.value);
 							if(selected.length > 0) {
-								html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>'+ key +':</label>&nbsp;';
-									html_value += selected[0].label;
-								html_value += '</div>';
+								html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;${selected[0].label}</div>`;
 							}
-						break;
+							break;
+						}
+						case 'map': {
+							let dataArray = findElementsByNamePrefix(data, key);
+							const transformedDict = {};
 
-						// MAP
-						case 'map':
-							let map_split = data[i].name.split('_tmp[')
-
-							if(data[i].name == map_split[0]) {
-								if(map_array !== undefined && map_array.length > 0) {
-									html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>'+ key +':</label>&nbsp;';
-									html_value += '<ul>';
-									
-									for(let j = 0; j < map_array.length; j++) {
-										if(map_array[j] !== undefined && map_array[j] !== '' && map_array[j] !== null) {
-											html_value += '<li>'+ map_array[j] +'</li>';
-										}
-									}
-									
-									html_value += '</ul>';
-									html_value += '</div>';
-								
-									map_array = [];
+							// Iterate over each object in the array
+							dataArray.forEach(obj => {
+								// Extract the identifier from the name property
+								const identifier = extractIdentifier(obj.name);
+								// Extract the field name from the name property
+								const fieldName = obj.name.split('[')[2].split(']')[0];
+								// Create a new dictionary for the identifier if it doesn't exist
+								if (!transformedDict[identifier]) {
+									transformedDict[identifier] = {};
 								}
-							} else {
-								let map_num = data[i].name.split('_tmp[')[1].split(']')[0];
+								// Add the field name and value to the dictionary for the identifier
+								transformedDict[identifier][fieldName] = obj.value;
+							});
+							html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;`
+							html_value += `<ul>`
+							Object.values(transformedDict).forEach(dict => {
+								html_value += `<li>${JSON.stringify(dict)}</li>`;
+							});
+							html_value += `</ul></div>`;
+							break;
+						}
+						case 'list': {
+							if(input.entry_schema.type == "map"){
+								let dataArray = findElementsByNamePrefix(data, key);
+								html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;`;
+								html_value += `<ul>`
 
-								if(map_array[map_num] == undefined) {
-									map_array[map_num] = '';
+								for(let i = 0; i < dataArray.length; i += 2){
+									const key = dataArray[i].value;
+									const value = dataArray[i+1].value
+									html_value += `<li>${key}: ${value}</li>`;
 								}
-
-								map_array[map_num] += data[i].value + ' ';
+								html_value += '</ul></div>';
 							}
-						break;
-
-						// LIST
-						case 'list':
-							if(data[i].value == '') {
-								if(list_array !== undefined && list_array.length > 0) {
-									html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>'+ key +':</label>&nbsp;';
-									html_value += '<ul>';
-									
-									for(let j = 0; j < list_array.length; j++) {
-										if(list_array[j] !== undefined && list_array[j] !== '' && list_array[j] !== null) {
-											html_value += '<li>'+ list_array[j] +'</li>';
-										}
-									}
-			
-									html_value += '</ul>';
-									html_value += '</div>';
-			
-									list_array = [];
-								}
-							} else {
-								list_array.push(data[i].value);
-							}
-
-						break;
-
-						// STRING & PASSWORD
-						case 'string':
-							if(data[i].value !== "") {
+							break;
+						}
+						case 'string': {
+							let dataItem = findElementByName(data, key);
+							if(dataItem !== undefined && dataItem.value !== "") {
 								if(key.includes('password')) {
-									html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>'+ key +':</label>&nbsp;';
-									html_value += '<span style="color: inherit!important">';
-			
-										for(let j = 0; j < data[i].value.length; j++) {
-											html_value += '•';
-										}
-										
-									html_value += '</span>';
-			
-									html_value += '<span style="display: none; color: inherit!important">'+ data[i].value +'</span>';
-									html_value += '&nbsp;<i class="fas fa-eye show-hide-password" style="color: inherit; cursor: pointer;" title="Show & hide password"></i>';
-									html_value += '</div>';
+									html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;<span style="color: inherit!important">${'•'.repeat(dataItem.value.length)}</span><span style="display: none; color: inherit!important">${dataItem.value}</span>&nbsp;<i class="fas fa-eye show-hide-password" style="color: inherit; cursor: pointer;" title="Show & hide password"></i></div>`;
 								} else {
-									html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>'+ key +':</label>&nbsp;';
-									html_value += data[i].value;
-									html_value += '</div>';
+									html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;${dataItem.value}</div>`;
 								}
 							}
-						break;
-
-						// MULTISELECT
-						case 'multiselect':
-							multi_array.push(data[i].value)
-
-							if(multi_array.length == data.filter(e => {return e.name == data[i].name}).length) {
-								html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>'+ key +':</label>&nbsp;';
-								html_value += '<ul>';
-
-								for(let j = 0; j < multi_array.length; j++) {
-									if(multi_array[j] !== undefined && multi_array[j] !== '' && multi_array[j] !== null) {
-										html_value += '<li>'+ multi_array[j] +'</li>';
-									}
-								}
-
-								html_value += '</ul>';
-								html_value += '</div>';
-
-								multi_array = [];
-							}
-						break;
-
+							break;
+						}
+						case 'password': {
+							let dataItem = findElementByName(data, key);
+							html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;<span style="color: inherit!important">${'•'.repeat(dataItem.value.length)}</span><span style="display: none; color: inherit!important">${dataItem.value}</span>&nbsp;<i class="fas fa-eye show-hide-password" style="color: inherit; cursor: pointer;" title="Show & hide password"></i></div>`;
+							break;
+						}
+						case 'multiselect': {
+							let dataArray = findMatchingElements(data, key);
+							html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;<ul>`
+							dataArray.forEach(obj => {
+								html_value += `<li>${obj.value}</li>`;
+							});
+							html_value += `</ul></div>`;
+                            break;
+						}	
 						// SSH USER
 						case 'ssh_user':
-						break;
-			
-						// DEFAULT
+							break;	
+
 						default:
-							html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>'+ key +':</label>&nbsp;';
-							html_value += data[i].value;
-							html_value += '</div>';
-						break;
-						}
+							try {
+								let dataItem = findElementByName(data, key);
+								if(dataItem.value !== ""){
+									html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;${dataItem.value}</div>`;
+								}
+							}
+							catch(err){
+							}
+							break;
 					}
-					
-					append += html_value;
-					}
-				}
+				}	
 
-				/* DESCRIPTION */
-				if(data[i].name == "additional_description") {
-					html_value = '<div class="form-group" style="margin-bottom: 4px;"><label>Deployment description:</label>&nbsp;';
-					html_value += data[i].value;
-					html_value += '</div>';
-
-					append += html_value;
-				}
 			}
 	
-			$('#checkSubmit > .dashboard-check-data').html(append);
+			$('#checkSubmit > .dashboard-check-data').html(html_value);
 
 			/* SHOW AND HIDE PASSWORD ON ICON CLICK */
 			$('.show-hide-password')
@@ -527,7 +487,6 @@ function validateHostname(input){
 }
 
 function __attachValidationHandler(input) {
-	console.log(input);
 	var valfunc = input.data("validate-function");
 	if (typeof valfunc !== 'undefined' && valfunc.length > 0) {
 
