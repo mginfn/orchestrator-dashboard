@@ -46,6 +46,12 @@ deployments_bp = Blueprint(
 )
 
 
+class InputValidationError(Exception):
+    """Exception raised for errors in the input validation process."""
+
+    pass
+
+
 @deployments_bp.route("/depls")
 @auth.authorized_with_valid_token
 def showdeploymentsingroup():
@@ -214,7 +220,7 @@ def preprocess_outputs(outputs, stoutputs, inputs):
                 if not eval(value.get("condition")):
                     if key in outputs:
                         del outputs[key]
-            except Exception as ex:
+            except InputValidationError as ex:
                 app.logger.warning("Error evaluating condition for output {}: {}".format(key, ex))
 
 
@@ -525,7 +531,7 @@ def configure():
 
     access_token = iam.token["access_token"]
 
-    tosca_info, tosca_templates, tosca_gmetadata = tosca.get()
+    tosca_info, _, tosca_gmetadata = tosca.get()
 
     selected_tosca = None
 
@@ -624,13 +630,408 @@ def add_sla_to_template(template, sla_id):
     return template
 
 
+def extract_inputs(form_data):
+    return {
+        k: v
+        for (k, v) in form_data.items()
+        if not k.startswith("extra_opts.") and k != "csrf_token"
+    }
+
+
+def load_template(selected_template):
+    with io.open(
+        os.path.join(app.settings.tosca_dir, selected_template), encoding="utf-8"
+    ) as stream:
+        template = yaml.full_load(stream)
+        stream.seek(0)
+        template_text = stream.read()
+    return template, template_text
+
+
+def process_dependent_definition(key: str, inputs: dict, stinputs: dict):
+    value = stinputs[key]
+    if value["type"] == "dependent_definition":
+        # retrieve the real type from dedicated field
+        if inputs[key + "-ref"] in stinputs:
+            stinputs[key] = stinputs[inputs[key + "-ref"]]
+        del inputs[key + "-ref"]
+
+
+def process_security_groups(key: str, inputs: dict, stinputs: dict, form_data: dict):
+    value = stinputs[key]
+
+    if value["type"] == "map" and (
+        value["entry_schema"]["type"] == "tosca.datatypes.network.PortSpec"
+        or value["entry_schema"]["type"] == "tosca.datatypes.indigo.network.PortSpec"
+    ):
+        if key in inputs:
+            try:
+                inputs[key] = json.loads(form_data[key])
+                for k, v in inputs[key].items():
+                    if "," in v["source"]:
+                        v["source_range"] = json.loads(v.pop("source", None))
+            except:
+                del inputs[key]
+                inputs[key] = {"ssh": {"protocol": "tcp", "source": 22}}
+
+            if "required_ports" in value:
+                inputs[key] = {**value["required_ports"], **inputs[key]}
+        else:
+            if "required_ports" in value:
+                inputs[key] = value["required_ports"]
+
+
+def process_map(key: str, inputs: dict, stinputs: dict, form_data: dict):
+    value = stinputs[key]
+    if value["type"] == "map" and value["entry_schema"]["type"] == "string":
+        if key in inputs:
+            try:
+                inputs[key] = {}
+                map = json.loads(form_data[key])
+                for k, v in map.items():
+                    inputs[key][v["key"]] = v["value"]
+            except:
+                del inputs[key]
+
+
+def process_list(key: str, inputs: dict, stinputs: dict, form_data: dict):
+    value = stinputs[key]
+
+    if value["type"] == "list":
+        if key in inputs:
+            try:
+                json_data = json.loads(form_data[key])
+                if (
+                    value["entry_schema"]["type"] == "map"
+                    and value["entry_schema"]["entry_schema"]["type"] == "string"
+                ):
+                    array = []
+                    for el in json_data:
+                        array.append({el["key"]: el["value"]})
+                    inputs[key] = array
+                else:
+                    inputs[key] = json_data
+            except:
+                del inputs[key]
+
+
+def process_ssh_user(key: str, inputs: dict, stinputs: dict):
+    value = stinputs[key]
+    if value["type"] == "ssh_user":
+        app.logger.info("Add ssh user")
+        if app.config.get("FEATURE_REQUIRE_USER_SSH_PUBKEY") == "yes":
+            if dbhelpers.get_ssh_pub_key(session["userid"]):
+                inputs[key] = [
+                    {
+                        "os_user_name": session["preferred_username"],
+                        "os_user_add_to_sudoers": True,
+                        "os_user_ssh_public_key": dbhelpers.get_ssh_pub_key(session["userid"]),
+                    }
+                ]
+            else:
+                flash(
+                    "Deployment request failed: no SSH key found. Please upload your key.",
+                    "danger",
+                )
+                raise InputValidationError(
+                    "Deployment request failed: no SSH key found. Please upload your key."
+                )
+
+
+def process_random_password(key: str, inputs: dict, stinputs: dict):
+    value = stinputs[key]
+    if value["type"] == "random_password":
+        inputs[key] = utils.generate_password()
+
+
+def process_uuidgen(key: str, inputs: dict, stinputs: dict, uuidgen_deployment: str):
+    value = stinputs[key]
+    if value["type"] == "uuidgen":
+        prefix = ""
+        suffix = ""
+        if "extra_specs" in value:
+            prefix = value["extra_specs"]["prefix"] if "prefix" in value["extra_specs"] else ""
+            suffix = value["extra_specs"]["suffix"] if "suffix" in value["extra_specs"] else ""
+        inputs[key] = prefix + uuidgen_deployment + suffix
+
+
+def process_openstack_ec2credentials(key: str, inputs: dict, stinputs: dict):
+    value = stinputs[key]
+
+    if value["type"] == "openstack_ec2credentials":
+        try:
+            del inputs[key]
+            project = next(
+                filter(
+                    lambda tenant: tenant.get("group") == session["active_usergroup"],
+                    value["auth"]["tenants"],
+                ),
+                None,
+            )
+            if not project:
+                raise IndexError("Project not configured for S3")
+            access, secret = keystone.get_or_create_ec2_creds(
+                iam.token["access_token"],
+                project.get("name"),
+                value["auth"]["url"],
+                value["auth"]["identity_provider"],
+                value["auth"]["protocol"],
+            )
+            access_key_input_name = value["inputs"]["aws_access_key"]
+            inputs[access_key_input_name] = access
+            secret_key_input_name = value["inputs"]["aws_secret_key"]
+            inputs[secret_key_input_name] = secret
+
+            functions = {
+                "s3.create_bucket": s3.create_bucket,
+                "s3.delete_bucket": s3.delete_bucket,
+            }
+
+            if "tests" in value and value["tests"]:
+                for test in value["tests"]:
+                    func = test["action"]
+                    args = test["args"]
+                    args["access_key"] = access
+                    args["secret_key"] = secret
+                    if func in functions:
+                        functions[func](**args)
+        except Forbidden as e:
+            app.logger.error("Error while testing S3: {}".format(e))
+            flash(
+                " Sorry, your request needs a special authorization. \
+                        A notification has been sent automatically to the support team. \
+                        You will be contacted soon.",
+                "danger",
+            )
+            utils.send_authorization_request_email(
+                "Sync&Share aaS for group {}".format(session["active_usergroup"])
+            )
+            raise
+
+
+def process_ldap_user(key: str, inputs: dict, stinputs: dict):
+    value = stinputs[key]
+
+    if value["type"] == "ldap_user":
+        try:
+            del inputs[key]
+
+            iam_base_url = app.settings.iam_url
+            iam_client_id = app.settings.iam_client_id
+            iam_client_secret = app.settings.iam_client_secret
+
+            username = "{}_{}".format(session["userid"], urlparse(iam_base_url).netloc)
+            email = session["useremail"]
+
+            jwt_token = auth.exchange_token_with_audience(
+                iam_base_url,
+                iam_client_id,
+                iam_client_secret,
+                iam.token["access_token"],
+                app.config.get("VAULT_BOUND_AUDIENCE"),
+            )
+
+            vaultclient = vaultservice.connect(jwt_token, app.config.get("VAULT_ROLE"))
+            luser = LdapUserManager(
+                app.config["LDAP_SOCKET"],
+                app.config["LDAP_TLS_CACERT_FILE"],
+                app.config["LDAP_BASE"],
+                app.config["LDAP_BIND_USER"],
+                app.config["LDAP_BIND_PASSWORD"],
+                vaultclient,
+            )
+
+            username, password = luser.create_user(username, email)
+            username_input_name = value["inputs"]["username"]
+            inputs[username_input_name] = username
+            password_input_name = value["inputs"]["password"]
+            inputs[password_input_name] = password
+
+        except Exception as e:
+            app.logger.error("Error: {}".format(e))
+            flash(
+                " The deployment submission failed with: {}. \
+                        Please try later or contact the admin(s): {}".format(
+                    e, app.config.get("SUPPORT_EMAIL")
+                ),
+                "danger",
+            )
+            raise InputValidationError(e)
+
+
+def process_userinfo(key, inputs, stinputs):
+    value = stinputs[key]
+
+    if value["type"] == "userinfo":
+        if key in inputs:
+            if value["attribute"] == "sub":
+                inputs[key] = session["userid"]
+
+
+def process_multiselect(key, inputs, stinputs):
+    value = stinputs[key]
+    if value["type"] == "multiselect":
+        if key in inputs:
+            try:
+                lval = request.form.getlist(key)
+                if "format" in value and value["format"]["type"] == "string":
+                    inputs[key] = value["format"]["delimiter"].join(lval)
+                else:
+                    inputs[key] = lval
+            except Exception as e:
+                app.logger.error("Error processing input {}: {}".format(key, e))
+                flash(
+                    " The deployment submission failed with: {}. \
+                            Please try later or contact the admin(s): {}".format(
+                        e, app.config.get("SUPPORT_EMAIL")
+                    ),
+                    "danger",
+                )
+                raise InputValidationError(e)
+
+
+def process_inputs(source_template, inputs, form_data, uuidgen_deployment):
+    doprocess = True
+
+    stinputs = copy.deepcopy(source_template["inputs"])
+
+    for key in stinputs.keys():
+        try:
+            # Manage special type 'dependent_definition' as first
+            process_dependent_definition(key, inputs, stinputs)
+
+            # Manage security groups
+            process_security_groups(key, inputs, stinputs, form_data)
+
+            # Manage map of string
+            process_map(key, inputs, stinputs, form_data)
+
+            # Manage list
+            process_list(key, inputs, stinputs, form_data)
+
+            process_ssh_user(key, inputs, stinputs)
+
+            process_random_password(key, inputs, stinputs)
+
+            process_uuidgen(key, inputs, stinputs, uuidgen_deployment)
+
+            process_openstack_ec2credentials(key, inputs, stinputs)
+
+            process_ldap_user(key, inputs, stinputs)
+
+            process_userinfo(key, inputs, stinputs)
+
+            process_multiselect(key, inputs, stinputs)
+        except Exception:
+            doprocess = False
+
+    return doprocess, inputs, stinputs
+
+
+def create_deployment(
+    template,
+    inputs,
+    stinputs,
+    form_data,
+    selected_template,
+    source_template,
+    template_text,
+    additionaldescription,
+    params,
+    storage_encryption,
+    vault_secret_uuid,
+    vault_secret_key,
+):
+    access_token = iam.token["access_token"]
+
+    keep_last_attempt = 1 if "extra_opts.keepLastAttempt" in form_data else 0
+    feedback_required = 1 if "extra_opts.sendEmailFeedback" in form_data else 0
+    provider_timeout_mins = (
+        form_data["extra_opts.providerTimeout"]
+        if "extra_opts.providerTimeoutSet" in form_data
+        else app.config["PROVIDER_TIMEOUT"]
+    )
+
+    user_group = (
+        session["active_usergroup"]
+        if "active_usergroup" in session and session["active_usergroup"] is not None
+        else None
+    )
+
+    elastic = tosca_helpers.eleasticdeployment(template)
+    updatable = source_template["updatable"]
+
+    try:
+        rs_json = app.orchestrator.create(
+            access_token,
+            user_group,
+            yaml.dump(template, default_flow_style=False, sort_keys=False),
+            inputs,
+            keep_last_attempt,
+            provider_timeout_mins,
+            app.config["OVERALL_TIMEOUT"],
+            app.config["CALLBACK_URL"],
+        )
+    except Exception as e:
+        flash(str(e), "danger")
+        app.logger.error("Error creating deployment: {}".format(e))
+        return redirect(url_for("deployments_bp.showdeployments"))
+
+    # store data into database
+    uuid = rs_json["uuid"]
+    deployment = dbhelpers.get_deployment(uuid)
+    if deployment is None:
+        vphid = rs_json["physicalId"] if "physicalId" in rs_json else ""
+        providername = rs_json["cloudProviderName"] if "cloudProviderName" in rs_json else ""
+
+        deployment = Deployment(
+            uuid=uuid,
+            creation_time=rs_json["creationTime"],
+            update_time=rs_json["updateTime"],
+            physicalId=vphid,
+            description=additionaldescription,
+            status=rs_json["status"],
+            outputs=json.dumps(rs_json["outputs"]),
+            stoutputs=json.dumps(source_template["outputs"]),
+            task=rs_json["task"],
+            links=json.dumps(rs_json["links"]),
+            sub=rs_json["createdBy"]["subject"],
+            template=template_text,
+            template_metadata=source_template["metadata_file"],
+            template_parameters=source_template["parameters_file"],
+            selected_template=selected_template,
+            inputs=json.dumps(inputs),
+            stinputs=json.dumps(stinputs),
+            params=json.dumps(params),
+            deployment_type=source_template["deployment_type"],
+            template_type=source_template["metadata"]["template_type"],
+            provider_name=providername,
+            user_group=rs_json["userGroup"],
+            endpoint="",
+            feedback_required=feedback_required,
+            keep_last_attempt=keep_last_attempt,
+            remote=1,
+            issuer=rs_json["createdBy"]["issuer"],
+            storage_encryption=storage_encryption,
+            vault_secret_uuid=vault_secret_uuid,
+            vault_secret_key=vault_secret_key,
+            elastic=elastic,
+            updatable=updatable,
+        )
+        dbhelpers.add_object(deployment)
+
+    else:
+        flash(
+            "Deployment with uuid:{} is already in the database!".format(uuid),
+            "warning",
+        )
+
+
 @deployments_bp.route("/submit", methods=["POST"])
 @auth.authorized_with_valid_token
 def createdep():
-    tosca_info, tosca_templates, tosca_gmetadata = tosca.get()
-
+    tosca_info, _, _ = tosca.get()
     access_token = iam.token["access_token"]
-
     # validate input
     request_template = request.args.get("template")
     if request_template not in tosca_info.keys():
@@ -638,350 +1039,50 @@ def createdep():
 
     selected_template = request_template
     source_template = tosca_info[selected_template]
-
-    app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
-
-    with io.open(
-        os.path.join(app.settings.tosca_dir, selected_template), encoding="utf-8"
-    ) as stream:
-        template = yaml.full_load(stream)
-        # rewind file
-        stream.seek(0)
-        template_text = stream.read()
-
     form_data = request.form.to_dict()
+    additionaldescription = form_data["additional_description"]
 
-    params = {}
+    inputs = extract_inputs(form_data)
+
+    template, template_text = load_template(selected_template)
 
     if form_data["extra_opts.schedtype"].lower() == "man":
         template = add_sla_to_template(template, form_data["extra_opts.selectedSLA"])
     else:
         remove_sla_from_template(template)
 
-    additionaldescription = form_data["additional_description"]
-
-    inputs = {
-        k: v
-        for (k, v) in form_data.items()
-        if not k.startswith("extra_opts.") and k != "csrf_token"
-    }
-
-    stinputs = copy.deepcopy(source_template["inputs"])
-
-    doprocess = True
-
     uuidgen_deployment = str(uuid_generator.uuid1())
 
-    for key, value in stinputs.items():
-        # Manage special type 'dependent_definition' as first
-        if value["type"] == "dependent_definition":
-            # retrieve the real type from dedicated field
-            if inputs[key + "-ref"] in stinputs:
-                value = stinputs[inputs[key + "-ref"]]
-            del inputs[key + "-ref"]
+    doprocess, inputs, stinputs = process_inputs(
+        source_template, inputs, form_data, uuidgen_deployment
+    )
 
-        # Manage security groups
-        if value["type"] == "map" and (
-            value["entry_schema"]["type"] == "tosca.datatypes.network.PortSpec"
-            or value["entry_schema"]["type"] == "tosca.datatypes.indigo.network.PortSpec"
-        ):
-            if key in inputs:
-                try:
-                    inputs[key] = json.loads(form_data[key])
-                    for k, v in inputs[key].items():
-                        if "," in v["source"]:
-                            v["source_range"] = json.loads(v.pop("source", None))
-                except:
-                    del inputs[key]
-                    inputs[key] = {"ssh": {"protocol": "tcp", "source": 22}}
-
-                if "required_ports" in value:
-                    inputs[key] = {**value["required_ports"], **inputs[key]}
-            else:
-                if "required_ports" in value:
-                    inputs[key] = value["required_ports"]
-        # Manage map of string
-        if value["type"] == "map" and value["entry_schema"]["type"] == "string":
-            if key in inputs:
-                try:
-                    inputs[key] = {}
-                    map = json.loads(form_data[key])
-                    for k, v in map.items():
-                        inputs[key][v["key"]] = v["value"]
-                except:
-                    del inputs[key]
-        # Manage list
-        if value["type"] == "list":
-            if key in inputs:
-                try:
-                    json_data = json.loads(form_data[key])
-                    if (
-                        value["entry_schema"]["type"] == "map"
-                        and value["entry_schema"]["entry_schema"]["type"] == "string"
-                    ):
-                        array = []
-                        for el in json_data:
-                            array.append({el["key"]: el["value"]})
-                        inputs[key] = array
-                    else:
-                        inputs[key] = json_data
-                except:
-                    del inputs[key]
-
-        if value["type"] == "ssh_user":
-            app.logger.info("Add ssh user")
-            if app.config.get("FEATURE_REQUIRE_USER_SSH_PUBKEY") == "yes":
-                if dbhelpers.get_ssh_pub_key(session["userid"]):
-                    inputs[key] = [
-                        {
-                            "os_user_name": session["preferred_username"],
-                            "os_user_add_to_sudoers": True,
-                            "os_user_ssh_public_key": dbhelpers.get_ssh_pub_key(session["userid"]),
-                        }
-                    ]
-                else:
-                    flash(
-                        "Deployment request failed: no SSH key found. Please upload your key.",
-                        "danger",
-                    )
-                    doprocess = False
-
-        if value["type"] == "random_password":
-            inputs[key] = utils.generate_password()
-
-        if value["type"] == "uuidgen":
-            prefix = ""
-            suffix = ""
-            if "extra_specs" in value:
-                prefix = value["extra_specs"]["prefix"] if "prefix" in value["extra_specs"] else ""
-                suffix = value["extra_specs"]["suffix"] if "suffix" in value["extra_specs"] else ""
-            inputs[key] = prefix + uuidgen_deployment + suffix
-
-        if value["type"] == "openstack_ec2credentials":
-            try:
-                del inputs[key]
-                project = next(
-                    filter(
-                        lambda tenant: tenant.get("group") == session["active_usergroup"],
-                        value["auth"]["tenants"],
-                    ),
-                    None,
-                )
-                if not project:
-                    raise IndexError("Project not configured for S3")
-                access, secret = keystone.get_or_create_ec2_creds(
-                    access_token,
-                    project.get("name"),
-                    value["auth"]["url"],
-                    value["auth"]["identity_provider"],
-                    value["auth"]["protocol"],
-                )
-                access_key_input_name = value["inputs"]["aws_access_key"]
-                inputs[access_key_input_name] = access
-                secret_key_input_name = value["inputs"]["aws_secret_key"]
-                inputs[secret_key_input_name] = secret
-
-                functions = {
-                    "s3.create_bucket": s3.create_bucket,
-                    "s3.delete_bucket": s3.delete_bucket,
-                }
-
-                if "tests" in value and value["tests"]:
-                    for test in value["tests"]:
-                        func = test["action"]
-                        args = test["args"]
-                        args["access_key"] = access
-                        args["secret_key"] = secret
-                        if func in functions:
-                            functions[func](**args)
-            except Forbidden as e:
-                app.logger.error("Error while testing S3: {}".format(e))
-                flash(
-                    " Sorry, your request needs a special authorization. \
-                        A notification has been sent automatically to the support team. \
-                        You will be contacted soon.",
-                    "danger",
-                )
-                utils.send_authorization_request_email(
-                    "Sync&Share aaS for group {}".format(session["active_usergroup"])
-                )
-                doprocess = False
-            except Exception as e:
-                flash(
-                    " The deployment submission failed with: {}. \
-                        Please contact the admin(s): {}".format(e, app.config.get("SUPPORT_EMAIL")),
-                    "danger",
-                )
-                doprocess = False
-
-        if value["type"] == "ldap_user":
-            try:
-                del inputs[key]
-
-                iam_base_url = app.settings.iam_url
-                iam_client_id = app.settings.iam_client_id
-                iam_client_secret = app.settings.iam_client_secret
-
-                username = "{}_{}".format(session["userid"], urlparse(iam_base_url).netloc)
-                email = session["useremail"]
-
-                jwt_token = auth.exchange_token_with_audience(
-                    iam_base_url,
-                    iam_client_id,
-                    iam_client_secret,
-                    access_token,
-                    app.config.get("VAULT_BOUND_AUDIENCE"),
-                )
-
-                vaultclient = vaultservice.connect(jwt_token, app.config.get("VAULT_ROLE"))
-                luser = LdapUserManager(
-                    app.config["LDAP_SOCKET"],
-                    app.config["LDAP_TLS_CACERT_FILE"],
-                    app.config["LDAP_BASE"],
-                    app.config["LDAP_BIND_USER"],
-                    app.config["LDAP_BIND_PASSWORD"],
-                    vaultclient,
-                )
-
-                username, password = luser.create_user(username, email)
-                username_input_name = value["inputs"]["username"]
-                inputs[username_input_name] = username
-                password_input_name = value["inputs"]["password"]
-                inputs[password_input_name] = password
-
-            except Exception as e:
-                app.logger.error("Error: {}".format(e))
-                flash(
-                    " The deployment submission failed with: {}. \
-                        Please try later or contact the admin(s): {}".format(
-                        e, app.config.get("SUPPORT_EMAIL")
-                    ),
-                    "danger",
-                )
-                doprocess = False
-
-        if value["type"] == "userinfo":
-            if key in inputs:
-                if value["attribute"] == "sub":
-                    inputs[key] = session["userid"]
-
-        if value["type"] == "multiselect":
-            if key in inputs:
-                try:
-                    lval = request.form.getlist(key)
-                    if "format" in value and value["format"]["type"] == "string":
-                        inputs[key] = value["format"]["delimiter"].join(lval)
-                    else:
-                        inputs[key] = lval
-                except Exception as e:
-                    app.logger.error("Error processing input {}: {}".format(key, e))
-                    flash(
-                        " The deployment submission failed with: {}. \
-                            Please try later or contact the admin(s): {}".format(
-                            e, app.config.get("SUPPORT_EMAIL")
-                        ),
-                        "danger",
-                    )
-                    doprocess = False
+    app.logger.debug(f"Calling orchestrator with inputs: {inputs}")
 
     if doprocess:
-        (
+        storage_encryption, vault_secret_uuid, vault_secret_key = add_storage_encryption(
+            access_token, inputs
+        )
+        params = {}  # is it needed??
+        create_deployment(
+            template,
+            inputs,
+            stinputs,
+            form_data,
+            selected_template,
+            source_template,
+            template_text,
+            additionaldescription,
+            params,
             storage_encryption,
             vault_secret_uuid,
             vault_secret_key,
-        ) = add_storage_encryption(access_token, inputs)
-
-        app.logger.debug("Parameters: " + json.dumps(inputs))
-
-        keep_last_attempt = 1 if "extra_opts.keepLastAttempt" in form_data else 0
-        feedback_required = 1 if "extra_opts.sendEmailFeedback" in form_data else 0
-        provider_timeout_mins = (
-            form_data["extra_opts.providerTimeout"]
-            if "extra_opts.providerTimeoutSet" in form_data
-            else app.config["PROVIDER_TIMEOUT"]
         )
-
-        user_group = (
-            session["active_usergroup"]
-            if "active_usergroup" in session and session["active_usergroup"] is not None
-            else None
-        )
-
-        elastic = tosca_helpers.eleasticdeployment(template)
-        updatable = source_template["updatable"]
-
-        try:
-            rs_json = app.orchestrator.create(
-                access_token,
-                user_group,
-                yaml.dump(template, default_flow_style=False, sort_keys=False),
-                inputs,
-                keep_last_attempt,
-                provider_timeout_mins,
-                app.config["OVERALL_TIMEOUT"],
-                app.config["CALLBACK_URL"],
-            )
-        except Exception as e:
-            flash(str(e), "danger")
-            app.logger.error("Error creating deployment: {}".format(e))
-            return redirect(url_for("deployments_bp.showdeployments"))
-
-        # store data into database
-        uuid = rs_json["uuid"]
-        deployment = dbhelpers.get_deployment(uuid)
-        if deployment is None:
-            vphid = rs_json["physicalId"] if "physicalId" in rs_json else ""
-            providername = rs_json["cloudProviderName"] if "cloudProviderName" in rs_json else ""
-
-            deployment = Deployment(
-                uuid=uuid,
-                creation_time=rs_json["creationTime"],
-                update_time=rs_json["updateTime"],
-                physicalId=vphid,
-                description=additionaldescription,
-                status=rs_json["status"],
-                outputs=json.dumps(rs_json["outputs"]),
-                stoutputs=json.dumps(source_template["outputs"]),
-                task=rs_json["task"],
-                links=json.dumps(rs_json["links"]),
-                sub=rs_json["createdBy"]["subject"],
-                template=template_text,
-                template_metadata=source_template["metadata_file"],
-                template_parameters=source_template["parameters_file"],
-                selected_template=selected_template,
-                inputs=json.dumps(inputs),
-                stinputs=json.dumps(stinputs),
-                params=json.dumps(params),
-                deployment_type=source_template["deployment_type"],
-                template_type=source_template["metadata"]["template_type"],
-                provider_name=providername,
-                user_group=rs_json["userGroup"],
-                endpoint="",
-                feedback_required=feedback_required,
-                keep_last_attempt=keep_last_attempt,
-                remote=1,
-                issuer=rs_json["createdBy"]["issuer"],
-                storage_encryption=storage_encryption,
-                vault_secret_uuid=vault_secret_uuid,
-                vault_secret_key=vault_secret_key,
-                elastic=elastic,
-                updatable=updatable,
-            )
-            dbhelpers.add_object(deployment)
-
-        else:
-            flash(
-                "Deployment with uuid:{} is already in the database!".format(uuid),
-                "warning",
-            )
 
     return redirect(url_for("deployments_bp.showdeployments"))
 
 
 def delete_secret_from_vault(access_token, secret_path):
-    vault_url = app.config.get("VAULT_URL")
-
-    vault_secrets_path = app.config.get("VAULT_SECRETS_PATH")
     vault_bound_audience = app.config.get("VAULT_BOUND_AUDIENCE")
     vault_delete_policy = app.config.get("DELETE_POLICY")
     vault_delete_token_time_duration = app.config.get("DELETE_TOKEN_TIME_DURATION")
