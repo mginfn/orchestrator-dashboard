@@ -113,11 +113,7 @@ def updatedeploymentsstatus(deployments, userid):
 
         providername = dep_json["cloudProviderName"] if "cloudProviderName" in dep_json else ""
         max_length = 65535
-        status_reason = ""
-        if "statusReason" in dep_json:
-            status_reason_data = dep_json["statusReason"]
-            if len(status_reason_data) > max_length:
-                status_reason = status_reason_data[:max_length]
+        status_reason = dep_json.get("statusReason", "")[:max_length]
 
         vphid = dep_json["physicalId"] if "physicalId" in dep_json else ""
 

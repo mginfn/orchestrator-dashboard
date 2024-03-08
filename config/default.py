@@ -53,6 +53,8 @@ NOT_GRANTED_ACCESS_TAG = "LOCKED"
 
 S3_IAM_GROUPS = []
 
+SENSITIVE_KEYWORDS = ["password", "token", "passphrase"]
+
 ### VAULT INTEGRATION SETTINGS
 VAULT_ROLE = "orchestrator"
 VAULT_OIDC_AUDIENCE = "ff2c57dc-fa09-43c9-984e-9ad8afc3fb56"
