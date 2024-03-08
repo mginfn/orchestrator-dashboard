@@ -548,6 +548,7 @@ def send_email_notifications(payload):
         try:
             email_subject = email_subjects.get(status, "")
             if email_subject:
+                app.logger.debug(f"Prepare email with subject <{email_subject}> for <{user_email}>")
                 utils.create_and_send_email(email_subject, mail_sender, [user_email], uuid, status)
         except Exception as error:
             utils.logexception("sending email: {}".format(error))
