@@ -284,7 +284,7 @@ def process_deployment_data(dep):
     outputs = json.loads(dep.outputs.strip('"')) if dep.outputs else {}
     stoutputs = json.loads(dep.stoutputs.strip('"')) if dep.stoutputs else {}
 
-    inputs = inputs = {k: v for k, v in i.items() if is_input_printable(stinputs, k)}
+    inputs = {k: v for k, v in i.items() if is_input_printable(stinputs, k)}
 
     preprocess_outputs(outputs, stoutputs, inputs)
 
@@ -559,10 +559,11 @@ def configure():
     if selected_tosca:
         template = copy.deepcopy(tosca_info[selected_tosca])
         # Manage eventual overrides
-        for k, v in template["inputs"].items():
+        for k, v in list(template["inputs"].items()):
             if "group_overrides" in v and session["active_usergroup"] in v["group_overrides"]:
                 overrides = v["group_overrides"][session["active_usergroup"]]
                 template["inputs"][k] = {**v, **overrides}
+                del template["inputs"][k]["group_overrides"]
 
         sla_id = tosca_helpers.getslapolicy(template)
 
@@ -894,6 +895,12 @@ def process_inputs(source_template, inputs, form_data, uuidgen_deployment):
     doprocess = True
 
     stinputs = copy.deepcopy(source_template["inputs"])
+
+    for k, v in list(stinputs.items()):
+        if "group_overrides" in v and session["active_usergroup"] in v["group_overrides"]:
+            overrides = v["group_overrides"][session["active_usergroup"]]
+            stinputs[k] = {**v, **overrides}
+            del stinputs[k]["group_overrides"]
 
     for key in stinputs.keys():
         try:
