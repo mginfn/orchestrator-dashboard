@@ -64,7 +64,6 @@
 											</div>
 											<div class="modal-footer">
 												<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-												<!--button type="button" class="btn btn-success" onclick="copyToClipboard()" data-dismiss="modal"><span class="fas fa-copy"></span> Copy to clipboard</button-->
 											</div>
 										</div>
 									</div>
@@ -76,11 +75,12 @@
 				<div class="tab-pane fade" id="InputValues">
 					<br>
 					{% for k,v in inputs.items() %}
-						{% if "password" in k or "token" in k %}
-							<div>
-								<p><strong>{{k}}</strong>: <input type="password" id="{{k}}" disabled value="{{v}}">
-								<input type="checkbox" onclick="toggle({{k}})"> Show
-								</p>
+						{% if k|contains_sensitive_keyword(config['SENSITIVE_KEYWORDS']) %}
+							<div style="margin-bottom: 4px;">
+								<label><strong>{{k}}</strong>:</label>&nbsp;
+								<span style="color: inherit!important">{{'•' * v|length}}</span>
+								<span style="display: none; color: inherit!important">{{v}}</span>&nbsp;
+								<i class="fas fa-eye show-hide-password" style="color: inherit; cursor: pointer;" title="Show & hide password"></i>
 							</div>
 						{% else %}
 							<p><strong>{{k}}</strong>: {{v}}</p>
@@ -104,6 +104,29 @@ $(document).ready( () => {
         $(this).html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...` );
         return true;
     });
+
+	/* SHOW AND HIDE PASSWORD ON ICON CLICK */
+	$('.show-hide-password')
+				.off()
+				.on('click', (e) => {
+					let asterysk = $($(e.target).parent().children()[1]);
+					let text = $($(e.target).parent().children()[2]);
+					let icon = $($(e.target).parent().children()[3]);
+
+					if(text.is(":hidden")) {
+						asterysk.hide();
+						text.show();
+						
+						icon.removeClass('fa-eye');
+						icon.addClass('fa-eye-slash');
+					} else {
+						text.hide();
+						asterysk.show();
+						
+						icon.removeClass('fa-eye-slash');
+						icon.addClass('fa-eye');
+					}
+				})
 });
 
 $('#luksPassphrase').password();

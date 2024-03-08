@@ -29,14 +29,14 @@
 	{% if value.type is defined and (update == False or value.updatable is not defined or value.updatable == True)%}
 		<!-- text type -->
 		{% if value.type == "text" %}
-			<input type="text" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
+			<input type="text" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}data-required=true required{%endif%} {{mode}} />
 		<!-- end text type -->
 
 		<!-- number types -->
 		{% elif value.type == "integer" %}
-			<input type="number" min="0" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" {{ value.function }} {{ value.function_params }} aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
+			<input type="number" min="0" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" {{ value.function }} {{ value.function_params }} aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}data-required=true required{%endif%} {{mode}} />
 		{% elif value.type == "float" %}
-			<input type="number" step="any" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
+			<input type="number" step="any" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}data-required=true required{%endif%} {{mode}} />
 		<!-- end number types -->
 
 		<!-- boolean type -->
@@ -69,7 +69,7 @@
 				{% set range_max = value.constraints['in_range'][1].split(' ')[0] %}
 			{% endif %}
 			<div class="input-group">
-				<input type="number" min="{{range_min}}" max="{{range_max}}" class="form-control" aria-describedby="{{key}}_append" data-validate-function="validateScalarUnitSize" data-type="{{value.type}}" data-units="{{value.default.split(' ')[1]}}" id="{{key}}" name="{{key}}" value="{{value.default.split(' ')[0]}}" {% if value.required %}required{%endif%} {{mode}} />
+				<input type="number" min="{{range_min}}" max="{{range_max}}" class="form-control" aria-describedby="{{key}}_append" data-validate-function="validateScalarUnitSize" data-type="{{value.type}}" data-units="{{value.default.split(' ')[1]}}" id="{{key}}" name="{{key}}" value="{{value.default.split(' ')[0]}}" {% if value.required %}data-required=true required{%endif%} {{mode}} />
 				<div class="input-group-append">
 					<span class="input-group-text" id="{{key}}_append">{{value.default.split(' ')[1]}}</span>
 				</div>
@@ -83,18 +83,18 @@
 
 		<!-- hostname type -->
 		{% elif value.type == "hostname" %}
-			<input type="text" class="form-control" onblur="validateHostname(this)" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} {{mode}} />
+			<input type="text" class="form-control" onblur="validateHostname(this)" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}data-required=true required{%endif%} {{mode}} />
 			<div class="invalid-feedback">Please provide a valid hostname</div>
 		<!-- end hostname type -->
 
 		<!-- email type -->
 		{% elif value.type == "email" %}
-			<input type="email" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{ session['useremail'] }}" {% if value.required %}required{%endif%} {{mode}} >
+			<input type="email" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{ session['useremail'] }}" {% if value.required %}data-required=true required{%endif%} {{mode}} >
 		<!-- end email type -->
 
 		<!-- password type -->
 		{% elif value.type == "password" %}
-			<input type="password" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" data-toggle="password" placeholder="Enter your password" {% if value.required %}required{%endif%} {{mode}}>
+			<input type="password" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" data-toggle="password" placeholder="Enter your password" {% if value.required %}data-required=true required{%endif%} {{mode}}>
 		<!-- end password type -->
 
 		<!-- random_password type -->
@@ -218,7 +218,7 @@
 				</select>
 			{% else %}
 			<!-- text type, hide fields with password -->
-				<input {% if 'password' in key %}type="password" data-toggle="password"{% else %}type="text"{% endif %} class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if value.required %}required{%endif%} {{mode}} />
+				<input {% if key|contains_sensitive_keyword(config['SENSITIVE_KEYWORDS']) %}type="password" data-toggle="password"{% else %}type="text"{% endif %} class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if value.required %}data-required=true required{%endif%} {{mode}} />
 			{% endif %}
 		{% endif %}  <!-- end tag type existence if -->
 

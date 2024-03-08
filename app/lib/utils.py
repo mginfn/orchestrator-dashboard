@@ -16,19 +16,22 @@ import enum
 import json
 import linecache
 import os
-import shutil
-import subprocess
 import re
-import sys
-import string
 import secrets
-from threading import Thread
+import shutil
+import string
+import subprocess
+import sys
 from hashlib import md5
-import requests
+from threading import Thread
+
 import randomcolor
+import requests
+from flask import current_app as app
+from flask import render_template, session
 from flask_mail import Message
-from flask import current_app as app, session, render_template
 from markupsafe import Markup
+
 from app.extensions import mail
 
 
@@ -158,17 +161,17 @@ def genstatuscolors(statuses):
     colors = []
     for status in statuses:
         if status == "CREATE_COMPLETE":
-            colors.append("#22cf22")    # green
+            colors.append("#22cf22")  # green
         elif status == "CREATE_IN_PROGRESS":
-            colors.append("#ffdf4d")    # yellow
+            colors.append("#ffdf4d")  # yellow
         elif status == "DELETE_IN_PROGRESS":
-            colors.append("#db6d00")    # orange
+            colors.append("#db6d00")  # orange
         elif status == "CREATE_FAILED":
-            colors.append("#920000")    # red
+            colors.append("#920000")  # red
         elif status == "DELETE_FAILED":
-            colors.append("#252525")    # dark grey
+            colors.append("#252525")  # dark grey
         else:
-            colors.append("#676767")    # light grey
+            colors.append("#676767")  # light grey
     return colors
 
 
@@ -248,6 +251,24 @@ def nnstr(s):
     return "" if (s is None or s == "") else str(s)
 
 
+def contains_sensitive_keyword(value, keywords):
+    """
+    Check if a value contains any of the specified keywords.
+
+    This function iterates through the provided list of keywords and checks if any of them
+    is present in the given value. It returns True if any keyword is found in the value,
+    and False otherwise.
+
+    Args:
+        value (str): The string value to check for keywords.
+        keywords (list): A list of strings representing the keywords to search for in the value.
+
+    Returns:
+        bool: True if any keyword is found in the value, False otherwise.
+    """
+    return any(keyword in value for keyword in keywords)
+
+
 def avatar(email, size):
     """
     Generate a Gravatar URL for a given email address and image size.
@@ -276,10 +297,9 @@ def logexception(err):
     linecache.checkcache(filename)
     line = linecache.getline(filename, lineno, f.f_globals)
     app.logger.error(
-        '{} at ({}, LINE {} "{}"): {}'.format(
-            err, filename, lineno, line.strip(), exc_obj
-        )
+        '{} at ({}, LINE {} "{}"): {}'.format(err, filename, lineno, line.strip(), exc_obj)
     )
+
 
 def getorchestratorconfiguration(orchestrator_url, access_token):
     headers = {"Authorization": "bearer %s" % access_token}
@@ -380,9 +400,7 @@ def create_and_send_email(subject, sender, recipients, uuid, status):
         subject,
         sender=sender,
         recipients=recipients,
-        html_body=render_template(
-            app.config.get("MAIL_TEMPLATE"), uuid=uuid, status=status
-        ),
+        html_body=render_template(app.config.get("MAIL_TEMPLATE"), uuid=uuid, status=status),
     )
 
 
@@ -502,9 +520,7 @@ def download_git_repo(
     """
     try:
         if not has_write_permission(target_directory):
-            return False, "No permission for creating the directory {}".format(
-                target_directory
-            )
+            return False, "No permission for creating the directory {}".format(target_directory)
 
         backup_path = backup_directory(target_directory)
 
@@ -518,9 +534,7 @@ def download_git_repo(
 
             # Clone the repository
             if private and username and deploy_token:
-                git_url = repo_url.replace(
-                    "https://", f"https://{username}:{deploy_token}@"
-                )
+                git_url = repo_url.replace("https://", f"https://{username}:{deploy_token}@")
                 subprocess.run(
                     ["git", "clone", git_url, target_directory],
                     check=True,

@@ -121,6 +121,7 @@ def create_app():
     app.jinja_env.filters["python_eval"] = utils.python_eval
     app.jinja_env.filters["enum2str"] = utils.enum_to_string
     app.jinja_env.filters["str2bool"] = utils.str2bool
+    app.jinja_env.filters["contains_sensitive_keyword"] = utils.contains_sensitive_keyword
 
     register_blueprints(app)
 
