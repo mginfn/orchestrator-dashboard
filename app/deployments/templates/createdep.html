@@ -18,7 +18,7 @@
 				<div class="modal-body">
 				<p>SSH keys allow you to establish a secure connection between your computer and your virtual machine. At least one public key has to be provided.</p>
 				<br>
-				<p>To create a new ssh key pair or upload your public key, please go <a target="_blank" href="{{ url_for("home_bp.portfolio") }}">here</a></p>
+				<p>To create a new ssh key pair or upload your public key, please go <a target="_blank" href="{{ url_for("home_bp.show_user_profile") }}">here</a></p>
 				{% if user_documentation_url is defined %}
 				<p>For more information, please visit our <a href="{{ user_documentation_url }}" target="_blank">documentation site</a>.</p>
 				{% endif %}
@@ -122,16 +122,41 @@
 </style>
 
 <script>
+/**
+ * Filters an array of elements to return only those whose names start with the specified prefix and have a non-empty value.
+ * @param {Array} array - The array of elements to filter.
+ * @param {string} prefix - The prefix to match against the element names.
+ * @returns {Array} An array of elements that match the criteria.
+ */	
 function findElementsByNamePrefix(array, prefix) {
- return array.filter(item => item.name.startsWith(prefix) && item.value != "");
+	if (isElementInHiddenFormGroup(prefix)){
+		return [];
+	}	
+ 	return array.filter(item => item.name.startsWith(prefix) && item.value != "");
 }
-
+/**
+ * Finds the first element in an array that matches the specified name and is not in a hidden form group.
+ * @param {Array} array - The array of elements to search through.
+ * @param {string} name - The name of the element to find.
+ * @returns {Object|undefined} The first matching element, or undefined if no matching element is found.
+ */
 function findElementByName(array, name) {
- return array.find(item => item.name === name);
+	if (isElementInHiddenFormGroup(name)){
+		return undefined;
+	}		
+ 	return array.find(item => item.name === name && !isElementInHiddenFormGroup(item));
 }
-
+/**
+ * Filters an array of elements to return only those that match the specified name.
+ * @param {Array} array - The array of elements to filter.
+ * @param {string} name - The name to match against the element names.
+ * @returns {Array} An array of elements that match the name.
+ */
 function findMatchingElements(array, name) {
- return array.filter(item => item.name == name);
+	if (isElementInHiddenFormGroup(name)){
+		return [];
+	}	
+ 	return array.filter(item => item.name == name);
 }
 
 function extractIdentifier(name) {
@@ -140,6 +165,17 @@ function extractIdentifier(name) {
     const identifier = parts[1].split(']')[0];
     return identifier;
 }
+
+function isElementInHiddenFormGroup(element) {
+    // Get the ID of the element
+    const groupId = 'form-group-' + element.name;
+	    // Find the closest parent that is a div.form-group and has an ID containing the element's ID
+    const formGroup = $("#depSubmit").find(`div.form-group#${groupId}`);
+	
+    // Return true if the formGroup exists and is hidden, false otherwise
+    return (formGroup.length > 0 && formGroup.attr('hidden') !== undefined);
+}
+
 
 $(document).ready(function() {
     $('.js-example-basic-single').select2({
@@ -187,41 +223,45 @@ $(document).ready(function() {
 						}
 						case 'map': {
 							let dataArray = findElementsByNamePrefix(data, key);
-							const transformedDict = {};
+							if (dataArray.length > 0){
+								const transformedDict = {};
 
-							// Iterate over each object in the array
-							dataArray.forEach(obj => {
-								// Extract the identifier from the name property
-								const identifier = extractIdentifier(obj.name);
-								// Extract the field name from the name property
-								const fieldName = obj.name.split('[')[2].split(']')[0];
-								// Create a new dictionary for the identifier if it doesn't exist
-								if (!transformedDict[identifier]) {
-									transformedDict[identifier] = {};
-								}
-								// Add the field name and value to the dictionary for the identifier
-								transformedDict[identifier][fieldName] = obj.value;
-							});
-							html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;`
-							html_value += `<ul>`
-							Object.values(transformedDict).forEach(dict => {
-								html_value += `<li>${JSON.stringify(dict)}</li>`;
-							});
-							html_value += `</ul></div>`;
+								// Iterate over each object in the array
+								dataArray.forEach(obj => {
+									// Extract the identifier from the name property
+									const identifier = extractIdentifier(obj.name);
+									// Extract the field name from the name property
+									const fieldName = obj.name.split('[')[2].split(']')[0];
+									// Create a new dictionary for the identifier if it doesn't exist
+									if (!transformedDict[identifier]) {
+										transformedDict[identifier] = {};
+									}
+									// Add the field name and value to the dictionary for the identifier
+									transformedDict[identifier][fieldName] = obj.value;
+								});
+								html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;`
+								html_value += `<ul>`
+								Object.values(transformedDict).forEach(dict => {
+									html_value += `<li>${JSON.stringify(dict)}</li>`;
+								});
+								html_value += `</ul></div>`;
+							}	
 							break;
 						}
 						case 'list': {
 							if(input.entry_schema.type == "map"){
 								let dataArray = findElementsByNamePrefix(data, key);
-								html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;`;
-								html_value += `<ul>`
+								if (dataArray.length > 0){
+									html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;`;
+									html_value += `<ul>`
 
-								for(let i = 0; i < dataArray.length; i += 2){
-									const key = dataArray[i].value;
-									const value = dataArray[i+1].value
-									html_value += `<li>${key}: ${value}</li>`;
+									for(let i = 0; i < dataArray.length; i += 2){
+										const itemKey = dataArray[i].value;
+										const itemValue = dataArray[i+1].value;
+										html_value += `<li>${itemKey}: ${itemValue}</li>`;
+									}
+									html_value += '</ul></div>';
 								}
-								html_value += '</ul></div>';
 							}
 							break;
 						}
@@ -257,7 +297,7 @@ $(document).ready(function() {
 						default:
 							try {
 								let dataItem = findElementByName(data, key);
-								if(dataItem.value !== ""){
+								if(dataItem !== undefined && dataItem.value !== ""){
 									html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;${dataItem.value}</div>`;
 								}
 							}
