@@ -45,6 +45,7 @@ deployments_bp = Blueprint(
     "deployments_bp", __name__, template_folder="templates", static_folder="static"
 )
 
+SHOW_DEPLOYMENTS_ROUTE = "deployments_bp.showdeployments"
 
 class InputValidationError(Exception):
     """Exception raised for errors in the input validation process."""
@@ -58,7 +59,7 @@ def showdeploymentsingroup():
     group = request.args["group"]
     session["active_usergroup"] = group
     flash("Project set to {}".format(group), "info")
-    return redirect(url_for("deployments_bp.showdeployments"))
+    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
 
 @deployments_bp.route("/list")
@@ -168,7 +169,7 @@ def deptemplate(depid=None):
         template = app.orchestrator.get_template(access_token, depid)
     except Exception:
         flash("Error getting template: ".format(), "danger")
-        return redirect(url_for("deployments_bp.showdeployments"))
+        return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
     return render_template("deptemplate.html", template=template)
 
@@ -180,7 +181,7 @@ def lockdeployment(depid=None):
     if dep is not None:
         dep.locked = 1
         dbhelpers.add_object(dep)
-    return redirect(url_for("deployments_bp.showdeployments"))
+    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
 
 @deployments_bp.route("/<depid>/unlock")
@@ -190,7 +191,7 @@ def unlockdeployment(depid=None):
     if dep is not None:
         dep.locked = 0
         dbhelpers.add_object(dep)
-    return redirect(url_for("deployments_bp.showdeployments"))
+    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
 
 @deployments_bp.route("/edit", methods=["POST"])
@@ -200,7 +201,7 @@ def editdeployment():
     dbhelpers.update_deployment(
         form_data["deployment_uuid"], dict(description=form_data["description"])
     )
-    return redirect(url_for("deployments_bp.showdeployments"))
+    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
 
 def preprocess_outputs(outputs, stoutputs, inputs):
@@ -236,12 +237,12 @@ def depoutput(depid=None):
     """
     if session["userrole"].lower() != "admin" and depid not in session["deployments_uuid_array"]:
         flash("You are not allowed to browse this page!", "danger")
-        return redirect(url_for("deployments_bp.showdeployments"))
+        return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
     # retrieve deployment from DB
     dep = dbhelpers.get_deployment(depid)
     if dep is None:
-        return redirect(url_for("deployments_bp.showdeployments"))
+        return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
     inputs, outputs, stoutputs = process_deployment_data(dep)
 
@@ -298,7 +299,7 @@ def deptemplatedb(depid):
     # retrieve deployment from DB
     dep = dbhelpers.get_deployment(depid)
     if dep is None:
-        return redirect(url_for("deployments_bp.showdeployments"))
+        return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
     else:
         template = dep.template
         return render_template("deptemplate.html", template=template)
@@ -330,7 +331,7 @@ def depinfradetails(depid=None):
             resources = app.orchestrator.get_resources(access_token, depid)
         except Exception as e:
             flash(str(e), "warning")
-            return redirect(url_for("deployments_bp.showdeployments"))
+            return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
         details = []
         for resource in resources:
@@ -378,7 +379,7 @@ def depqcgdetails(depid=None):
             job = None
 
         return render_template("depqcgdetails.html", job=(job[0] if job else None))
-    return redirect(url_for("deployments_bp.showdeployments"))
+    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
 
 @deployments_bp.route("/<depid>/delete")
@@ -396,7 +397,7 @@ def depdel(depid=None):
     except Exception as e:
         flash(str(e), "danger")
 
-    return redirect(url_for("deployments_bp.showdeployments"))
+    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
 
 @deployments_bp.route("/depupdate/<depid>")
@@ -445,7 +446,7 @@ def depupdate(depid=None):
                 update=True,
             )
 
-    return redirect(url_for("deployments_bp.showdeployments"))
+    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
 
 @deployments_bp.route("/updatedep", methods=["POST"])
@@ -520,7 +521,7 @@ def updatedep():
         except Exception as e:
             flash(str(e), "danger")
 
-    return redirect(url_for("deployments_bp.showdeployments"))
+    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
 
 @deployments_bp.route("/configure", methods=["GET", "POST"])
@@ -982,7 +983,7 @@ def create_deployment(
     except Exception as e:
         flash(str(e), "danger")
         app.logger.error("Error creating deployment: {}".format(e))
-        return redirect(url_for("deployments_bp.showdeployments"))
+        return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
     # store data into database
     uuid = rs_json["uuid"]
@@ -1086,7 +1087,7 @@ def createdep():
             vault_secret_key,
         )
 
-    return redirect(url_for("deployments_bp.showdeployments"))
+    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
 
 def delete_secret_from_vault(access_token, secret_path):
@@ -1185,4 +1186,4 @@ def sendportsrequest():
             "danger",
         )
 
-    return redirect(url_for("deployments_bp.showdeployments"))
+    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
