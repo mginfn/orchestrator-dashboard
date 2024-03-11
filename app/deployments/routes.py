@@ -47,6 +47,7 @@ deployments_bp = Blueprint(
 
 SHOW_DEPLOYMENTS_ROUTE = "deployments_bp.showdeployments"
 
+
 class InputValidationError(Exception):
     """Exception raised for errors in the input validation process."""
 
@@ -475,8 +476,8 @@ def updatedep():
             k: v
             for (k, v) in form_data.items()
             if not k.startswith("extra_opts.")
-            and not k == "_depid"
-            and (k in stinputs and "updatable" in stinputs[k] and stinputs[k]["updatable"] == True)
+            and k != "_depid"
+            and (k in stinputs and "updatable" in stinputs[k] and stinputs[k]["updatable"] is True)
         }
 
         app.logger.debug("Parameters: " + json.dumps(inputs))
@@ -524,27 +525,13 @@ def updatedep():
     return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
 
-@deployments_bp.route("/configure", methods=["GET", "POST"])
+@deployments_bp.route("/configure", methods=["GET"])
 @auth.authorized_with_valid_token
 def configure():
-    check_data = 0
     steps = {"current": 1, "total": 2}
-
-    access_token = iam.token["access_token"]
-
     tosca_info, _, tosca_gmetadata = tosca.get()
 
     selected_tosca = None
-
-    if request.method == "POST":
-        selected_tosca = request.form.get("selected_tosca")
-
-        if "check_data" in request.args:
-            check_data = int(request.args["check_data"])
-
-        if check_data == 1:  # from choose
-            steps["total"] = 3
-            steps["current"] = 2
 
     if "selected_tosca" in request.args:
         selected_tosca = request.args["selected_tosca"]
@@ -557,6 +544,33 @@ def configure():
         else:
             return render_template("choosedep.html", templates=templates)
 
+    return prepare_configure_form(selected_tosca, tosca_info, steps)
+
+
+@deployments_bp.route("/configure", methods=["POST"])
+@auth.authorized_with_valid_token
+def configure_post():
+    check_data = 0
+    steps = {"current": 1, "total": 2}
+
+    tosca_info, _, _ = tosca.get()
+
+    selected_tosca = None
+
+    selected_tosca = request.form.get("selected_tosca")
+
+    if "check_data" in request.args:
+        check_data = int(request.args["check_data"])
+
+    if check_data == 1:  # from choose
+        steps["total"] = 3
+        steps["current"] = 2
+
+    return prepare_configure_form(selected_tosca, tosca_info, steps)
+
+
+def prepare_configure_form(selected_tosca, tosca_info, steps):
+    access_token = iam.token["access_token"]
     if selected_tosca:
         template = copy.deepcopy(tosca_info[selected_tosca])
         # Manage eventual overrides

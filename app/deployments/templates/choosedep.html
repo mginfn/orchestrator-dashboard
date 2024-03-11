@@ -15,7 +15,7 @@
 					Step&nbsp;1/3
 				</div>
 			</div>
-			<form id="depSelect" action="{{ url_for('deployments_bp.configure', check_data=1) }}" method="post">
+			<form id="depSelect" action="{{ url_for('deployments_bp.configure_post', check_data=1) }}" method="post">
 				<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 				{% for template in templates %}
 					<div class="form-check">
