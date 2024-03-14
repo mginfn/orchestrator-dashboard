@@ -108,21 +108,27 @@ def update_deployments():
     except Exception as e:
         flash("Error retrieving deployment list: \n" + str(e), "warning")
 
-    if deployments_from_orchestrator:
-        iids = dbhelpers.updatedeploymentsstatus(deployments_from_orchestrator, subject)["iids"]
+    update_deployments_status(deployments_from_orchestrator, subject)
 
-        # retrieve deployments from DB
-        deployments = dbhelpers.cvdeployments(dbhelpers.get_user_deployments(subject))
-        for dep in deployments:
-            newremote = dep.remote
-            if dep.uuid not in iids:
-                if dep.remote == 1:
-                    newremote = 0
-            else:
-                if dep.remote == 0:
-                    newremote = 1
-            if dep.remote != newremote:
-                dbhelpers.update_deployment(dep.uuid, dict(remote=newremote))
+def update_deployments_status(deployments_from_orchestrator, subject):
+
+    if not deployments_from_orchestrator:
+        return
+    
+    iids = dbhelpers.updatedeploymentsstatus(deployments_from_orchestrator, subject)["iids"]
+
+    # retrieve deployments from DB
+    deployments = dbhelpers.cvdeployments(dbhelpers.get_user_deployments(subject))
+    for dep in deployments:
+        newremote = dep.remote
+        if dep.uuid not in iids:
+            if dep.remote == 1:
+                newremote = 0
+        else:
+            if dep.remote == 0:
+                newremote = 1
+        if dep.remote != newremote:
+            dbhelpers.update_deployment(dep.uuid, dict(remote=newremote))
 
 
 @deployments_bp.route("/overview")
@@ -132,17 +138,21 @@ def showdeploymentsoverview():
     update_deployments()
 
     deps = dbhelpers.get_user_deployments(session["userid"])
-    statuses = {}
-    projects = {}
-    providers = {}
+    # Initialize dictionaries for status, projects, and providers
+    statuses = {"UNKNOWN": 0}
+    projects = {"UNKNOWN": 0}
+    providers = {"UNKNOWN": 0}
+
     for dep in deps:
-        status = dep.status if dep.status else "UNKNOWN"
+        status = dep.status or "UNKNOWN"
         if status != "DELETE_COMPLETE" and dep.remote == 1:
-            statuses[status] = 1 if status not in statuses else statuses[status] + 1
-            project = dep.user_group if dep.user_group else "UNKNOWN"
-            projects[project] = 1 if project not in projects else projects[project] + 1
-            provider = dep.provider_name if dep.provider_name else "UNKNOWN"
-            providers[provider] = 1 if provider not in providers else providers[provider] + 1
+            statuses[status] = statuses.get(status, 0) + 1
+
+            project = dep.user_group or "UNKNOWN"
+            projects[project] = projects.get(project, 0) + 1
+
+            provider = dep.provider_name or "UNKNOWN"
+            providers[provider] = providers.get(provider, 0) + 1
 
     return render_template(
         "depoverview.html",
@@ -219,9 +229,8 @@ def preprocess_outputs(outputs, stoutputs, inputs):
     for key, value in stoutputs.items():
         if "condition" in value:
             try:
-                if not eval(value.get("condition")):
-                    if key in outputs:
-                        del outputs[key]
+                if not eval(value.get("condition")) and key in outputs:
+                    del outputs[key]
             except InputValidationError as ex:
                 app.logger.warning("Error evaluating condition for output {}: {}".format(key, ex))
 
@@ -404,50 +413,53 @@ def depdel(depid=None):
 @deployments_bp.route("/depupdate/<depid>")
 @auth.authorized_with_valid_token
 def depupdate(depid=None):
-    if depid is not None:
-        dep = dbhelpers.get_deployment(depid)
-        if dep is not None:
-            access_token = iam.token["access_token"]
-            template = dep.template
-            tosca_info = tosca.extracttoscainfo(yaml.full_load(io.StringIO(template)), None)
-            inputs = json.loads(dep.inputs.strip('"')) if dep.inputs else {}
-            stinputs = json.loads(dep.stinputs.strip('"')) if dep.stinputs else {}
-            tosca_info["inputs"] = {**tosca_info["inputs"], **stinputs}
+    if depid is None:
+        return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+    dep = dbhelpers.get_deployment(depid)
+    
+    if dep is not None:
+        return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+    
+    access_token = iam.token["access_token"]
+    template = dep.template
+    tosca_info = tosca.extracttoscainfo(yaml.full_load(io.StringIO(template)), None)
+    inputs = json.loads(dep.inputs.strip('"')) if dep.inputs else {}
+    stinputs = json.loads(dep.stinputs.strip('"')) if dep.stinputs else {}
+    tosca_info["inputs"] = {**tosca_info["inputs"], **stinputs}
 
-            for k, v in tosca_info["inputs"].items():
-                if k in inputs:
-                    if "default" in tosca_info["inputs"][k]:
-                        tosca_info["inputs"][k]["default"] = inputs[k]
+    for k, v in tosca_info["inputs"].items():
+        if k in inputs and "default" in tosca_info["inputs"][k]:
+            tosca_info["inputs"][k]["default"] = inputs[k]
 
-            stoutputs = json.loads(dep.stoutputs.strip('"')) if dep.stoutputs else {}
-            tosca_info["outputs"] = {**tosca_info["outputs"], **stoutputs}
+    stoutputs = json.loads(dep.stoutputs.strip('"')) if dep.stoutputs else {}
+    tosca_info["outputs"] = {**tosca_info["outputs"], **stoutputs}
 
-            sla_id = tosca_helpers.getslapolicy(tosca_info)
-            slas = sla.get_slas(
-                access_token,
-                app.settings.orchestrator_conf["slam_url"],
-                app.settings.orchestrator_conf["cmdb_url"],
-                dep.deployment_type,
-            )
-            ssh_pub_key = dbhelpers.get_ssh_pub_key(session["userid"])
+    sla_id = tosca_helpers.getslapolicy(tosca_info)
+    slas = sla.get_slas(
+        access_token,
+        app.settings.orchestrator_conf["slam_url"],
+        app.settings.orchestrator_conf["cmdb_url"],
+        dep.deployment_type,
+    )
+    ssh_pub_key = dbhelpers.get_ssh_pub_key(session["userid"])
 
-            return render_template(
-                "updatedep.html",
-                template=tosca_info,
-                template_description=tosca_info["description"],
-                instance_description=dep.description,
-                feedback_required=dep.feedback_required,
-                keep_last_attempt=dep.keep_last_attempt,
-                provider_timeout=app.config["PROVIDER_TIMEOUT"],
-                selectedTemplate=dep.selected_template,
-                ssh_pub_key=ssh_pub_key,
-                slas=slas,
-                sla_id=sla_id,
-                depid=depid,
-                update=True,
-            )
+    return render_template(
+        "updatedep.html",
+        template=tosca_info,
+        template_description=tosca_info["description"],
+        instance_description=dep.description,
+        feedback_required=dep.feedback_required,
+        keep_last_attempt=dep.keep_last_attempt,
+        provider_timeout=app.config["PROVIDER_TIMEOUT"],
+        selectedTemplate=dep.selected_template,
+        ssh_pub_key=ssh_pub_key,
+        slas=slas,
+        sla_id=sla_id,
+        depid=depid,
+        update=True,
+    )
 
-    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+    
 
 
 @deployments_bp.route("/updatedep", methods=["POST"])
@@ -461,68 +473,70 @@ def updatedep():
 
     depid = form_data["_depid"]
 
-    if depid is not None:
-        dep = dbhelpers.get_deployment(depid)
+    if depid is None:
+        return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+    
+    dep = dbhelpers.get_deployment(depid)
 
-        template = yaml.full_load(io.StringIO(dep.template))
+    template = yaml.full_load(io.StringIO(dep.template))
 
-        if form_data["extra_opts.schedtype"].lower() == "man":
-            template = add_sla_to_template(template, form_data["extra_opts.selectedSLA"])
-        else:
-            remove_sla_from_template(template)
+    if form_data["extra_opts.schedtype"].lower() == "man":
+        template = add_sla_to_template(template, form_data["extra_opts.selectedSLA"])
+    else:
+        remove_sla_from_template(template)
 
-        stinputs = json.loads(dep.stinputs.strip('"')) if dep.stinputs else {}
-        inputs = {
-            k: v
-            for (k, v) in form_data.items()
-            if not k.startswith("extra_opts.")
-            and k != "_depid"
-            and (k in stinputs and "updatable" in stinputs[k] and stinputs[k]["updatable"] is True)
-        }
+    stinputs = json.loads(dep.stinputs.strip('"')) if dep.stinputs else {}
+    inputs = {
+        k: v
+        for (k, v) in form_data.items()
+        if not k.startswith("extra_opts.")
+        and k != "_depid"
+        and (k in stinputs and "updatable" in stinputs[k] and stinputs[k]["updatable"] is True)
+    }
 
-        app.logger.debug("Parameters: " + json.dumps(inputs))
+    app.logger.debug("Parameters: " + json.dumps(inputs))
 
-        template_text = yaml.dump(template, default_flow_style=False, sort_keys=False)
+    template_text = yaml.dump(template, default_flow_style=False, sort_keys=False)
 
-        app.logger.debug("[Deployment Update] inputs: {}".format(json.dumps(inputs)))
-        app.logger.debug("[Deployment Update] Template: {}".format(template_text))
+    app.logger.debug("[Deployment Update] inputs: {}".format(json.dumps(inputs)))
+    app.logger.debug("[Deployment Update] Template: {}".format(template_text))
 
-        keep_last_attempt = (
-            1 if "extra_opts.keepLastAttempt" in form_data else dep.keep_last_attempt
+    keep_last_attempt = (
+        1 if "extra_opts.keepLastAttempt" in form_data else dep.keep_last_attempt
+    )
+    feedback_required = (
+        1 if "extra_opts.sendEmailFeedback" in form_data else dep.feedback_required
+    )
+    provider_timeout_mins = (
+        form_data["extra_opts.providerTimeout"]
+        if "extra_opts.providerTimeoutSet" in form_data
+        else app.config["PROVIDER_TIMEOUT"]
+    )
+
+    try:
+        app.orchestrator.update(
+            access_token,
+            depid,
+            template_text,
+            inputs,
+            keep_last_attempt,
+            provider_timeout_mins,
+            app.config["OVERALL_TIMEOUT"],
+            app.config["CALLBACK_URL"],
         )
-        feedback_required = (
-            1 if "extra_opts.sendEmailFeedback" in form_data else dep.feedback_required
-        )
-        provider_timeout_mins = (
-            form_data["extra_opts.providerTimeout"]
-            if "extra_opts.providerTimeoutSet" in form_data
-            else app.config["PROVIDER_TIMEOUT"]
-        )
+        # store data into database
+        dep.keep_last_attempt = keep_last_attempt
+        dep.feedback_required = feedback_required
+        dep.template = template_text
+        oldinputs = json.loads(dep.inputs.strip('"')) if dep.inputs else {}
+        updatedinputs = {**oldinputs, **inputs}
+        dep.inputs = (json.dumps(updatedinputs),)
+        dbhelpers.add_object(dep)
 
-        try:
-            app.orchestrator.update(
-                access_token,
-                depid,
-                template_text,
-                inputs,
-                keep_last_attempt,
-                provider_timeout_mins,
-                app.config["OVERALL_TIMEOUT"],
-                app.config["CALLBACK_URL"],
-            )
-            # store data into database
-            dep.keep_last_attempt = keep_last_attempt
-            dep.feedback_required = feedback_required
-            dep.template = template_text
-            oldinputs = json.loads(dep.inputs.strip('"')) if dep.inputs else {}
-            updatedinputs = {**oldinputs, **inputs}
-            dep.inputs = (json.dumps(updatedinputs),)
-            dbhelpers.add_object(dep)
+    except Exception as e:
+        flash(str(e), "danger")
 
-        except Exception as e:
-            flash(str(e), "danger")
-
-    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+    
 
 
 @deployments_bp.route("/configure", methods=["GET"])
@@ -674,27 +688,35 @@ def process_dependent_definition(key: str, inputs: dict, stinputs: dict):
 
 
 def process_security_groups(key: str, inputs: dict, stinputs: dict, form_data: dict):
-    value = stinputs[key]
+    value = stinputs.get(key)
 
-    if value["type"] == "map" and (
-        value["entry_schema"]["type"] == "tosca.datatypes.network.PortSpec"
-        or value["entry_schema"]["type"] == "tosca.datatypes.indigo.network.PortSpec"
-    ):
-        if key in inputs:
-            try:
-                inputs[key] = json.loads(form_data[key])
-                for k, v in inputs[key].items():
-                    if "," in v["source"]:
-                        v["source_range"] = json.loads(v.pop("source", None))
-            except:
-                del inputs[key]
-                inputs[key] = {"ssh": {"protocol": "tcp", "source": 22}}
+    if not value or value["type"] == "map":
+        return
 
-            if "required_ports" in value:
-                inputs[key] = {**value["required_ports"], **inputs[key]}
-        else:
-            if "required_ports" in value:
-                inputs[key] = value["required_ports"]
+    port_types = ["tosca.datatypes.network.PortSpec", "tosca.datatypes.indigo.network.PortSpec"]
+    if not any(value["entry_schema"]["type"] == t for t in port_types):
+        return
+
+    if key in inputs:
+        process_inputs_for_security_groups(key, value, inputs, form_data)
+
+    if "required_ports" in value:
+        inputs[key] = value["required_ports"]
+
+def process_inputs_for_security_groups(key, value, inputs, form_data):
+
+    try:
+        inputs[key] = json.loads(form_data.get(key, {}))
+        for k, v in inputs[key].items():
+            if "," in v["source"]:
+                v["source_range"] = json.loads(v.pop("source", None))
+    except Exception:
+        del inputs[key]
+        inputs[key] = {"ssh": {"protocol": "tcp", "source": 22}}
+
+    if "required_ports" in value:
+        inputs[key] = {**value["required_ports"], **inputs[key]}
+
 
 
 def process_map(key: str, inputs: dict, stinputs: dict, form_data: dict):
@@ -703,32 +725,31 @@ def process_map(key: str, inputs: dict, stinputs: dict, form_data: dict):
         if key in inputs:
             try:
                 inputs[key] = {}
-                map = json.loads(form_data[key])
-                for k, v in map.items():
+                imap = json.loads(form_data[key])
+                for k, v in imap.items():
                     inputs[key][v["key"]] = v["value"]
-            except:
+            except Exception:
                 del inputs[key]
 
 
 def process_list(key: str, inputs: dict, stinputs: dict, form_data: dict):
     value = stinputs[key]
 
-    if value["type"] == "list":
-        if key in inputs:
-            try:
-                json_data = json.loads(form_data[key])
-                if (
-                    value["entry_schema"]["type"] == "map"
-                    and value["entry_schema"]["entry_schema"]["type"] == "string"
-                ):
-                    array = []
-                    for el in json_data:
-                        array.append({el["key"]: el["value"]})
-                    inputs[key] = array
-                else:
-                    inputs[key] = json_data
-            except:
-                del inputs[key]
+    if value["type"] == "list" and key in inputs:
+        try:
+            json_data = json.loads(form_data[key])
+            if (
+                value["entry_schema"]["type"] == "map"
+                and value["entry_schema"]["entry_schema"]["type"] == "string"
+            ):
+                array = []
+                for el in json_data:
+                    array.append({el["key"]: el["value"]})
+                inputs[key] = array
+            else:
+                inputs[key] = json_data
+        except Exception:
+            del inputs[key]
 
 
 def process_ssh_user(key: str, inputs: dict, stinputs: dict):
@@ -879,31 +900,29 @@ def process_userinfo(key, inputs, stinputs):
     value = stinputs[key]
 
     if value["type"] == "userinfo":
-        if key in inputs:
-            if value["attribute"] == "sub":
+        if key in inputs and value["attribute"] == "sub":
                 inputs[key] = session["userid"]
 
 
 def process_multiselect(key, inputs, stinputs):
     value = stinputs[key]
-    if value["type"] == "multiselect":
-        if key in inputs:
-            try:
-                lval = request.form.getlist(key)
-                if "format" in value and value["format"]["type"] == "string":
-                    inputs[key] = value["format"]["delimiter"].join(lval)
-                else:
-                    inputs[key] = lval
-            except Exception as e:
-                app.logger.error("Error processing input {}: {}".format(key, e))
-                flash(
-                    " The deployment submission failed with: {}. \
-                            Please try later or contact the admin(s): {}".format(
-                        e, app.config.get("SUPPORT_EMAIL")
-                    ),
-                    "danger",
-                )
-                raise InputValidationError(e)
+    if value["type"] == "multiselect" and key in inputs:
+        try:
+            lval = request.form.getlist(key)
+            if "format" in value and value["format"]["type"] == "string":
+                inputs[key] = value["format"]["delimiter"].join(lval)
+            else:
+                inputs[key] = lval
+        except Exception as e:
+            app.logger.error("Error processing input {}: {}".format(key, e))
+            flash(
+                " The deployment submission failed with: {}. \
+                        Please try later or contact the admin(s): {}".format(
+                    e, app.config.get("SUPPORT_EMAIL")
+                ),
+                "danger",
+            )
+            raise InputValidationError(e)
 
 
 def process_inputs(source_template, inputs, form_data, uuidgen_deployment):
