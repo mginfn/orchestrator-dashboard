@@ -110,11 +110,11 @@ def update_deployments():
 
     update_deployments_status(deployments_from_orchestrator, subject)
 
-def update_deployments_status(deployments_from_orchestrator, subject):
 
+def update_deployments_status(deployments_from_orchestrator, subject):
     if not deployments_from_orchestrator:
         return
-    
+
     iids = dbhelpers.updatedeploymentsstatus(deployments_from_orchestrator, subject)["iids"]
 
     # retrieve deployments from DB
@@ -416,10 +416,10 @@ def depupdate(depid=None):
     if depid is None:
         return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
     dep = dbhelpers.get_deployment(depid)
-    
+
     if dep is not None:
         return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
-    
+
     access_token = iam.token["access_token"]
     template = dep.template
     tosca_info = tosca.extracttoscainfo(yaml.full_load(io.StringIO(template)), None)
@@ -459,8 +459,6 @@ def depupdate(depid=None):
         update=True,
     )
 
-    
-
 
 @deployments_bp.route("/updatedep", methods=["POST"])
 @auth.authorized_with_valid_token
@@ -475,7 +473,7 @@ def updatedep():
 
     if depid is None:
         return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
-    
+
     dep = dbhelpers.get_deployment(depid)
 
     template = yaml.full_load(io.StringIO(dep.template))
@@ -501,12 +499,8 @@ def updatedep():
     app.logger.debug("[Deployment Update] inputs: {}".format(json.dumps(inputs)))
     app.logger.debug("[Deployment Update] Template: {}".format(template_text))
 
-    keep_last_attempt = (
-        1 if "extra_opts.keepLastAttempt" in form_data else dep.keep_last_attempt
-    )
-    feedback_required = (
-        1 if "extra_opts.sendEmailFeedback" in form_data else dep.feedback_required
-    )
+    keep_last_attempt = 1 if "extra_opts.keepLastAttempt" in form_data else dep.keep_last_attempt
+    feedback_required = 1 if "extra_opts.sendEmailFeedback" in form_data else dep.feedback_required
     provider_timeout_mins = (
         form_data["extra_opts.providerTimeout"]
         if "extra_opts.providerTimeoutSet" in form_data
@@ -535,8 +529,6 @@ def updatedep():
 
     except Exception as e:
         flash(str(e), "danger")
-
-    
 
 
 @deployments_bp.route("/configure", methods=["GET"])
@@ -690,7 +682,7 @@ def process_dependent_definition(key: str, inputs: dict, stinputs: dict):
 def process_security_groups(key: str, inputs: dict, stinputs: dict, form_data: dict):
     value = stinputs.get(key)
 
-    if not value or value["type"] == "map":
+    if not value or value["type"] != "map":
         return
 
     port_types = ["tosca.datatypes.network.PortSpec", "tosca.datatypes.indigo.network.PortSpec"]
@@ -703,8 +695,8 @@ def process_security_groups(key: str, inputs: dict, stinputs: dict, form_data: d
     if "required_ports" in value:
         inputs[key] = value["required_ports"]
 
-def process_inputs_for_security_groups(key, value, inputs, form_data):
 
+def process_inputs_for_security_groups(key, value, inputs, form_data):
     try:
         inputs[key] = json.loads(form_data.get(key, {}))
         for k, v in inputs[key].items():
@@ -716,7 +708,6 @@ def process_inputs_for_security_groups(key, value, inputs, form_data):
 
     if "required_ports" in value:
         inputs[key] = {**value["required_ports"], **inputs[key]}
-
 
 
 def process_map(key: str, inputs: dict, stinputs: dict, form_data: dict):
@@ -901,7 +892,7 @@ def process_userinfo(key, inputs, stinputs):
 
     if value["type"] == "userinfo":
         if key in inputs and value["attribute"] == "sub":
-                inputs[key] = session["userid"]
+            inputs[key] = session["userid"]
 
 
 def process_multiselect(key, inputs, stinputs):
@@ -963,7 +954,10 @@ def process_inputs(source_template, inputs, form_data, uuidgen_deployment):
             process_userinfo(key, inputs, stinputs)
 
             process_multiselect(key, inputs, stinputs)
-        except Exception:
+        except Exception as e:
+            msg = f"Error in validating deployment request: {e}"
+            flash(msg, "danger")
+            app.logger.error(msg)
             doprocess = False
 
     return doprocess, inputs, stinputs
