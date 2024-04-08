@@ -96,7 +96,6 @@ def updatedeploymentsstatus(deployments, userid):
     result = {}
     deps = []
     iids = []
-    # uuid = ''
 
     # update deployments status in database
     for dep_json in deployments:
@@ -266,6 +265,42 @@ def cvdeployment(d):
         updatable=d.updatable,
     )
     return deployment
+
+
+def update_deployments(subject):
+    issuer = app.settings.iam_url
+    if not issuer.endswith("/"):
+        issuer += "/"
+
+    # retrieve deployments from orchestrator
+    access_token = iam.token["access_token"]
+    deployments_from_orchestrator = []
+
+    deployments_from_orchestrator = app.orchestrator.get_deployments(
+        access_token, created_by="{}@{}".format(subject, issuer)
+    )
+
+    update_deployments_status(deployments_from_orchestrator, subject)
+
+
+def update_deployments_status(deployments_from_orchestrator, subject):
+    if not deployments_from_orchestrator:
+        return
+
+    iids = updatedeploymentsstatus(deployments_from_orchestrator, subject)["iids"]
+
+    # retrieve deployments from DB
+    deployments = cvdeployments(get_user_deployments(subject))
+    for dep in deployments:
+        newremote = dep.remote
+        if dep.uuid not in iids:
+            if dep.remote == 1:
+                newremote = 0
+        else:
+            if dep.remote == 0:
+                newremote = 1
+        if dep.remote != newremote:
+            update_deployment(dep.uuid, dict(remote=newremote))
 
 
 def get_services(visibility, groups=[]):

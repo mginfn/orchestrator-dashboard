@@ -91,51 +91,14 @@ def showdeployments():
     return render_template("deployments.html", deployments=deployments)
 
 
-def update_deployments():
-    issuer = app.settings.iam_url
-    if not issuer.endswith("/"):
-        issuer += "/"
-
-    subject = session["userid"]
-
-    # retrieve deployments from orchestrator
-    access_token = iam.token["access_token"]
-    deployments_from_orchestrator = []
-    try:
-        deployments_from_orchestrator = app.orchestrator.get_deployments(
-            access_token, created_by="{}@{}".format(subject, issuer)
-        )
-    except Exception as e:
-        flash("Error retrieving deployment list: \n" + str(e), "warning")
-
-    update_deployments_status(deployments_from_orchestrator, subject)
-
-
-def update_deployments_status(deployments_from_orchestrator, subject):
-    if not deployments_from_orchestrator:
-        return
-
-    iids = dbhelpers.updatedeploymentsstatus(deployments_from_orchestrator, subject)["iids"]
-
-    # retrieve deployments from DB
-    deployments = dbhelpers.cvdeployments(dbhelpers.get_user_deployments(subject))
-    for dep in deployments:
-        newremote = dep.remote
-        if dep.uuid not in iids:
-            if dep.remote == 1:
-                newremote = 0
-        else:
-            if dep.remote == 0:
-                newremote = 1
-        if dep.remote != newremote:
-            dbhelpers.update_deployment(dep.uuid, dict(remote=newremote))
-
-
 @deployments_bp.route("/overview")
 @auth.authorized_with_valid_token
 def showdeploymentsoverview():
     # refresh deployment list
-    update_deployments()
+    try:
+        dbhelpers.update_deployments(session["userid"])
+    except Exception as e:
+        flash("Error retrieving deployment list: \n" + str(e), "warning")
 
     deps = dbhelpers.get_user_deployments(session["userid"])
     # Initialize dictionaries for status, projects, and providers
@@ -239,7 +202,8 @@ def preprocess_outputs(outputs, stoutputs, inputs):
 @auth.authorized_with_valid_token
 def depoutput(depid=None):
     """
-    A function to render the details of a deployment, including inputs, outputs, and structured outputs.
+    A function to render the details of a deployment, including inputs, outputs, 
+    and structured outputs.
     Parameters:
     - depid: str, the ID of the deployment
     Returns:

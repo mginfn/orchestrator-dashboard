@@ -357,6 +357,7 @@ def home():
 
 
 @home_bp.route("/portfolio")
+@auth.authorized_with_valid_token
 def portfolio():
     """
     A route function for the "/portfolio" endpoint.
@@ -366,6 +367,11 @@ def portfolio():
     and renders the portfolio template with the retrieved data.
     If the user is not logged in, it redirects to the login page.
     """
+    try:
+        dbhelpers.update_deployments(session["userid"])
+    except Exception as e:
+        flash("Error retrieving deployment list: \n" + str(e), "warning")
+
     deps = dbhelpers.get_user_deployments(session["userid"])
     statuses = {}
     for dep in deps:
