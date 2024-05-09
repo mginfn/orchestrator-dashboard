@@ -202,7 +202,7 @@ def preprocess_outputs(outputs, stoutputs, inputs):
 @auth.authorized_with_valid_token
 def depoutput(depid=None):
     """
-    A function to render the details of a deployment, including inputs, outputs, 
+    A function to render the details of a deployment, including inputs, outputs,
     and structured outputs.
     Parameters:
     - depid: str, the ID of the deployment
@@ -379,9 +379,10 @@ def depdel(depid=None):
 def depupdate(depid=None):
     if depid is None:
         return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+
     dep = dbhelpers.get_deployment(depid)
 
-    if dep is not None:
+    if dep is None:
         return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
     access_token = iam.token["access_token"]
@@ -493,6 +494,8 @@ def updatedep():
 
     except Exception as e:
         flash(str(e), "danger")
+
+    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
 
 @deployments_bp.route("/configure", methods=["GET"])

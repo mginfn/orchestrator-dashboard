@@ -101,7 +101,7 @@
                             <h5 class="modal-title" id="confirm_action_label"><strong>Confirm action</strong></h5>
                             <button type="button" class="close" data-dismiss="modal">&times;</button>
                         </div>
-                        <div class="modal-body">
+                        <div id="performActionModal" class="modal-body">
                             <br><br>
                             <form id="performActionForm" action="#" method="post">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -158,9 +158,8 @@ $('.confirm_action').on('show.bs.modal', (event) => {
     let title = target.data('text')
     let url = target.data('url')
 
-    let modal = $(this)
-    modal.find('.modal-body').prepend(title)
-    modal.find('#performActionForm').prop('action', url)
+    $('#performActionModal').prepend(title)
+    $('#performActionForm').prop('action', url)
 })
 
 </script>
