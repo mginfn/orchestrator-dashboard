@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import wraps
 import ast
+from functools import wraps
+
 import requests
-from flask import current_app as app, redirect, render_template, session, url_for, json
+from flask import current_app as app
+from flask import json, redirect, render_template, session, url_for
 
 from app.iam import iam
 from app.lib import utils
@@ -32,9 +34,7 @@ def set_user_info():
         supported_groups = list(set(app.settings.iam_groups) & set(user_groups))
         if len(supported_groups) == 0:
             app.logger.warning(
-                "The user {} does not belong to any supported user group".format(
-                    user_id
-                )
+                "The user {} does not belong to any supported user group".format(user_id)
             )
 
     session["userid"] = user_id
@@ -51,6 +51,9 @@ def set_user_info():
     if "active_usergroup" not in session:
         session["active_usergroup"] = next(iter(supported_groups), None)
 
+    iam_configuration = iam.get(".well-known/openid-configuration").json()
+    session["iss"] = iam_configuration["issuer"]
+
 
 def update_user_info():
     account_info = iam.get("/userinfo")
@@ -63,9 +66,7 @@ def update_user_info():
         supported_groups = list(set(app.settings.iam_groups) & set(user_groups))
         if len(supported_groups) == 0:
             app.logger.warning(
-                "The user {} does not belong to any supported user group".format(
-                    user_id
-                )
+                "The user {} does not belong to any supported user group".format(user_id)
             )
 
     session["usergroups"] = user_groups
@@ -100,9 +101,7 @@ def only_for_admin(f):
     return decorated_function
 
 
-def exchange_token_with_audience(
-    iam_url, client_id, client_secret, iam_token, audience
-):
+def exchange_token_with_audience(iam_url, client_id, client_secret, iam_token, audience):
     payload_string = (
         '{ "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange", "audience": "'
         + audience
@@ -120,9 +119,7 @@ def exchange_token_with_audience(
 
     if not iam_response.ok:
         raise Exception(
-            "Error exchanging token: {} - {}".format(
-                iam_response.status_code, iam_response.text
-            )
+            "Error exchanging token: {} - {}".format(iam_response.status_code, iam_response.text)
         )
 
     deserialized_iam_response = json.loads(iam_response.text)

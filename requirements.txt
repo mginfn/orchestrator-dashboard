@@ -1,5 +1,5 @@
 Flask==3.0.2
-Werkzeug==3.0.1
+Werkzeug==3.0.3
 Flask-Caching==2.1.0
 Flask_Dance==7.0.1
 Flask-Mail==0.9.1

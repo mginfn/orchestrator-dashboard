@@ -26,6 +26,7 @@ from app.extensions import cache, db, mail, migrate, redis_client, tosca, vaults
 from app.home.routes import home_bp
 from app.iam import make_iam_blueprint
 from app.lib import utils
+from app.lib.cmdb import Cmdb
 from app.lib.orchestrator import Orchestrator
 from app.lib.settings import Settings
 from app.providers.routes import providers_bp
@@ -69,6 +70,9 @@ def create_app():
 
     orchestrator = Orchestrator(settings.orchestrator_url)
     app.orchestrator = orchestrator
+
+    cmdb = Cmdb(app.settings.orchestrator_conf["cmdb_url"])
+    app.cmdb = cmdb
 
     app.config["MAX_CONTENT_LENGTH"] = 1024 * 100  # put in the config.py
 

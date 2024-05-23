@@ -13,13 +13,14 @@
 # limitations under the License.
 
 
+import io
 import json
 import os
-import io
-from fnmatch import fnmatch
 import uuid
-import yaml
+from fnmatch import fnmatch
+
 import jsonschema
+import yaml
 
 
 class ToscaInfo:
@@ -76,10 +77,7 @@ class ToscaInfo:
                     self.metadata_schema,
                     format_checker=jsonschema.Draft202012Validator.FORMAT_CHECKER,
                 )
-                # tosca_gmetadata = {service["id"]: {k: v for k, v in service.items() if k != "id"} for service in metadata['services']}
-                tosca_gmetadata = {
-                    str(uuid.uuid4()): service for service in metadata["services"]
-                }
+                tosca_gmetadata = {str(uuid.uuid4()): service for service in metadata["services"]}
                 return tosca_gmetadata
 
     def _loadtoscatemplates(self):
@@ -143,9 +141,7 @@ class ToscaInfo:
                         fmname = os.path.relpath(
                             os.path.join(mpath, mname), self.tosca_metadata_dir
                         )
-                        if fnmatch(
-                            fmname, os.path.splitext(tosca)[0] + ".metadata.yml"
-                        ) or fnmatch(
+                        if fnmatch(fmname, os.path.splitext(tosca)[0] + ".metadata.yml") or fnmatch(
                             fmname, os.path.splitext(tosca)[0] + ".metadata.yaml"
                         ):
                             # skip hidden files
@@ -161,9 +157,7 @@ class ToscaInfo:
                                         "metadata" in metadata_template
                                         and metadata_template["metadata"] is not None
                                     ):
-                                        for k, v in metadata_template[
-                                            "metadata"
-                                        ].items():
+                                        for k, v in metadata_template["metadata"].items():
                                             tosca_info["metadata"][k] = v
 
             # override description from metadata, if available
@@ -196,14 +190,10 @@ class ToscaInfo:
                 )  # this has to be reassigned here because is local.
                 for fpath, subs, fnames in os.walk(tosca_pars_path):
                     for fname in fnames:
-                        ffname = os.path.relpath(
-                            os.path.join(fpath, fname), self.tosca_params_dir
-                        )
+                        ffname = os.path.relpath(os.path.join(fpath, fname), self.tosca_params_dir)
                         if fnmatch(
                             ffname, os.path.splitext(tosca)[0] + ".parameters.yml"
-                        ) or fnmatch(
-                            ffname, os.path.splitext(tosca)[0] + ".parameters.yaml"
-                        ):
+                        ) or fnmatch(ffname, os.path.splitext(tosca)[0] + ".parameters.yaml"):
                             # skip hidden files
                             if fname[0] != ".":
                                 tosca_pars_file = os.path.join(fpath, fname)
@@ -229,6 +219,14 @@ class ToscaInfo:
 
             updatable = updatabledeployment(tosca_info["inputs"])
             tosca_info["updatable"] = updatable
+
+            s3_node_found, s3_node = has_node_of_type(template, "tosca.nodes.indigo.S3Bucket")
+            if s3_node_found:
+                tosca_info["inputs"]["__" + s3_node.get("name")] = {
+                    "type": "openstack_ec2credentials",
+                    "url": s3_node.get("properties").get("s3_url"),
+                }
+
         return tosca_info
 
     def get(self):
@@ -250,16 +248,10 @@ def getdeploymenttype(nodes):
                 if k == "type" and v == "tosca.nodes.indigo.Compute":
                     deployment_type = "CLOUD"
                     break
-                if (
-                    k == "type"
-                    and v == "tosca.nodes.indigo.Container.Application.Docker.Marathon"
-                ):
+                if k == "type" and v == "tosca.nodes.indigo.Container.Application.Docker.Marathon":
                     deployment_type = "MARATHON"
                     break
-                if (
-                    k == "type"
-                    and v == "tosca.nodes.indigo.Container.Application.Docker.Chronos"
-                ):
+                if k == "type" and v == "tosca.nodes.indigo.Container.Application.Docker.Chronos":
                     deployment_type = "CHRONOS"
                     break
                 if k == "type" and v == "tosca.nodes.indigo.Qcg.Job":
@@ -280,31 +272,31 @@ def getslapolicy(template):
                     ):
                         if "properties" in v:
                             sla_id = (
-                                v["properties"]["sla_id"]
-                                if "sla_id" in v["properties"]
-                                else ""
+                                v["properties"]["sla_id"] if "sla_id" in v["properties"] else ""
                             )
                         break
     return sla_id
 
 
 def eleasticdeployment(template):
-    return hasnodeoftype(template, "tosca.nodes.indigo.ElasticCluster")
+    found, _ = has_node_of_type(template, "tosca.nodes.indigo.ElasticCluster")
+    return found
 
 
 def updatabledeployment(inputs):
     updatable = False
     for key, value in inputs.items():
         if "updatable" in value:
-            if value["updatable"] == True:
+            if value["updatable"]:
                 updatable = True
                 break
 
     return updatable
 
 
-def hasnodeoftype(template, nodetype):
+def has_node_of_type(template, nodetype):
     found = False
+    node = None
     if "topology_template" in template:
         if "node_templates" in template["topology_template"]:
             for j, u in template["topology_template"]["node_templates"].items():
@@ -313,5 +305,7 @@ def hasnodeoftype(template, nodetype):
                 for k, v in u.items():
                     if k == "type" and nodetype in v:
                         found = True
+                        node = u
+                        node["name"] = j  # add node name
                         break
-    return found
+    return found, node

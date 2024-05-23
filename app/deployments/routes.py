@@ -15,6 +15,8 @@
 import copy
 import io
 import os
+import random
+import string
 import uuid as uuid_generator
 from urllib.parse import urlparse
 
@@ -753,43 +755,72 @@ def process_uuidgen(key: str, inputs: dict, stinputs: dict, uuidgen_deployment: 
 def process_openstack_ec2credentials(key: str, inputs: dict, stinputs: dict):
     value = stinputs[key]
 
-    if value["type"] == "openstack_ec2credentials":
+    if value["type"] == "openstack_ec2credentials" and key.startswith("__"):
         try:
+            # remove from inputs array since it is not a real input to pass to the orchestrator
             del inputs[key]
-            project = next(
-                filter(
-                    lambda tenant: tenant.get("group") == session["active_usergroup"],
-                    value["auth"]["tenants"],
-                ),
-                None,
-            )
-            if not project:
-                raise IndexError("Project not configured for S3")
-            access, secret = keystone.get_or_create_ec2_creds(
+
+            s3_url = value["url"]
+            service = app.cmdb.get_service_by_endpoint(iam.token["access_token"], s3_url)
+            prj, idp = app.cmdb.get_service_project(
                 iam.token["access_token"],
-                project.get("name"),
-                value["auth"]["url"],
-                value["auth"]["identity_provider"],
-                value["auth"]["protocol"],
+                session["iss"],
+                service,
+                session["active_usergroup"],
             )
-            access_key_input_name = value["inputs"]["aws_access_key"]
-            inputs[access_key_input_name] = access
-            secret_key_input_name = value["inputs"]["aws_secret_key"]
-            inputs[secret_key_input_name] = secret
 
-            functions = {
-                "s3.create_bucket": s3.create_bucket,
-                "s3.delete_bucket": s3.delete_bucket,
-            }
+            if not prj or not idp:
+                raise Exception("Unable to get EC2 credentials")
 
-            if "tests" in value and value["tests"]:
-                for test in value["tests"]:
-                    func = test["action"]
-                    args = test["args"]
-                    args["access_key"] = access
-                    args["secret_key"] = secret
-                    if func in functions:
-                        functions[func](**args)
+            if prj and idp:
+                access, secret = keystone.get_or_create_ec2_creds(
+                    iam.token["access_token"],
+                    prj.get("tenant_name"),
+                    service["auth_url"].rstrip("/v3"),
+                    idp["name"],
+                    idp["protocol"],
+                )
+
+                iam_base_url = app.settings.iam_url
+                iam_client_id = app.settings.iam_client_id
+                iam_client_secret = app.settings.iam_client_secret
+
+                jwt_token = auth.exchange_token_with_audience(
+                    iam_base_url,
+                    iam_client_id,
+                    iam_client_secret,
+                    iam.token["access_token"],
+                    app.config.get("VAULT_BOUND_AUDIENCE"),
+                )
+
+                vaultclient = vaultservice.connect(jwt_token, app.config.get("VAULT_ROLE"))
+
+                secret_path = (
+                    session["userid"]
+                    + "/services_credential/"
+                    + urlparse(s3_url).netloc
+                    + "/"
+                    + session["active_usergroup"]
+                )
+
+                vaultclient.write_secret_dict(
+                    None, secret_path, {"aws_access_key": access, "aws_secret_key": secret}
+                )
+
+                app.logger.debug(f"EC2 Credentials saved to Vault path {secret_path}")
+
+                test_backet_name = "".join(random.choices(string.ascii_lowercase, k=8))
+                s3.create_bucket(
+                    s3_url=s3_url, access_key=access, secret_key=secret, bucket=test_backet_name
+                )
+                s3.delete_bucket(
+                    s3_url=s3_url, access_key=access, secret_key=secret, bucket=test_backet_name
+                )
+
+                app.logger.debug(
+                    f"Bucket creation/deletion test performed with bucket name {test_backet_name}"
+                )
+
         except Forbidden as e:
             app.logger.error("Error while testing S3: {}".format(e))
             flash(
