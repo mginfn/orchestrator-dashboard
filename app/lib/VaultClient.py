@@ -142,7 +142,7 @@ class VaultClient:
         secret_dict = dict()
         secret_dict[key] = value
 
-        return write_secret_dict(token, secret_path, secret_dict, cas)
+        return self.write_secret_dict(token, secret_path, secret_dict, cas)
 
     def read_secret(self, token, secret_path, key):
         """
