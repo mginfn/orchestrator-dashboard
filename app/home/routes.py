@@ -29,7 +29,7 @@ from flask import (
 from flask import current_app as app
 from markupsafe import Markup
 
-from app.extensions import redis_client, tosca
+from app.extensions import csrf, redis_client, tosca
 from app.iam import iam
 from app.lib import auth, dbhelpers, openstack, utils
 from app.models.User import User
@@ -445,6 +445,7 @@ def logout():
 
 
 @home_bp.route("/callback", methods=["POST"])
+@csrf.exempt
 def callback():
     """
     Callback function for handling POST requests to /callback endpoint.

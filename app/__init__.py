@@ -17,12 +17,11 @@ from logging.config import dictConfig
 
 from flask import Flask
 from flask_migrate import upgrade
-from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.deployments.routes import deployments_bp
 from app.errors.routes import errors_bp
-from app.extensions import cache, db, mail, migrate, redis_client, tosca, vaultservice
+from app.extensions import cache, csrf, db, mail, migrate, redis_client, tosca, vaultservice
 from app.home.routes import home_bp
 from app.iam import make_iam_blueprint
 from app.lib import utils
@@ -63,7 +62,8 @@ def create_app():
         app.config.from_file("config.json", json.load)
 
     app.secret_key = app.config["SECRET_KEY"]
-    CSRFProtect(app)
+
+    csrf.init_app(app)
 
     settings = Settings(app)
     app.settings = settings  # attach the Settings object to the app

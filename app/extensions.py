@@ -16,6 +16,7 @@ from flask_mail import Mail
 from flask_migrate import Migrate
 from flask_redis import FlaskRedis
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
 
 from app.lib.tosca_info import ToscaInfo
 from app.lib.Vault import Vault
@@ -38,3 +39,5 @@ cache: Cache = Cache()
 mail: Mail = Mail()
 
 tosca: ToscaInfo = ToscaInfo()
+
+csrf: CSRFProtect = CSRFProtect()
