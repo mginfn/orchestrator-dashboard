@@ -54,9 +54,7 @@ class Orchestrator:
         url = self.orchestrator_url + "/deployments" + str_params
 
         try:
-            get_all_results(
-                url, headers=headers, timeout=self.timeout, results=deployments
-            )
+            get_all_results(url, headers=headers, timeout=self.timeout, results=deployments)
         except Exception as e:
             raise Exception("Error retrieving deployment list: {}".format(str(e)))
         return deployments
@@ -83,9 +81,7 @@ class Orchestrator:
 
         if not response.ok:
             raise Exception(
-                "Error getting log for deployment {}: {}".format(
-                    deployment_uuid, response.text
-                )
+                "Error getting log for deployment {}: {}".format(deployment_uuid, response.text)
             )
         return response.text
 
@@ -109,9 +105,7 @@ class Orchestrator:
 
         resources = []
         try:
-            get_all_results(
-                url=url, timeout=self.timeout, headers=headers, results=resources
-            )
+            get_all_results(url=url, timeout=self.timeout, headers=headers, results=resources)
         except Exception as e:
             raise Exception(
                 "Error retrieving resources list for deployment {}: {}".format(
@@ -131,9 +125,7 @@ class Orchestrator:
             + resource_uuid
             + "/actions"
         )
-        response = requests.post(
-            url, timeout=self.timeout, headers=headers, json={"type": action}
-        )
+        response = requests.post(url, timeout=self.timeout, headers=headers, json={"type": action})
 
         if not response.ok:
             raise Exception(
@@ -170,9 +162,7 @@ class Orchestrator:
         payload = {"template": template, "parameters": inputs}
         payload.update(params)
 
-        response = requests.post(
-            url, timeout=self.timeout, json=payload, headers=headers
-        )
+        response = requests.post(url, timeout=self.timeout, json=payload, headers=headers)
 
         if not response.ok:
             raise Exception("Error creating deployment: {}".format(response.text))
@@ -205,23 +195,17 @@ class Orchestrator:
         payload = {"template": template, "parameters": inputs}
         payload.update(params)
 
-        response = requests.put(
-            url, timeout=self.timeout, json=payload, headers=headers
-        )
+        response = requests.put(url, timeout=self.timeout, json=payload, headers=headers)
         if not response.ok:
             raise Exception(
-                "Error updating deployment: {}: {}".format(
-                    deployment_uuid, response.text
-                )
+                "Error updating deployment: {}: {}".format(deployment_uuid, response.text)
             )
 
     def delete(self, access_token, deployment_uuid):
         headers = {"Authorization": "Bearer %s" % access_token}
-        url = self.orchestrator_url + "/deployments/" + deployment_uuid
+        url = self.orchestrator_url + "/deployments/" + deployment_uuid + "?force=true"
         response = requests.delete(url, timeout=self.timeout, headers=headers)
         if not response.ok:
             raise Exception(
-                "Error deleting deployment {}: {}".format(
-                    deployment_uuid, response.text
-                )
+                "Error deleting deployment {}: {}".format(deployment_uuid, response.text)
             )
