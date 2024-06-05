@@ -14,8 +14,9 @@
     --color-secondary: #fefefe;
     --color-secondary-hover: #fefefedd;
     
-    --color-danger: #ff2500;
-    --color-danger-50: #ff250080;
+    --color-danger: #de2335;
+    --color-danger-50: #de233580;
+    --color-danger-hover: #ed2639;
 
     --dashboard-card-height: 250px;
     --dashboard-navbar-height: 101px;
@@ -117,6 +118,7 @@ form {
     align-items: center;
     justify-content: center;
     border: none;
+    /* box-shadow: -1px 1px 2px 0px #0000003b; */
 }
 
 .dashboard-button:not(.dashboard-button-lg) > i {
@@ -129,6 +131,7 @@ form {
     padding: 8px 32px;
     font-size: 16px;
     text-transform: uppercase;
+    align-items: baseline;
 }
 
 .dashboard-button-primary {
@@ -167,6 +170,7 @@ form {
 .dashboard-button-outline-no-border {
     background: transparent;
     color: var(--color-primary);
+    box-shadow: none;
 }
 
 .dashboard-button-round {
@@ -328,6 +332,10 @@ table.table-bordered.dataTable tbody td {
 .dashboard-button-primary-outline:hover {
     background: var(--color-primary);
     color: var(--color-secondary);
+}
+
+.dashboard-button-danger:hover {
+    background: var(--color-danger-hover);
 }
 
 .dashboard-button-danger-outline:hover {
@@ -1163,6 +1171,7 @@ table.table-bordered.dataTable tbody td {
 
 .dashboard-template-header-buttons, .dashboard-template-footer-buttons {
     display: flex;
+    align-items: center;
     margin-left: auto;
     width: fit-content;
 }

@@ -15,7 +15,7 @@
                 <i class="fas fa-check-circle"></i>&nbsp;&nbsp; Creation completed
             </div>
             <div class="dashboard-report-count">
-                {{ s_values[0] if s_values[0] != undefined else 0 }}
+                {{ s_values[1] if s_values[1] != undefined else 0 }}
             </div>
         </div>
 
@@ -33,7 +33,7 @@
                 <i class="fas fa-times-circle"></i>&nbsp;&nbsp; Creation failed
             </div>
             <div class="dashboard-report-count">
-                {{ s_values[1] if s_values[1] != undefined else 0 }}
+                {{ s_values[0] if s_values[0] != undefined else 0 }}
             </div>
         </div>
     </div>

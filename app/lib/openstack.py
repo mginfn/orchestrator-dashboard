@@ -285,3 +285,42 @@ def delete_ec2_creds(
                     delete_ec2_credential(
                         auth_url, user_id, cred.get("access"), scoped_token
                     )
+
+def get_openstack_ec2_creds(
+    access_token, project, auth_url, identity_provider="infn-cc", protocol="oidc"
+):
+    """Get EC2 credentials from access token. If some EC2 credentials are already available, they will be re-used.
+    Otherwise new credentials will be generated
+
+    Parameters
+    ----------
+    access_token : str
+        The user access token issued by the OpenID Connect IdP
+    project : str
+        The project the credentials must be valid for
+    identity_provider : str
+        the identity provider as configured in keystone (default is infn-cc)
+    protocol:
+        the protocol as configured in keystone (default is oidc)
+
+    Returns
+    -------
+    access: str
+        credential access key
+    secret: str
+        credential secret
+    """
+
+    unscoped_token, user_id = get_unscoped_keystone_token(
+        access_token, auth_url, identity_provider, protocol
+    )
+
+    if unscoped_token:
+        projects = get_project_list(auth_url, unscoped_token)
+        prj = next(filter(lambda prj: prj.get("name") == project, projects), None)
+        project_id = prj.get("id") if prj else None
+
+        if project_id:
+            scoped_token = get_scoped_token(auth_url, unscoped_token, project_id)
+
+            return scoped_token

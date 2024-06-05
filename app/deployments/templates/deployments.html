@@ -54,7 +54,7 @@
 							<th>Endpoint</th>
 							<th>Deployed at</th>
 							<th>Physical Id</th>
-							<th>Actions</th>
+							<th style="width: 1%; white-space: nowrap;">Actions</th>
 						</tr>
 					</thead>
 					<!--Table head-->
@@ -65,6 +65,7 @@
 							{% if "IN_PROGRESS" in deployment.status %}
 								{% set ar.found = true %}
 							{% endif %}
+
 							<tr>
 								<td><strong>{{deployment.description}}</strong></td>
 								<td><a href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}">{{deployment.uuid}}</a></td>
@@ -86,7 +87,7 @@
 								<td>
 									<div class="btn-group">
 										<!-- DETAILS -->
-										<a class="btn btn-info btn-sm" href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}">
+										<a class="btn btn-info btn-sm" href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}" style="display: flex; align-items: center;">
 											<span class="fas fa-bars mr-2 grey-text"></span>Details
 										</a>
 										<button type="button" class="btn btn-info dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
@@ -105,9 +106,13 @@
 												<a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.deplog', depid=deployment.uuid) }}">
 													<span class="fas fa-file-alt mr-2 grey-text"></span>Log
 												</a>
-												{% if config['FEATURE_PORTS_REQUEST']|str2bool %}
-													<a class="dropdown-item" data-toggle="modal" data-target="#requestPorts" data-id="{{ deployment.uuid }}" data-action="{{ url_for('deployments_bp.sendportsrequest') }}" >
+												{% if config['FEATURE_PORTS_REQUEST']|str2bool and (deployment.status == 'CREATE_COMPLETE' or deployment.status == 'UPDATE_COMPLETE') %}
+													<!-- <a class="dropdown-item" data-toggle="modal" data-target="#requestPorts" data-id="{{ deployment.uuid }}" data-action="{{ url_for('deployments_bp.sendportsrequest') }}" >
 														<span class="fas fa-ticket-alt mr-2 grey-text"></span>Request Ports
+													</a> -->
+
+													<a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.security_groups', depid=deployment.uuid) }}">
+														<span class="fas fa-shield-alt mr-2 grey-text"></span>Manage Ports
 													</a>
 												{% endif %}
 											{% endif %}

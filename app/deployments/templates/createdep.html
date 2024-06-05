@@ -217,7 +217,7 @@ $(document).ready(function() {
 							let dataItem = findElementByName(data, key);
 							let selected = input.constraints.filter(e => e.value == dataItem.value);
 							if(selected.length > 0) {
-								html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;${selected[0].label}</div>`;
+								html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key.replaceAll('_', ' ')}:</label>&nbsp;${selected[0].label}</div>`;
 							}
 							break;
 						}
@@ -239,7 +239,7 @@ $(document).ready(function() {
 									// Add the field name and value to the dictionary for the identifier
 									transformedDict[identifier][fieldName] = obj.value;
 								});
-								html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;`
+								html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key.replaceAll('_', ' ')}:</label>&nbsp;`
 								html_value += `<ul>`
 								Object.values(transformedDict).forEach(dict => {
 									html_value += `<li>${JSON.stringify(dict)}</li>`;
@@ -252,7 +252,7 @@ $(document).ready(function() {
 							if(input.entry_schema.type == "map"){
 								let dataArray = findElementsByNamePrefix(data, key);
 								if (dataArray.length > 0){
-									html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;`;
+									html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key.replaceAll('_', ' ')}:</label>&nbsp;`;
 									html_value += `<ul>`
 
 									for(let i = 0; i < dataArray.length; i += 2){
@@ -269,25 +269,28 @@ $(document).ready(function() {
 							let dataItem = findElementByName(data, key);
 							if(dataItem !== undefined && dataItem.value !== "") {
 								if(key.includes('password')) {
-									html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;<span style="color: inherit!important">${'•'.repeat(dataItem.value.length)}</span><span style="display: none; color: inherit!important">${dataItem.value}</span>&nbsp;<i class="fas fa-eye show-hide-password" style="color: inherit; cursor: pointer;" title="Show & hide password"></i></div>`;
+									html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key.replaceAll('_', ' ')}:</label>&nbsp;<span style="color: inherit!important">${'•'.repeat(dataItem.value.length)}</span><span style="display: none; color: inherit!important">${dataItem.value}</span>&nbsp;<i class="fas fa-eye show-hide-password" style="color: inherit; cursor: pointer;" title="Show & hide password"></i></div>`;
 								} else {
-									html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;${dataItem.value}</div>`;
+									html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key.replaceAll('_', ' ')}:</label>&nbsp;${dataItem.value}</div>`;
 								}
 							}
 							break;
 						}
 						case 'password': {
 							let dataItem = findElementByName(data, key);
-							html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;<span style="color: inherit!important">${'•'.repeat(dataItem.value.length)}</span><span style="display: none; color: inherit!important">${dataItem.value}</span>&nbsp;<i class="fas fa-eye show-hide-password" style="color: inherit; cursor: pointer;" title="Show & hide password"></i></div>`;
+							html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key.replaceAll('_', ' ')}:</label>&nbsp;<span style="color: inherit!important">${'•'.repeat(dataItem.value.length)}</span><span style="display: none; color: inherit!important">${dataItem.value}</span>&nbsp;<i class="fas fa-eye show-hide-password" style="color: inherit; cursor: pointer;" title="Show & hide password"></i></div>`;
 							break;
 						}
 						case 'multiselect': {
 							let dataArray = findMatchingElements(data, key);
-							html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;<ul>`
-							dataArray.forEach(obj => {
-								html_value += `<li>${obj.value}</li>`;
-							});
-							html_value += `</ul></div>`;
+							
+							if (dataArray.length > 0) {
+								html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key.replaceAll('_', ' ')}:</label>&nbsp;<ul>`
+								dataArray.forEach(obj => {
+									html_value += `<li>${obj.value}</li>`;
+								});
+								html_value += `</ul></div>`;
+							}
                             break;
 						}	
 						// SSH USER
@@ -298,7 +301,7 @@ $(document).ready(function() {
 							try {
 								let dataItem = findElementByName(data, key);
 								if(dataItem !== undefined && dataItem.value !== ""){
-									html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key}:</label>&nbsp;${dataItem.value}</div>`;
+									html_value += `<div class="form-group" style="margin-bottom: 4px;"><label>${key.replaceAll('_', ' ')}:</label>&nbsp;${dataItem.value}</div>`;
 								}
 							}
 							catch(err){
@@ -361,14 +364,23 @@ $(document).ready(function () {
 });
 
 $(document).ready(function () {
-	$(".nav-link").on('click', () => {
-		checkForm()
+	$('input').on("focusout", (elem) => {
+		if ( (!elem.target.disabled) && elem.target.required && (elem.target.value == '')){
+			elem.target.style.borderColor = 'red';
+		}
+		else {
+			elem.target.style.borderColor = '#ccc';
+		}
 	});
-	$('input').on("focusout", () => {
-		checkForm()
-	});
-	$('select').on("change", () => {
-		checkForm()
+	$('select').on("change", (elem) => {
+		let select = elem.target;
+
+		if ( (!select.disabled) && select.required && (select.value == '')){
+			$(select).parent().children('span.select2').children().children().css('cssText', 'border-color: red!important');
+		}
+		else {
+			$(select).parent().children('span.select2').children().children().css('cssText', 'border-color: #80808056!important'); 
+		}
 	});
 	$('#continue_btn').on("click", () => {
 		checkForm()

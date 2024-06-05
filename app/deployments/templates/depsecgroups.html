@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid">
+    <br>
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="dashboard-template-header">
+                <div class="dashboard-template-image">
+                	<i class="fas fa-user-shield"></i>
+                </div>
+
+                <div class="dashboard-template-title">
+                  	Security Groups
+                </div>
+                
+                <div class="dashboard-subtitle" style="text-transform: none;">
+                    {{ depid }}
+                </div>
+            
+                <div class="dashboard-template-header-buttons">
+                    <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="set_loading(true); location.href='{{ url_for('deployments_bp.showdeployments') }}'"><i class="fas fa-arrow-left"></i>&nbsp;Back</button>
+                    <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick='set_loading(true); location.reload()'>
+						<i class="fas fa-sync-alt"></i>&nbsp;Refresh
+					</button>
+                </div>
+            </div>
+
+            <div class="table-responsive" style="overflow:inherit;">
+                <table id="tablePorts" class="table table-bordered table-striped table-hover">
+                    <!--Table head-->
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>ID</th>
+                        <th>Description</th>
+                        <th style="width: 1%; white-space: nowrap;">Actions</th>
+                    </tr>
+                    </thead>
+                    <!--Table body-->
+                    <tbody>
+                        {% for group in sec_groups %}
+                            <tr>
+                                <td>{{ group.name }}</td>
+                                <td>{{ group.id }}</td>
+                                <td>{{ group.description }}</td>
+                                <td>
+                                    <div style="display: flex; width: min-content;">
+                                        <button type="button" class="dashboard-button dashboard-button-primary-outline" title="Manage Ports" onclick='set_loading(true); location.href="{{ url_for('deployments_bp.manage_rules', depid=depid, sec_group_id=group.id) }}"'>
+                                            <i class="fas fa-shield-alt"></i>&nbsp;Manage Ports
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %} 
+                    </tbody>
+                </table>
+            </div>            
+        </div>
+    </div>
+    <br><br>
+</div>
+
+<script>
+
+    $('#tablePorts').dataTable( {
+        "responsive": true,
+            "columnDefs": [
+                {
+                    "targets"  : 'no-sort',
+                    "orderable": false,
+                },
+            ],
+        "order": [[ 2, "desc" ]]
+    });
+    
+</script>
+
+{% endblock %}
+

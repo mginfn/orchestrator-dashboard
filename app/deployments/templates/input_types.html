@@ -21,7 +21,7 @@
 			{% if value.display_name is defined %}
 				{{value.display_name}}
 			{% else %}
-				{{key}}
+				{{key.replace('_', ' ')}}
 			{% endif %}
 		</label>
 	{% endif %}

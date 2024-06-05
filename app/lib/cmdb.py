@@ -88,10 +88,10 @@ class Cmdb:
             }
         """
         # Fetch the service using auth_url if available, else use the provided service directly
+        service_tmp = self.get_service_by_endpoint(access_token, service.get("auth_url", None))
+
         s = (
-            self.get_service_by_endpoint(access_token, service.get("auth_url", None))
-            if isinstance(service, dict)
-            else service
+            service_tmp if service_tmp is not None else service
         )
 
         if not s:

@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid">
+    <br>
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="dashboard-template-header">
+                <div class="dashboard-template-image">
+                	<i class="fas fa-shield-alt"></i>
+                </div>
+
+                <div class="dashboard-template-title">
+                  	Manage Ports
+                </div>
+                
+                <div class="dashboard-subtitle" style="text-transform: none;">
+                    {{ depid }} ({{ sec_group_id }})
+                </div>
+            
+                <div class="dashboard-template-header-buttons">
+                    <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="set_loading(true); location.href='{{ url_for('deployments_bp.showdeployments') }}'"><i class="fas fa-arrow-left"></i>&nbsp;Back</button>
+					<button type="button" class="dashboard-button dashboard-button-lg dashboard-button-primary" title="Add Port" data-toggle="modal" data-target="#modal_add_port" data-backdrop="static" data-keyboard="false">
+						Add Port&nbsp;<i class="fas fa-plus"></i>
+					</button>
+                </div>
+
+                <!-- Modal ADD RULE -->
+                <div class="modal fade" id="modal_add_port" role="dialog">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Add Port</h5>
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            </div>
+                            <details style="padding: 0 1rem;">
+                                <summary>How to add a port? Brief explanation</summary>
+                                <div class="dashboard-subtitle" style="margin-left: 0;">Description</div>
+                                <div class="dashboard-text">
+                                    Ports define which traffic is allowed to instances assigned to the security group. A security group port consists of three main parts:
+                                    <br><div style="height: 5px;"></div>
+                                    <b>Rule</b>: You can specify the desired rule template or use custom rules, the options are Custom TCP Rule, Custom UDP Rule, or Custom ICMP Rule.
+                                    <br><div style="height: 5px;"></div>
+                                    <b>Open Port/Port Range</b>: For TCP and UDP rules you may choose to open either a single port or a range of ports. Selecting the "Port Range" option will provide you with space to provide both the starting and ending ports for the range. For ICMP rules you instead specify an ICMP type and code in the spaces provided.
+                                    <br><div style="height: 5px;"></div>
+                                    <b>Remote</b>: You must specify the source of the traffic to be allowed via this rule. You may do so either in the form of an IP address block (CIDR) or via a source group (Security Group). Selecting a security group as the source will allow any other instance in that security group access to any other instance via this rule.
+                                </div>
+                            </details>
+                            <div class="modal-body">
+                                <form id="add_rule" action="{{ url_for("deployments_bp.create_rule", depid=depid, sec_group_id=sec_group_id) }}" method="post">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <div class="form-group" id="elem_rule">
+                                        <label>Rule*</label>
+                                        <select class="form-control" id="input_rule" required>
+                                            <option value="tcp">Custom TCP Rule</opti1on>
+                                            <option value="udp">Custom UDP Rule</option>
+                                            <option value="icmp">Custom ICMP Rule</option>
+                                            <option value="custom">Other Protocol</option>
+                                            <option value="all_icmp">ALL ICMP</option>
+                                            <option value="all_tcp">ALL TCP</option>
+                                            <option value="all_udp">ALL UDP</option>
+                                            <option value="dns">DNS</option>
+                                            <option value="http">HTTP</option>
+                                            <option value="https">HTTPS</option>
+                                            <option value="imap">IMAP</option>
+                                            <option value="imaps">IMAPS</option>
+                                            <option value="ldap">LDAP</option>
+                                            <option value="ms_sql">MS SQL</option>
+                                            <option value="mysql">MYSQL</option>
+                                            <option value="pop3">POP3</option>
+                                            <option value="pop3s">POP3S</option>
+                                            <option value="rdp">RDP</option>
+                                            <option value="smtp">SMTP</option>
+                                            <option value="smtps">SMTPS</option>
+                                            <option value="ssh">SSH</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" id="elem_description">
+                                        <label for="input_description">Description</label>
+                                        <input type="text" class="form-control" id="input_description" name="input_description" placeholder="" value="" maxlength="255">
+                                    </div>
+                                    <div class="form-group" id="elem_direction">
+                                        <label>Direction*</label>
+                                        <select class="form-control" id="input_direction" name="input_direction" required>
+                                            <option value="ingress">Ingress</option>
+                                            <option value="egress">Egress</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" id="elem_openport">
+                                        <label>Open Port*</label>
+                                        <select class="form-control" value="port" id="input_openport" required>
+                                            <option value="port">Port</option>
+                                            <option value="range">Port Range</option>
+                                            <option value="all">All ports</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" id="elem_port">
+                                        <label>Port*</label>
+                                        <input type="text" class="form-control" id="input_port" placeholder="80" value="" required>
+                                    </div>
+                                    <div class="form-group" id="elem_port_from">
+                                        <label for="input_port_from">From Port*</label>
+                                        <input type="text" class="form-control" id="input_port_from" name="input_port_from" placeholder="81" value="">
+                                    </div>
+                                    <div class="form-group" id="elem_port_to">
+                                        <label for="input_port_to">To Port*</label>
+                                        <input type="text" class="form-control" id="input_port_to" name="input_port_to" placeholder="82" value="">
+                                    </div>
+                                    <div class="form-group" id="elem_ip_protocol">
+                                        <label for="input_ip_protocol">IP Protocol</label>
+                                        <input type="text" class="form-control" id="input_ip_protocol" name="input_ip_protocol" placeholder="" value="">
+                                    </div>
+                                    <div class="form-group" id="elem_CIDR">
+                                        <label for="input_CIDR">CIDR*</label>
+                                        <input type="text" class="form-control" id="input_CIDR" name="input_CIDR" placeholder="0.0.0.0/0" value="0.0.0.0/0" required>
+                                    </div>
+                                    <br>
+                                    <div class="dashboard-template-buttons-container">
+                                        <button data-dismiss="modal" class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Cancel">
+                                            Cancel&nbsp;<i class="fas fa-ban"></i>
+                                        </button>
+                                        <button class="dashboard-button dashboard-button-lg dashboard-button-primary" type="submit" title="Add port">
+                                            Add port&nbsp;<i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive" style="overflow:inherit;">
+                <table id="tablePorts" class="table table-bordered table-striped table-hover">
+                    <!--Table head-->
+                    <thead>
+                    <tr>
+                        <th>Direction</th>
+                        <th>Ether Type</th>
+                        <th>IP Protocol</th>
+                        <th>Port Range</th>
+                        <th>Remote IP Prefix</th>
+                        <th>Description</th>
+                        <th style="width: 1%; white-space: nowrap;">Actions</th>
+                    </tr>
+                    </thead>
+                    <!--Table body-->
+                    <tbody>
+                        {% for rule in rules %}
+                            <tr>
+                                <td>{{ rule.direction.capitalize() }}</td>
+                                <td>{{ rule.ethertype }}</td>
+                                <td>{{ 'Any' if rule.protocol == None else rule.protocol.upper() }}</td>
+                                {% if rule.port_range_min == rule.port_range_max %}
+                                    <td>{{ 'Any' if rule.port_range_min == None else rule.port_range_min }}</td>
+                                {% else %}
+                                    <td>{{ rule.port_range_min }} - {{ rule.port_range_max }}</td>
+                                {% endif %}
+
+                                <td>{{ '-' if rule.remote_ip_prefix == None else rule.remote_ip_prefix }}</td>
+                                <td>{{ '-' if rule.description == None or rule.description == '' else rule.description }}</td>
+                                <td>
+                                    <div style="display: flex; width: min-content;">
+                                        <!-- <button type="button" class="dashboard-button dashboard-button-primary-outline" title="Edit Rule">
+                                            <i class="fas fa-edit"></i>&nbsp;Edit
+                                        </button>
+                                        &nbsp;&nbsp; -->
+                                        <button type="button" class="dashboard-button dashboard-button-danger" title="Delete Port" data-toggle="modal" data-target="#delete_confirm_{{ rule.id | replace('-', '_') }}" data-backdrop="static" data-keyboard="false">
+                                            <i class="fas fa-trash"></i>&nbsp;Delete
+                                        </button>
+                                    </div>
+                                </td>
+
+                                <!-- Modal DELETE -->
+                                <div class="modal fade" id="delete_confirm_{{ rule.id | replace('-', '_') }}" role="dialog">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Confirm port deletion</h5>
+                                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Do you really want to delete the port "{{ '' if rule.description == None or rule.description == '' else rule.description + ' ' }}{{ rule.ethertype }}&nbsp;{% if rule.port_range_min != None and rule.port_range_min != '' %}{% if rule.port_range_min == rule.port_range_max %}{{ '' if rule.port_range_min == None else rule.port_range_min }}/{{ '' if rule.protocol == None else rule.protocol.upper() }}{% else %}{{ rule.port_range_min }} - {{ rule.port_range_max }}/{{ '' if rule.protocol == None else rule.protocol.upper() }}{% endif %}{% else %}{{ '' if rule.protocol == None else rule.protocol.upper() }}{% endif %}{{ '' if rule.remote_ip_prefix == None else ' from ' + rule.remote_ip_prefix }}"?</p>
+                                                <br>
+                                                <div class="dashboard-template-buttons-container">
+                                                    <button data-dismiss="modal" class="dashboard-button dashboard-button-lg dashboard-button-primary-outline" title="Close modal">
+                                                        No, go back
+                                                    </button>
+                                                    <button onclick='set_loading(true); location.href="{{ url_for('deployments_bp.delete_rule', depid=depid, sec_group_id=sec_group_id, rule_id=rule.id) }}"' class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Delete port">
+                                                        <i class="fas fa-trash-alt"></i>&nbsp;Yes, delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>            
+        </div>
+    </div>
+    <br><br>
+</div>
+
+<script>
+
+    $('#tablePorts').dataTable( {
+        "responsive": true,
+            "columnDefs": [
+                {
+                    "targets"  : 'no-sort',
+                    "orderable": false,
+                },
+            ],
+        "order": [[ 2, "desc" ]]
+    });
+
+    $(document).ready(() => {
+        $('#elem_port_from').hide();
+        $('#elem_port_to').hide();
+        $('#elem_ip_protocol').hide();
+    });
+
+    $('#input_rule').on('change', () => {
+        let val = $('#input_rule').val();
+
+        $('#input_port').attr('required', false);
+        $('#input_port_from').attr('required', false);
+        $('#input_port_to').attr('required', false);
+
+        switch (val) {
+            case 'tcp':
+            case 'udp':
+            case 'icmp':
+                show_elements(['elem_rule', 'elem_description', 'elem_direction', 'elem_openport', 'elem_port', 'elem_CIDR']);
+                $('#input_port').attr('required', true);
+                $('#input_openport').val('port');
+                break;
+
+            case 'custom':
+                show_elements(['elem_rule', 'elem_description', 'elem_direction', 'elem_ip_protocol', 'elem_CIDR']);
+                break;
+
+            case 'all_icmp':
+            case 'all_tcp':
+            case 'all_udp':
+                show_elements(['elem_rule', 'elem_description', 'elem_direction', 'elem_CIDR']);
+                break;
+
+            default:
+                show_elements(['elem_rule', 'elem_description', 'elem_CIDR']);
+                break;
+        }
+    });
+
+    function show_elements(list) {
+        hide_elements();
+
+        for(let i in list) {
+            let elem = $('#'+ list[i]);
+
+            console.log(elem)
+            
+            if(elem.length > 0) {
+                elem.show();
+            }
+        }
+    }
+
+    function hide_elements() {
+        $('#elem_rule').hide();
+        $('#elem_description').hide();
+        $('#elem_direction').hide();
+        $('#elem_openport').hide();
+        $('#elem_port').hide();
+        $('#elem_port_from').hide();
+        $('#elem_port_to').hide();
+        $('#elem_CIDR').hide();
+        $('#elem_ip_protocol').hide();
+    }
+
+    $('#input_openport').on('change', () => {
+        let val = $('#input_openport').val();
+
+        $('#elem_port').hide();
+        $('#elem_port_from').hide();
+        $('#elem_port_to').hide();
+        $('#input_port').val('');
+        $('#input_port_from').val('');
+        $('#input_port_to').val('');
+
+        switch (val) {
+            case 'port':
+                $('#elem_port').show();
+
+                $('#input_port').attr('required', true);
+                $('#input_port_from').attr('required', false);
+                $('#input_port_to').attr('required', false);
+                break;
+            case 'range':
+                $('#elem_port_from').show();
+                $('#elem_port_to').show();
+
+                $('#input_port').attr('required', false);
+                $('#input_port_from').attr('required', true);
+                $('#input_port_to').attr('required', true);
+                break;
+            default:
+                $('#input_port').attr('required', false);
+                $('#input_port_from').attr('required', false);
+                $('#input_port_to').attr('required', false);
+                break;
+        }
+    });
+
+    $("#input_port").on('keyup', () => {
+        let port = $("#input_port").val();
+
+        $("#input_port_from").val(port);
+        $("#input_port_to").val(port);
+    });
+
+    $('#add_rule').submit(() => {
+        set_loading(true);
+    });
+
+    $('input').on("focusout", (elem) => {
+        if ( (!elem.target.disabled) && elem.target.required && (elem.target.value == '')){
+            elem.target.style.borderColor = 'red';
+        }
+        else {
+            elem.target.style.borderColor = '#ccc';
+        }
+    });
+    $('select').on("change", (elem) => {
+        let select = elem.target;
+
+        if ( (!select.disabled) && select.required && (select.value == '')){
+            $(select).parent().children('span.select2').children().children().css('cssText', 'border-color: red!important');
+        }
+        else {
+            $(select).parent().children('span.select2').children().children().css('cssText', 'border-color: #80808056!important'); 
+        }
+    });
+</script>
+
+{% endblock %}
+
