@@ -203,7 +203,7 @@ class Orchestrator:
 
     def delete(self, access_token, deployment_uuid):
         headers = {"Authorization": "Bearer %s" % access_token}
-        url = self.orchestrator_url + "/deployments/" + deployment_uuid + "?force=true"
+        url = self.orchestrator_url + "/deployments/" + deployment_uuid
         response = requests.delete(url, timeout=self.timeout, headers=headers)
         if not response.ok:
             raise Exception(
