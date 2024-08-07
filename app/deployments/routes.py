@@ -55,6 +55,7 @@ deployments_bp = Blueprint(
 )
 
 SHOW_DEPLOYMENTS_ROUTE = "deployments_bp.showdeployments"
+MANAGE_RULES_ROUTE = "deployments_bp.manage_rules"
 
 
 class InputValidationError(Exception):
@@ -303,39 +304,66 @@ def deplog(depid=None):
     return render_template("deplog.html", log=log)
 
 
+def extract_vm_details(depid, resources):
+    details = []
+    for resource in resources:
+        if "VirtualMachineInfo" in resource["metadata"]:
+            vminfo = json.loads(resource["metadata"]["VirtualMachineInfo"])
+            vmprop = utils.format_json_radl(vminfo["vmProperties"])
+            vmprop["state"] = resource["state"]
+            vmprop["resId"] = resource["uuid"]
+            vmprop["depId"] = depid
+            details.append(vmprop)
+    return details
+
+
+def process_tosca_info(dep):
+    template = dep.template
+    tosca_info = tosca.extracttoscainfo(yaml.full_load(io.StringIO(template)), None)
+    inputs = json.loads(dep.inputs.strip('"')) if dep.inputs else {}
+    stinputs = json.loads(dep.stinputs.strip('"')) if dep.stinputs else {}
+    tosca_info["inputs"] = {**tosca_info["inputs"], **stinputs}
+
+    for k, v in tosca_info["inputs"].items():
+        if k in inputs and "default" in tosca_info["inputs"][k]:
+            tosca_info["inputs"][k]["default"] = inputs[k]
+
+    stoutputs = json.loads(dep.stoutputs.strip('"')) if dep.stoutputs else {}
+    tosca_info["outputs"] = {**tosca_info["outputs"], **stoutputs}
+    return tosca_info
+
+
 @deployments_bp.route("/<depid>/infradetails")
 @auth.authorized_with_valid_token
 def depinfradetails(depid=None):
     access_token = iam.token["access_token"]
 
     dep = dbhelpers.get_deployment(depid)
-    if dep is not None and dep.physicalId is not None:
-        try:
-            resources = app.orchestrator.get_resources(access_token, depid)
-        except Exception as e:
-            flash(str(e), "warning")
-            return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
-        details = []
-        for resource in resources:
-            if "VirtualMachineInfo" in resource["metadata"]:
-                vminfo = json.loads(resource["metadata"]["VirtualMachineInfo"])
-                vmprop = utils.format_json_radl(vminfo["vmProperties"])
-                vmprop["state"] = resource["state"]
-                vmprop["resId"] = resource["uuid"]
-                vmprop["depId"] = depid
-                details.append(vmprop)
+    if dep is None or dep.physicalId is None:
+        return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
-        return render_template("depinfradetails.html", vmsdetails=details)
+    try:
+        resources = app.orchestrator.get_resources(access_token, depid)
+    except Exception as e:
+        flash(str(e), "warning")
+        return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+
+    details = extract_vm_details(depid, resources)
+    tosca_info = process_tosca_info(dep)
+
+    return render_template(
+        "depinfradetails.html",
+        vmsdetails=details,
+        deployment=dep,
+        template=tosca_info,
+        update=True,
+    )
 
 
 # PORTS MANAGEMENT
-
-
-def get_openstack_connection(endpoint):
-    service = app.cmdb.get_service_by_endpoint(
-        iam.token["access_token"], "https://" + endpoint + "/v3"
-    )
+def get_openstack_connection(endpoint, provider):
+    service = app.cmdb.get_service_by_endpoint(iam.token["access_token"], endpoint, provider, False)
 
     prj, idp = app.cmdb.get_service_project(
         iam.token["access_token"],
@@ -421,17 +449,21 @@ def security_groups(depid=None):
     try:
         sec_groups = ""
 
+        vm_provider = request.args.get("depProvider")
         vm_info = get_vm_info(depid)
         vm_id = vm_info["vm_id"]
         vm_endpoint = vm_info["vm_endpoint"]
 
-        conn = get_openstack_connection(vm_endpoint)
+        conn = get_openstack_connection(vm_endpoint, vm_provider)
         sec_groups = get_sec_groups(conn, vm_id)
 
         if len(sec_groups) == 1:
             return redirect(
                 url_for(
-                    "deployments_bp.manage_rules", depid=depid, sec_group_id=sec_groups[0]["id"]
+                    MANAGE_RULES_ROUTE,
+                    depid=depid,
+                    provider=vm_provider,
+                    sec_group_id=sec_groups[0]["id"],
                 )
             )
 
@@ -444,7 +476,9 @@ def security_groups(depid=None):
 @deployments_bp.route("/<depid>/<sec_group_id>/manage_rules")
 @auth.authorized_with_valid_token
 def manage_rules(depid=None, sec_group_id=None):
-    conn = get_openstack_connection(get_vm_info(depid)["vm_endpoint"])
+    provider = request.args.get("provider")
+
+    conn = get_openstack_connection(get_vm_info(depid)["vm_endpoint"], provider)
 
     rules = conn.list_security_groups({"id": sec_group_id})
 
@@ -454,15 +488,16 @@ def manage_rules(depid=None, sec_group_id=None):
         rules = []
 
     return render_template(
-        "depgrouprules.html", depid=depid, sec_group_id=sec_group_id, rules=rules
+        "depgrouprules.html", depid=depid, provider=provider, sec_group_id=sec_group_id, rules=rules
     )
 
 
 @deployments_bp.route("/<depid>/<sec_group_id>/create_rule", methods=["POST"])
 @auth.authorized_with_valid_token
 def create_rule(depid=None, sec_group_id=None):
+    provider = request.args.get("provider")
     try:
-        conn = get_openstack_connection(get_vm_info(depid)["vm_endpoint"])
+        conn = get_openstack_connection(get_vm_info(depid)["vm_endpoint"], provider)
         conn.network.create_security_group_rule(
             security_group_id=sec_group_id,
             description=request.form["input_description"],
@@ -487,20 +522,26 @@ def create_rule(depid=None, sec_group_id=None):
     except Exception as e:
         flash("Error: \n" + str(e), "danger")
 
-    return redirect(url_for("deployments_bp.manage_rules", depid=depid, sec_group_id=sec_group_id))
+    return redirect(
+        url_for(MANAGE_RULES_ROUTE, depid=depid, provider=provider, sec_group_id=sec_group_id)
+    )
 
 
 @deployments_bp.route("/<depid>/<sec_group_id>/<rule_id>/delete_rule")
 @auth.authorized_with_valid_token
 def delete_rule(depid=None, sec_group_id=None, rule_id=None):
+    provider = request.args.get("provider")
+
     try:
-        conn = get_openstack_connection(get_vm_info(depid)["vm_endpoint"])
+        conn = get_openstack_connection(get_vm_info(depid)["vm_endpoint"], provider)
         conn.delete_security_group_rule(rule_id)
         flash("Port deleted successfully!", "success")
     except Exception as e:
         flash("Error: \n" + str(e), "danger")
 
-    return redirect(url_for("deployments_bp.manage_rules", depid=depid, sec_group_id=sec_group_id))
+    return redirect(
+        url_for(MANAGE_RULES_ROUTE, depid=depid, provider=provider, sec_group_id=sec_group_id)
+    )
 
 
 # ---
@@ -517,10 +558,66 @@ def depaction(depid):
             app.orchestrator.post_action(
                 access_token, depid, request.args["vmid"], request.args["action"]
             )
+            flash("Action successfully triggered.", "success")
         except Exception as e:
             app.logger.error("Action on deployment {} failed: {}".format(dep.uuid, str(e)))
             flash(str(e), "warning")
-        flash("Action successfully triggered.", "success")
+
+    return redirect(url_for("deployments_bp.depinfradetails", depid=depid))
+
+
+@deployments_bp.route("/<depid>/delnode", methods=["POST"])
+@auth.authorized_with_valid_token
+def delnode(depid):
+    access_token = iam.token["access_token"]
+    dep = dbhelpers.get_deployment(depid)
+    if dep is not None and dep.physicalId is not None:
+        try:
+            vm_id = request.args["vmid"]
+            app.logger.debug(f"Requested deletion of node {vm_id} on deployment {dep.uuid}")
+            resource = app.orchestrator.get_resource(access_token, depid, vm_id)
+            resources = app.orchestrator.get_resources(access_token, depid)
+
+            node = next((res for res in resources if res.get("uuid") == vm_id), None)
+            node_name = node.get("toscaNodeName")
+            # current count -1 --> remove one node
+            count = sum(1 for res in resources if res.get("toscaNodeName") == node_name) - 1
+
+            app.logger.debug(f"Resource details: {resource}")
+            app.logger.debug(f"Count = {count}")
+
+            template = app.orchestrator.get_template(access_token, depid)
+
+            template_dict = yaml.full_load(io.StringIO(template))
+
+            new_template, new_inputs = tosca_helpers.set_removal_list(
+                template_dict, node_name, [vm_id], count
+            )
+
+            template_text = yaml.dump(new_template, default_flow_style=False, sort_keys=False)
+            app.logger.debug(f"{template_text}")
+
+            app.orchestrator.update(
+                access_token,
+                depid,
+                template_text,
+                new_inputs,
+                dep.keep_last_attempt,
+                app.config["PROVIDER_TIMEOUT"],
+                app.config["OVERALL_TIMEOUT"],
+                app.config["CALLBACK_URL"],
+            )
+            # update inputs for deployment stored in the DB
+            oldinputs = json.loads(dep.inputs.strip('"')) if dep.inputs else {}
+            updatedinputs = {**oldinputs, **new_inputs}
+            dep.inputs = (json.dumps(updatedinputs),)
+            dbhelpers.add_object(dep)
+
+            flash("Node deletion successfully triggered.", "success")
+        except Exception as e:
+            err_msg = f"Node deletion on deployment {dep.uuid} failed: {str(e)}"
+            app.logger.error(err_msg)
+            flash(err_msg, "warning")
 
     return redirect(url_for("deployments_bp.depinfradetails", depid=depid))
 
@@ -609,6 +706,64 @@ def depupdate(depid=None):
         depid=depid,
         update=True,
     )
+
+
+@deployments_bp.route("/addnodes/<depid>", methods=["POST"])
+@auth.authorized_with_valid_token
+def addnodes(depid):
+    access_token = iam.token["access_token"]
+
+    form_data = request.form.to_dict()
+
+    app.logger.debug(f"Form data for dep {depid}: {json.dumps(form_data)}")
+
+    dep = dbhelpers.get_deployment(depid)
+
+    if dep is None or dep.physicalId is None:
+        flash("Deployment not found or invalid.", "warning")
+        return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+
+    try:
+        template = app.orchestrator.get_template(access_token, depid)
+
+        template_dict = yaml.full_load(io.StringIO(template))
+
+        template_text = yaml.dump(template_dict, default_flow_style=False, sort_keys=False)
+
+        new_inputs = extract_inputs(form_data)
+
+        old_inputs = json.loads(dep.inputs.strip('"')) if dep.inputs else {}
+
+        # do not trigger an update if nothing changes
+        if not form_data.get("extra_opts.force_update") and all(
+            old_inputs.get(k) == v for k, v in new_inputs.items()
+        ):
+            message = f"Node addition Aborted for Deployment {dep.uuid}: No changes detected"
+            app.logger.error(message)
+            flash(message, "warning")
+            return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+
+        app.orchestrator.update(
+            access_token,
+            depid,
+            template_text,
+            new_inputs,
+            dep.keep_last_attempt,
+            app.config["PROVIDER_TIMEOUT"],
+            app.config["OVERALL_TIMEOUT"],
+            app.config["CALLBACK_URL"],
+        )
+        # update inputs for deployment stored in the DB
+        updatedinputs = {**old_inputs, **new_inputs}
+        dep.inputs = (json.dumps(updatedinputs),)
+        dbhelpers.add_object(dep)
+        flash("Node addition successfully triggered.", "success")
+    except Exception as e:
+        err_msg = f"Node addition on deployment {dep.uuid} failed: {str(e)}"
+        app.logger.error(err_msg)
+        flash(err_msg, "warning")
+
+    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
 
 @deployments_bp.route("/updatedep", methods=["POST"])

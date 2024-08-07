@@ -18,6 +18,8 @@
     --color-danger-50: #de233580;
     --color-danger-hover: #ed2639;
 
+    --color-warning: #ffc107;
+
     --dashboard-card-height: 250px;
     --dashboard-navbar-height: 101px;
 
@@ -165,6 +167,12 @@ form {
     background: transparent;
     color: var(--color-danger);
     border: 2px solid var(--color-danger);
+}
+
+.dashboard-button-warning {
+    border: none;
+    background: var(--color-warning);
+    color: var(--color-secondary);
 }
 
 .dashboard-button-outline-no-border {
@@ -1154,6 +1162,9 @@ table.table-bordered.dataTable tbody td {
 .dashboard-template-title {
     font-weight: 500;
     font-size: 32px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .dashboard-template-step {
@@ -1407,6 +1418,18 @@ footer {
 
     .dashboard-loading-bar, .dashboard-loading-image > img {
         width: 200px;
+    }
+    
+    .dashboard-template-header {
+        flex-direction: column;
+    }
+    
+    .dashboard-template-header-buttons {
+        margin: 0;
+    }
+    
+    .dashboard-template-step {
+        margin: 0;
     }
 
     .footer-info {

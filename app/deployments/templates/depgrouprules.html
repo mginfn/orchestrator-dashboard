@@ -20,8 +20,8 @@
             
                 <div class="dashboard-template-header-buttons">
                     <button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Back" onclick="set_loading(true); location.href='{{ url_for('deployments_bp.showdeployments') }}'"><i class="fas fa-arrow-left"></i>&nbsp;Back</button>
-					<button type="button" class="dashboard-button dashboard-button-lg dashboard-button-primary" title="Add Port" data-toggle="modal" data-target="#modal_add_port" data-backdrop="static" data-keyboard="false">
-						Add Port&nbsp;<i class="fas fa-plus"></i>
+					<button type="button" class="dashboard-button dashboard-button-primary" title="Add Port" data-toggle="modal" data-target="#modal_add_port" data-backdrop="static" data-keyboard="false">
+						Add Port<i class="fas fa-plus"></i>
 					</button>
                 </div>
 
@@ -47,7 +47,7 @@
                                 </div>
                             </details>
                             <div class="modal-body">
-                                <form id="add_rule" action="{{ url_for("deployments_bp.create_rule", depid=depid, sec_group_id=sec_group_id) }}" method="post">
+                                <form id="add_rule" action="{{ url_for("deployments_bp.create_rule", depid=depid, provider=provider, sec_group_id=sec_group_id) }}" method="post">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <div class="form-group" id="elem_rule">
                                         <label>Rule*</label>
@@ -186,7 +186,7 @@
                                                     <button data-dismiss="modal" class="dashboard-button dashboard-button-lg dashboard-button-primary-outline" title="Close modal">
                                                         No, go back
                                                     </button>
-                                                    <button onclick='set_loading(true); location.href="{{ url_for('deployments_bp.delete_rule', depid=depid, sec_group_id=sec_group_id, rule_id=rule.id) }}"' class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Delete port">
+                                                    <button onclick='set_loading(true); location.href="{{ url_for('deployments_bp.delete_rule', depid=depid, provider=provider, sec_group_id=sec_group_id, rule_id=rule.id) }}"' class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Delete port">
                                                         <i class="fas fa-trash-alt"></i>&nbsp;Yes, delete
                                                     </button>
                                                 </div>

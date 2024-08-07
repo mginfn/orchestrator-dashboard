@@ -11,7 +11,7 @@
                 </div>
 
                 <div class="dashboard-template-title">
-                  	Virtual Machines
+                  	Virtual Nodes
                 </div>
             
                 <div class="dashboard-template-header-buttons">
@@ -21,6 +21,68 @@
 					<button type="button" class="dashboard-button dashboard-button-outline-no-border" title="Refresh" onclick='location.reload()'>
 						<i class="fas fa-sync-alt"></i>&nbsp;Refresh
 					</button>
+                    {% if config['FEATURE_UPDATE_DEPLOYMENT']|str2bool and deployment.updatable == 1 %}
+                        <button type="button" class="dashboard-button dashboard-button-primary" title="Add Virtual Nodes" data-toggle="modal" data-target="#modal_add_vm" data-backdrop="static" data-keyboard="false">
+                            Add Node<i class="fas fa-plus"></i>
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Modal ADD VM -->
+            <div class="modal fade" id="modal_add_vm" role="dialog">                
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title dashboard-text">Add Virtual Nodes</h5>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <span class="dashboard-text" style="padding: 0 1rem;"><i class="fas fa-exclamation-triangle"></i>&nbsp;Please note that the "<b>NUMBER OF NODES</b>" field specifies the <b>total number of nodes</b> you want in your cluster after the addition, not the number of new nodes to be created. 
+                            For example, if you currently have 3 nodes and want to increase to 5, you should enter 5.</span>
+                        <div class="modal-body">
+                            <form id="add_vm" action="{{ url_for('deployments_bp.addnodes', depid=deployment.uuid) }}" method="post">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                {% set tabs=template['tabs'] %}
+                                {% set inputs=template['inputs'] %}
+
+                                {% if tabs|length == 0 %}
+                                    {% set tabs = ['Configuration'] %}
+                                {% endif %}
+                                
+                                <!-- inputs -->
+                                <div class="tab-content">
+                                    {% for tab in tabs %}
+                                        {% if loop.first %}
+                                            <div id={{tab}} class="tab-pane fade show active">
+                                        {% else %}
+                                            <div id={{tab}} class="tab-pane fade">
+                                        {% endif %}
+                                
+                                        {% for key, value in inputs.items() %}
+                                            {% if value.tab == tab or ( tab == tabs[0] and value.tab is not defined) %}
+                                                {% include 'input_types.html' %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="force_update" name="extra_opts.force_update">
+                                    <label class="form-check-label" for="keepLastAttempt">Force update</label>
+                                    <small class="form-text text-muted">Trigger an update even if no changes are detected.</small>
+                                </div>
+                                <br>
+                                <div class="dashboard-template-buttons-container">
+                                    <button data-dismiss="modal" class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Cancel">
+                                        Cancel&nbsp;<i class="fas fa-ban"></i>
+                                    </button>
+                                    <button class="dashboard-button dashboard-button-lg dashboard-button-primary" type="submit" title="Add Node">
+                                        Add&nbsp;<i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -70,22 +132,29 @@
                                 {{info.state}}
                             </td>
                             <td>
-                                <div class="btn-group-vertical">
+                                <div class="btn-group-vertical" style="width: 100%;">
                                     <!-- Actions -->
                                     {% set start_enable = 'disabled' %}
                                     {% set stop_enable = 'disabled' %}
-                                    {% if info.state == "STOPPED" %}{% set start_enable = 'enabled' %}{% endif %}
-                                    {% if info.state == "STARTED" %}{% set stop_enable = 'enabled' %}{% endif %}
-                                    <a class="dashboard-button dashboard-button-danger {{stop_enable}}" data-toggle="modal" style="color: white"
-                                        data-target="#confirm_action"
+                                    {% set delete_enable = 'disabled' %}
+                                    {% if info.state == "STOPPED" %}{% set start_enable = 'enabled' %}{% set delete_enable = 'enabled' %}{% endif %}
+                                    {% if info.state == "STARTED" %}{% set stop_enable = 'enabled' %}{% set delete_enable = 'enabled' %}{% endif %}
+                                    <a class="dashboard-button dashboard-button-warning {{stop_enable}}" data-toggle="modal"
+                                        style="color: white; width: 100%;" data-target="#confirm_action"
                                         data-text="Do you really want to stop the VM {{ info.instance_name }}?"
                                         data-url="{{ url_for('deployments_bp.depaction', depid=info.depId, vmid=info.resId, action='stop') }}"><span
-                                        class="fas fa-stop mr-2 grey-text"></span>Stop VM</a>
-                                    <a class="dashboard-button dashboard-button-primary {{start_enable}}" data-toggle="modal" style="color: white"
-                                        data-target="#confirm_action"
+                                        class="fas fa-stop mr-2 grey-text"></span>Stop</a>
+                                    <a class="dashboard-button dashboard-button-primary {{start_enable}}" data-toggle="modal"
+                                        style="color: white; width: 100%;" data-target="#confirm_action"
                                         data-text="Do you really want to start the VM {{ info.instance_name }}?"
                                         data-url="{{ url_for('deployments_bp.depaction', depid=info.depId, vmid=info.resId, action='start') }}"><span
-                                        class="fas fa-play mr-2 grey-text"></span>Start VM</a>
+                                        class="fas fa-play mr-2 grey-text"></span>Start</a>
+                                    <br><br>
+                                    <a class="dashboard-button dashboard-button-primary {{delete_enable}}" data-toggle="modal"
+                                        style="color: white; background-color: var(--color-danger); width: 100%;" data-target="#delete_action"
+                                        data-text="Do you really want to delete the VM {{ info.instance_name }}?"
+                                        data-url="{{ url_for('deployments_bp.delnode', depid=info.depId, vmid=info.resId) }}"><i
+                                        class="fas fa-trash-alt"></i>&nbsp;Delete</a>
                                 </div>
                             </td>
                         </tr>
@@ -94,6 +163,8 @@
                     <!--Table body-->
                 </table>
             </div>
+
+            <!-- Modal confirm -->
             <div class="modal fade confirm_action" id="confirm_action" role="dialog">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
@@ -102,16 +173,50 @@
                             <button type="button" class="close" data-dismiss="modal">&times;</button>
                         </div>
                         <div id="performActionModal" class="modal-body">
-                            <br><br>
+                            <p id="performActionModalText"></p>
+                            <br>
                             <form id="performActionForm" action="#" method="post">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <div class="dashboard-template-buttons-container">
-                                    <button data-dismiss="modal" type=button class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Cancel">
+                                    <button data-dismiss="modal" type=button
+                                        class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Cancel">
                                         Cancel&nbsp;<i class="fas fa-ban"></i>
                                     </button>
-                
-                                    <button type="submit" class="dashboard-button dashboard-button-lg dashboard-button-primary execActionBtn" role="button" title="Execute">
+
+                                    <button type="submit"
+                                        class="dashboard-button dashboard-button-lg dashboard-button-primary execActionBtn"
+                                        role="button" title="Execute">
                                         Execute&nbsp;<i class="fas fa-arrow-right"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal delete -->
+            <div class="modal fade delete_action" id="delete_action" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="delete_action_label"><strong>Confirm deletion</strong></h5>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div id="performDelActionModal" class="modal-body">
+                            <p id="performDelActionModalText"></p>
+                            <br>
+                            <form id="performDelActionForm" action="#" method="post">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div class="dashboard-template-buttons-container">
+                                    <button data-dismiss="modal"
+                                        class="dashboard-button dashboard-button-lg dashboard-button-primary-outline"
+                                        title="Close modal">
+                                        No, go back
+                                    </button>
+                                    <button type="submit" role="button"
+                                        class="dashboard-button dashboard-button-lg dashboard-button-danger" title="Delete VM">
+                                        <i class="fas fa-trash-alt"></i>&nbsp;Yes, delete
                                     </button>
                                 </div>
                             </form>
@@ -158,9 +263,28 @@ $('.confirm_action').on('show.bs.modal', (event) => {
     let title = target.data('text')
     let url = target.data('url')
 
-    $('#performActionModal').prepend(title)
+    $('#performActionModalText').text(title)
     $('#performActionForm').prop('action', url)
 })
+
+$('.delete_action').on('show.bs.modal', (event) => {
+    let target = $(event.relatedTarget) // Button that triggered the modal
+    // Extract info from data-* attributes
+    let title = target.data('text')
+    let url = target.data('url')
+
+    $('#performDelActionModalText').text(title)
+    $('#performDelActionForm').prop('action', url)
+})
+
+$('#add_vm').submit(() => {
+    set_loading(true);
+});
+
+$('#performDelActionForm').submit(() => {
+    set_loading(true);
+});
+
 
 </script>
 

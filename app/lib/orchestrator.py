@@ -99,9 +99,12 @@ class Orchestrator:
             )
         return response.text
 
-    def get_resources(self, access_token, deployment_uuid):
-        headers = {"Authorization": "Bearer %s" % access_token}
-        url = self.orchestrator_url + "/deployments/" + deployment_uuid + "/resources"
+    def get_resources(self, access_token, deployment_uuid, type=None):
+        url = f"{self.orchestrator_url}/deployments/{deployment_uuid}/resources"
+        if type:
+            url += f"?type={type}"
+
+        headers = {"Authorization": f"Bearer {access_token}"}
 
         resources = []
         try:
@@ -113,6 +116,20 @@ class Orchestrator:
                 )
             )
         return resources
+
+    def get_resource(self, access_token, deployment_uuid, resource_id):
+        url = f"{self.orchestrator_url}/deployments/{deployment_uuid}/resources/{resource_id}"
+
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        response = requests.get(url, headers=headers, timeout=self.timeout)
+
+        if not response.ok:
+            raise Exception(
+                f"Error getting resource {resource_id} for deployment {deployment_uuid}: "
+                f"{response.text}"
+            )
+        return response.json()
 
     def post_action(self, access_token, deployment_uuid, resource_uuid, action):
         headers = {"Authorization": "Bearer %s" % access_token}

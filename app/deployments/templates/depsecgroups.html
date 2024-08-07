@@ -46,7 +46,7 @@
                                 <td>{{ group.description }}</td>
                                 <td>
                                     <div style="display: flex; width: min-content;">
-                                        <button type="button" class="dashboard-button dashboard-button-primary-outline" title="Manage Ports" onclick='set_loading(true); location.href="{{ url_for('deployments_bp.manage_rules', depid=depid, sec_group_id=group.id) }}"'>
+                                        <button type="button" class="dashboard-button dashboard-button-primary-outline" title="Manage Ports" onclick='set_loading(true); location.href="{{ url_for('deployments_bp.manage_rules', depid=depid, provider="provider", sec_group_id=group.id) }}"'>
                                             <i class="fas fa-shield-alt"></i>&nbsp;Manage Ports
                                         </button>
                                     </div>

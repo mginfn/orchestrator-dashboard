@@ -309,3 +309,50 @@ def has_node_of_type(template, nodetype):
                         node["name"] = j  # add node name
                         break
     return found, node
+
+
+def set_removal_list(template_dict, node_name, removal_list, count):
+    # Check if the node_templates section exists
+    if (
+        "topology_template" not in template_dict
+        or "node_templates" not in template_dict["topology_template"]
+    ):
+        raise KeyError("The 'node_templates' section is missing in the TOSCA template.")
+
+    node_templates = template_dict["topology_template"]["node_templates"]
+
+    # Check if the node exists
+    if node_name not in node_templates:
+        raise KeyError(f"Node '{node_name}' does not exist in the TOSCA template.")
+
+    node = node_templates[node_name]
+
+    # Check if the capabilities section exists
+    if "capabilities" not in node:
+        node["capabilities"] = {}
+    capabilities = node["capabilities"]
+
+    # Check if the scalable section exists
+    if "scalable" not in capabilities:
+        capabilities["scalable"] = {}
+    scalable = capabilities["scalable"]
+
+    # Check if the properties section exists
+    if "properties" not in scalable:
+        scalable["properties"] = {}
+    properties = scalable["properties"]
+
+    # Update the removal_list property
+    properties["removal_list"] = removal_list
+
+    count_property = properties["count"]
+    inputs = {}
+    if isinstance(count_property, dict):
+        if "get_input" in count_property:
+            input_name = count_property["get_input"]
+            inputs = {input_name: count}
+    else:
+        # Update the count property
+        properties["count"] = count
+
+    return template_dict, inputs

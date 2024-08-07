@@ -1,14 +1,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.serializeJSON/2.9.0/jquery.serializejson.min.js" integrity="sha256-A6ALIKGCsaO4m9Bg8qeVYZpvU575sGTBvtpzEFdL0z8=" crossorigin="anonymous"></script>
-{% if update == True and (value.updatable is not defined or value.updatable == False) %}
-	{% set mode = "disabled" %}
-{% else %}
- 	{% set mode = "" %}
-{% endif %}
-
 {% if value.hidden == True %}
 	{% set hidden = "hidden" %}
 {% else %}
  	{% set hidden = "" %}
+{% endif %}
+
+{% if update == True and (value.updatable is not defined or value.updatable == False) %}
+	{% set mode = "disabled" %}
+	{% set hidden = "hidden" %}
+	{% set skip = 1 %}
+{% else %}
+ 	{% set mode = "" %}
+	{% set skip = 0 %}
 {% endif %}
 
 {% if value.show_separator %}
@@ -25,8 +28,10 @@
 			{% endif %}
 		</label>
 	{% endif %}
-
-	{% if value.type is defined and (update == False or value.updatable is not defined or value.updatable == True)%}
+	
+	{% if skip == 1 %}
+	<!-- skip field -->
+	{% elif value.type is defined and (update == False or value.updatable is not defined or value.updatable == True)%}
 		<!-- text type -->
 		{% if value.type == "text" %}
 			<input type="text" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}data-required=true required{%endif%} {{mode}} />

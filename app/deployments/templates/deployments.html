@@ -36,7 +36,7 @@
 						<i class="fas fa-sync-alt"></i>&nbsp;Refresh
 					</button>
 					<button type="button" class="dashboard-button dashboard-button-primary" title="New deployment" onclick='location.href="{{ url_for('home_bp.home') }}"'>
-						<i class="fas fa-plus"></i>&nbsp;New deployment
+						New deployment<i class="fas fa-plus"></i>
 					</button>
                 </div>
             </div>
@@ -97,10 +97,6 @@
 											<a class="dropdown-item" data-toggle="modal" data-target="#editDeployment" data-id="{{ deployment.uuid }}" data-description="{{ deployment.description }}" data-action="{{ url_for('deployments_bp.editdeployment') }}">
 												<span class="fas fa-edit mr-2 grey-text"></span>Edit</a>
 											<a class="dropdown-item" href="{{ url_for('deployments_bp.deptemplate', depid=deployment.uuid) }}"><span class="fas fa-search mr-2 grey-text"></span>Show template</a>
-											
-											{% if config['FEATURE_UPDATE_DEPLOYMENT']|str2bool and deployment.updatable == 1 %}
-												<a class="dropdown-item" href="{{ url_for('deployments_bp.depupdate', depid=deployment.uuid) }}"><span class="fas fa-crop mr-2 grey-text"></span>Add/Remove nodes</a>
-											{% endif %}
 
 											{% if deployment.deployment_type == "CLOUD" %}
 												<a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.deplog', depid=deployment.uuid) }}">
@@ -111,7 +107,7 @@
 														<span class="fas fa-ticket-alt mr-2 grey-text"></span>Request Ports
 													</a> -->
 
-													<a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.security_groups', depid=deployment.uuid) }}">
+													<a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.security_groups', depid=deployment.uuid, depProvider=deployment.provider_name) }}">
 														<span class="fas fa-shield-alt mr-2 grey-text"></span>Manage Ports
 													</a>
 												{% endif %}
@@ -119,7 +115,7 @@
 
 											{% if deployment.deployment_type == "CLOUD" %}
 												<a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.depinfradetails', depid=deployment.uuid) }}">
-													<span class="fas fa-desktop mr-2 grey-text"></span>Manage VMs
+													<span class="fas fa-desktop mr-2 grey-text"></span>Manage Nodes
 												</a>
 											{% endif %}
 
