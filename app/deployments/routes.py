@@ -1000,9 +1000,6 @@ def process_security_groups(key: str, inputs: dict, stinputs: dict, form_data: d
     if key in inputs:
         process_inputs_for_security_groups(key, value, inputs, form_data)
 
-    if "required_ports" in value:
-        inputs[key] = value["required_ports"]
-
 
 def process_inputs_for_security_groups(key, value, inputs, form_data):
     try:
