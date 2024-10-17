@@ -51,7 +51,7 @@ def show_user(subject):
             role = request.form["role"]
         active = request.form["active"]
         # update database
-        dbhelpers.update_user(subject, dict(role=role, active=active))
+        dbhelpers.update_user(subject, dict(role=role, active=bool(active)))
 
     user = dbhelpers.get_user(subject)
     if user is not None:
