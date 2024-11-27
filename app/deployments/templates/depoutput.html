@@ -38,6 +38,7 @@
 					<p><b>CREATED AT:</b> {{deployment.creation_time}}</p>
 					<p><b>UPDATED AT:</b> {{deployment.update_time}}</p>
 					<p><b>DEPLOYED AT:</b> {{deployment.provider_name}}</p>
+					<p><b>REGION:</b> {{deployment.region_name if deployment.region_name != None else ''}}</p>
 
 					{% if deployment.endpoint != '' %}
 						<p><b>ENDPOINT:</b> {{deployment.endpoint}}</p>

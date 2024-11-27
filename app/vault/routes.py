@@ -28,7 +28,7 @@ from flask import (
 
 from app.extensions import vaultservice
 from app.iam import iam
-from app.lib import auth, dbhelpers
+from app.lib import auth, dbhelpers, fed_reg
 from app.lib import sshkey as sshkeyhelpers
 from app.providers import sla
 
@@ -230,19 +230,26 @@ def update_ssh_key(subject):
 @vault_bp.route("/manage_credentials")
 @auth.authorized_with_valid_token
 def manage_service_creds():
-    slas = {}
+    slas = []
+    access_token = iam.token["access_token"]
 
-    try:
-        access_token = iam.token["access_token"]
-        slas = sla.get_slas(
-            access_token,
-            app.settings.orchestrator_conf["slam_url"],
-            app.settings.orchestrator_conf["cmdb_url"],
-        )
-        app.logger.debug("Service details: {}".format(slas))
+    # Fed-Reg
+    app.logger.debug("FED_REG_URL: {}".format(app.settings.fed_reg_url))
+    if app.settings.fed_reg_url is not None:
+        slas = fed_reg.retrieve_slas_from_specific_user_group(access_token=access_token)
 
-    except Exception as e:
-        flash("Error retrieving SLAs list: \n" + str(e), "warning")
+    # SLAM
+    elif app.settings.orchestrator_conf.get("slam_url", None) is not None:
+        try:
+            slas = sla.get_slas(
+                access_token,
+                app.settings.orchestrator_conf["slam_url"],
+                app.settings.orchestrator_conf["cmdb_url"],
+            )
+            app.logger.debug("Service details: {}".format(slas))
+
+        except Exception as e:
+            flash("Error retrieving SLAs list: \n" + str(e), "warning")
 
     return render_template("service_creds.html", slas=slas)
 

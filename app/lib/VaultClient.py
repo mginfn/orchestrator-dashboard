@@ -23,7 +23,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class VaultClient:
-    def __init__(self, vault_url, jwt_token, role):
+    def __init__(self, vault_url, jwt_token, role, mount_point):
+        self.mount_point = mount_point
         self.vault_url = vault_url
 
         login_url = vault_url + "/v1/auth/jwt/login"
@@ -126,7 +127,7 @@ class VaultClient:
 
         try:
             response = self.client.secrets.kv.v2.create_or_update_secret(
-                path=secret_path, mount_point="secrets", secret=secret, cas=cas
+                path=secret_path, mount_point=self.mount_point, secret=secret, cas=cas
             )
         except hvac.exceptions.InvalidRequest as e:
             raise Exception("[FATAL] Unable to write vault path: {}".format(str(e)))
@@ -152,7 +153,7 @@ class VaultClient:
         self.set_token(token)
         try:
             secret = self.client.secrets.kv.v2.read_secret_version(
-                path=secret_path, mount_point="secrets"
+                path=secret_path, mount_point=self.mount_point
             )
         except hvac.exceptions.InvalidPath as e:
             raise Exception("[FATAL] Unable to read vault path: {}".format(str(e)))
@@ -166,7 +167,7 @@ class VaultClient:
         """
         self.set_token(token)
         self.client.secrets.kv.v2.delete_metadata_and_all_versions(
-            path=secret_path, mount_point="secrets"
+            path=secret_path, mount_point=self.mount_point
         )
 
     def revoke_token(self):

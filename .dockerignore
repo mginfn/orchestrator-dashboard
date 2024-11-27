@@ -1,4 +1,4 @@
-__pycache__
+**/__pycache__
 *.pyc
 *.pyo
 *.pyd
@@ -19,7 +19,9 @@ coverage.xml
 .pytest_cache
 .hypothesis
 # flask
-instance
+instance/**
 # vscode
 .vscode
 .devcontainer
+# virtual envs
+.venv

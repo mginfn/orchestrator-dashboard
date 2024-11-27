@@ -71,7 +71,7 @@ class Vault(object):
         if self.vault_url is None:
             self.vault_url = app.config.get("VAULT_URL", "")
         if self.vault_secrets_path is None:
-            self.vault_secrets_path = app.config.get("VAULT_SECRET_PATH", "secret")
+            self.vault_secrets_path = app.config.get("VAULT_SECRETS_PATH", "secrets")
         if self.vault_bound_audience is None:
             self.vault_bound_audience = app.config.get("VAULT_BOUND_AUDIENCE", "")
         if self.vault_role is None:
@@ -92,4 +92,4 @@ class Vault(object):
         """
         if role is None:
             role = self.vault_role
-        return VaultClient(self.vault_url, token, role)
+        return VaultClient(self.vault_url, token, role, self.vault_secrets_path)

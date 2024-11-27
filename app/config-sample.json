@@ -5,6 +5,7 @@
     "ORCHESTRATOR_URL": "https://indigo-paas.cloud.ba.infn.it/orchestrator",
     "SLAM_URL": "https://indigo-slam.cloud.ba.infn.it:8443",
     "CMDB_URL": "https://indigo-paas.cloud.ba.infn.it/cmdb",
+    "FED_REG_URL": "https://fedreg-dev.cloud.infn.it/fed-reg/api/",
     "IM_URL": "https://indigo-paas.cloud.ba.infn.it/im",
     "VAULT_URL": "https://indigo-vault.cloud.ba.infn.it:8200",
     "VAULT_ROLE": "orchestrator",

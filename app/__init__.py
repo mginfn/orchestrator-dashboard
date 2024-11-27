@@ -60,6 +60,7 @@ def create_app():
         app.config.from_file("../tests/resources/config.json", json.load)
     else:
         app.config.from_file("config.json", json.load)
+        app.config.from_prefixed_env()
 
     app.secret_key = app.config["SECRET_KEY"]
 

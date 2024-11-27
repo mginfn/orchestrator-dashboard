@@ -48,14 +48,24 @@
                                     <td>Infrastructure Manager (IM)</td>
                                     <td>{{ orchestrator_conf['im_url'] }}</td>
                                 </tr>
-                                <tr>
+                                {% if orchestrator_conf['slam_url'] is not none %}
+								<tr>
                                     <td>SLA Manager (SLAM)</td>
                                     <td>{{ orchestrator_conf['slam_url'] }}</td>
                                 </tr>
-                                <tr>
+                                {% endif %}
+                                {% if orchestrator_conf['cmdb_url'] is not none %}
+								<tr>
                                     <td>Configuration Management DB (CMDB)</td>
                                     <td>{{ orchestrator_conf['cmdb_url'] }}</td>
                                 </tr>
+                                {% endif %}
+                                {% if orchestrator_conf['fed_reg_url'] is not none %}
+								<tr>
+                                    <td>Federation Registry (Fed-Reg)</td>
+                                    <td>{{ orchestrator_conf['fed_reg_url'] }}</td>
+                                </tr>
+                                {% endif %}
                             </tbody>
                         </table>
                     </div>

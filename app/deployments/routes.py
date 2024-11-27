@@ -17,6 +17,7 @@ import io
 import os
 import random
 import string
+from typing import Optional
 import uuid as uuid_generator
 from re import search
 from urllib.parse import urlparse
@@ -39,7 +40,7 @@ from werkzeug.exceptions import Forbidden
 
 from app.extensions import tosca, vaultservice
 from app.iam import iam
-from app.lib import auth, dbhelpers, s3, utils
+from app.lib import auth, dbhelpers, fed_reg, s3, utils
 from app.lib import openstack as keystone
 from app.lib import tosca_info as tosca_helpers
 from app.lib.ldap_user import LdapUserManager
@@ -362,32 +363,112 @@ def depinfradetails(depid=None):
 
 
 # PORTS MANAGEMENT
-def get_openstack_connection(endpoint, provider):
-    service = app.cmdb.get_service_by_endpoint(iam.token["access_token"], endpoint, provider, False)
+def get_openstack_connection(
+    *,
+    endpoint: str,
+    provider_name: str,
+    provider_type: Optional[str] = None,
+    region_name: Optional[str] = None,
+) -> openstack.connection.Connection:
+    """Create openstack connection, to target project, using access token."""
+    conn = None
 
-    prj, idp = app.cmdb.get_service_project(
-        iam.token["access_token"],
-        session["iss"],
-        service,
-        session["active_usergroup"],
-    )
-
-    if not prj or not idp:
-        raise Exception("Unable to get service/project information.")
-
-    # Create a connection using the access token
-    conn = openstack.connect(
-        auth=dict(
-            auth_url=service["endpoint"],
-            project_id=prj.get("tenant_id"),
-            protocol=idp["protocol"],
-            identity_provider=idp["name"],
+    # Fed-Reg
+    if app.settings.fed_reg_url is not None:
+        # Find target provider
+        providers = fed_reg.get_providers(
             access_token=iam.token["access_token"],
-        ),
-        region_name=service["region"],
-        identity_api_version=3,
-        auth_type="v3oidcaccesstoken",
-    )
+            with_conn=True,
+            name=provider_name,
+            type=provider_type,
+        )
+        assert (
+            len(providers) < 2
+        ), f"Found multiple providers with name '{provider_name}' and type '{provider_type}'"
+        assert (
+            len(providers) > 0
+        ), f"Provider with name '{provider_name}' and type '{provider_type}' not found"
+        provider = providers[0]
+
+        # Retrieve the authentication details matching the current identity provider
+        identity_provider = next(
+            filter(
+                lambda x: x["endpoint"] == session["iss"],
+                provider["identity_providers"],
+            )
+        )
+        auth_method = identity_provider["relationship"]
+
+        # Retrieve the auth_url matching the target region. In older deployments,
+        # if not inferred from the provider name, the region is None.
+        if region_name is not None:
+            region = next(
+                filter(lambda x: x["name"] == region_name, provider["regions"])
+            )
+        else:
+            region = provider["regions"][0]
+        identity_service = next(
+            filter(lambda x: x["type"] == "identity", region["services"])
+        )
+
+        # Retrieve user groups to get target project
+        user_group = next(
+            filter(
+                lambda x: x["name"] == session["active_usergroup"],
+                identity_provider["user_groups"],
+            )
+        )
+        projects = fed_reg.get_projects(
+            access_token=iam.token["access_token"],
+            with_conn=True,
+            provider_uid=provider["uid"],
+            user_group_uid=user_group["uid"],
+        )
+        assert len(projects) < 2, "Found multiple projects"
+        assert len(projects) > 0, "Projects not found"
+        project = projects[0]
+
+        # Create openstack connection
+        conn = openstack.connect(
+            auth=dict(
+                auth_url=identity_service["endpoint"],
+                project_id=project["uuid"],
+                protocol=auth_method["protocol"],
+                identity_provider=auth_method["idp_name"],
+                access_token=iam.token["access_token"],
+            ),
+            region_name=region_name,
+            identity_api_version=3,
+            auth_type="v3oidcaccesstoken",
+        )
+    # SLAM
+    elif app.settings.orchestrator_conf.get("slam_url", None) is not None:
+        service = app.cmdb.get_service_by_endpoint(
+            iam.token["access_token"], endpoint, provider_name, False
+        )
+
+        prj, idp = app.cmdb.get_service_project(
+            iam.token["access_token"],
+            session["iss"],
+            service,
+            session["active_usergroup"],
+        )
+
+        if not prj or not idp:
+            raise Exception("Unable to get service/project information.")
+
+        conn = openstack.connect(
+            auth=dict(
+                auth_url=service["endpoint"],
+                project_id=prj.get("tenant_id"),
+                protocol=idp["protocol"],
+                identity_provider=idp["name"],
+                access_token=iam.token["access_token"],
+            ),
+            region_name=service["region"],
+            identity_api_version=3,
+            auth_type="v3oidcaccesstoken",
+        )
 
     return conn
 
@@ -416,7 +497,12 @@ def get_vm_info(depid):
         return "", ""
 
     vm_id, vm_endpoint = find_node_with_pubip(resources)
-    return {"vm_id": vm_id, "vm_endpoint": vm_endpoint}
+    return {
+        "vm_id": vm_id,
+        "vm_endpoint": vm_endpoint,
+        "vm_provider_type": dep.provider_type,
+        "vm_region": dep.region_name,
+    }
 
 
 def get_sec_groups(conn, server_id, public=True):
@@ -454,7 +540,12 @@ def security_groups(depid=None):
         vm_id = vm_info["vm_id"]
         vm_endpoint = vm_info["vm_endpoint"]
 
-        conn = get_openstack_connection(vm_endpoint, vm_provider)
+        conn = get_openstack_connection(
+            endpoint=vm_endpoint,
+            provider_name=vm_provider,
+            provider_type=vm_info["vm_provider_type"],
+            region_name=vm_info["vm_region"],
+        )
         sec_groups = get_sec_groups(conn, vm_id)
 
         if len(sec_groups) == 1:
@@ -478,7 +569,13 @@ def security_groups(depid=None):
 def manage_rules(depid=None, sec_group_id=None):
     provider = request.args.get("provider")
 
-    conn = get_openstack_connection(get_vm_info(depid)["vm_endpoint"], provider)
+    vm_info = get_vm_info(depid)
+    conn = get_openstack_connection(
+        endpoint=vm_info["vm_endpoint"],
+        provider_name=provider,
+        provider_type=vm_info["vm_provider_type"],
+        region_name=vm_info["vm_region"],
+    )
 
     rules = conn.list_security_groups({"id": sec_group_id})
 
@@ -496,8 +593,14 @@ def manage_rules(depid=None, sec_group_id=None):
 @auth.authorized_with_valid_token
 def create_rule(depid=None, sec_group_id=None):
     provider = request.args.get("provider")
+    vm_info = get_vm_info(depid)
     try:
-        conn = get_openstack_connection(get_vm_info(depid)["vm_endpoint"], provider)
+        conn = get_openstack_connection(
+            endpoint=vm_info["vm_endpoint"],
+            provider_name=provider,
+            provider_type=vm_info["vm_provider_type"],
+            region_name=vm_info["vm_region"],
+        )
         conn.network.create_security_group_rule(
             security_group_id=sec_group_id,
             description=request.form["input_description"],
@@ -531,9 +634,14 @@ def create_rule(depid=None, sec_group_id=None):
 @auth.authorized_with_valid_token
 def delete_rule(depid=None, sec_group_id=None, rule_id=None):
     provider = request.args.get("provider")
-
+    vm_info = get_vm_info(depid)
     try:
-        conn = get_openstack_connection(get_vm_info(depid)["vm_endpoint"], provider)
+        conn = get_openstack_connection(
+            endpoint=vm_info["vm_endpoint"],
+            provider_name=provider,
+            provider_type=vm_info["vm_provider_type"],
+            region_name=vm_info["vm_region"],
+        )
         conn.delete_security_group_rule(rule_id)
         flash("Port deleted successfully!", "success")
     except Exception as e:
@@ -683,12 +791,26 @@ def depupdate(depid=None):
     tosca_info["outputs"] = {**tosca_info["outputs"], **stoutputs}
 
     sla_id = tosca_helpers.getslapolicy(tosca_info)
-    slas = sla.get_slas(
-        access_token,
-        app.settings.orchestrator_conf["slam_url"],
-        app.settings.orchestrator_conf["cmdb_url"],
-        dep.deployment_type,
-    )
+
+    slas = []
+    # Fed-Reg
+    app.logger.debug("FED_REG_URL: {}".format(app.settings.fed_reg_url))
+    if app.settings.fed_reg_url is not None:
+        slas = fed_reg.retrieve_slas_from_specific_user_group(
+            access_token=access_token,
+            service_type="compute",
+            deployment_type=dep.deployment_type,
+        )
+
+    # SLAM
+    elif app.settings.orchestrator_conf.get("slam_url", None) is not None:
+        slas = sla.get_slas(
+            access_token,
+            app.settings.orchestrator_conf["slam_url"],
+            app.settings.orchestrator_conf["cmdb_url"],
+            dep.deployment_type,
+        )
+
     ssh_pub_key = dbhelpers.get_ssh_pub_key(session["userid"])
 
     return render_template(
@@ -788,6 +910,7 @@ def updatedep():
         template = add_sla_to_template(template, form_data["extra_opts.selectedSLA"])
     else:
         remove_sla_from_template(template)
+    app.logger.debug(yaml.dump(template, default_flow_style=False))
 
     stinputs = json.loads(dep.stinputs.strip('"')) if dep.stinputs else {}
     inputs = {
@@ -896,12 +1019,24 @@ def prepare_configure_form(selected_tosca, tosca_info, steps):
 
         sla_id = tosca_helpers.getslapolicy(template)
 
-        slas = sla.get_slas(
-            access_token,
-            app.settings.orchestrator_conf["slam_url"],
-            app.settings.orchestrator_conf["cmdb_url"],
-            template["deployment_type"],
-        )
+        slas = []
+        # Fed-Reg
+        app.logger.debug("FED_REG_URL: {}".format(app.settings.fed_reg_url))
+        if app.settings.fed_reg_url is not None:
+            slas = fed_reg.retrieve_slas_from_specific_user_group(
+                access_token=access_token,
+                service_type="compute",
+                deployment_type=template["deployment_type"],
+            )
+
+        # SLAM
+        elif app.settings.orchestrator_conf.get("slam_url", None) is not None:
+            slas = sla.get_slas(
+                access_token,
+                app.settings.orchestrator_conf["slam_url"],
+                app.settings.orchestrator_conf["cmdb_url"],
+                template["deployment_type"],
+            )
 
         ssh_pub_key = dbhelpers.get_ssh_pub_key(session["userid"])
 
@@ -954,8 +1089,6 @@ def add_sla_to_template(template, sla_id):
             }
         }
     ]
-
-    app.logger.debug(yaml.dump(template, default_flow_style=False))
 
     return template
 
@@ -1095,28 +1228,105 @@ def process_openstack_ec2credentials(key: str, inputs: dict, stinputs: dict):
         try:
             # remove from inputs array since it is not a real input to pass to the orchestrator
             del inputs[key]
-
             s3_url = value["url"]
-            service = app.cmdb.get_service_by_endpoint(iam.token["access_token"], s3_url)
-            prj, idp = app.cmdb.get_service_project(
-                iam.token["access_token"],
-                session["iss"],
-                service,
-                session["active_usergroup"],
-            )
 
-            if not prj or not idp:
-                raise Exception("Unable to get EC2 credentials")
+            # Fed-Reg
+            if app.settings.fed_reg_url is not None:
+                user_groups = fed_reg.get_user_groups(
+                    access_token=iam.token["access_token"],
+                    with_conn=True,
+                    name=session["active_usergroup"],
+                    idp_endpoint=session["iss"],
+                )
+                assert (
+                    len(user_groups) < 2
+                ), f"Found multiple user groups with name '{session['active_usergroup']}' and issuer '{session['iss']}'"
+                assert (
+                    len(user_groups) > 0
+                ), f"User group with name '{session['active_usergroup']}' and issuer '{session['iss']}' not found"
+                user_group = user_groups[0]
 
-            if prj and idp:
-                access, secret = keystone.get_or_create_ec2_creds(
-                    iam.token["access_token"],
-                    prj.get("tenant_name"),
-                    service["auth_url"].rstrip("/v3"),
-                    idp["name"],
-                    idp["protocol"],
+                # Find project, provider and region matching service url
+                found = False
+                for sla in user_group["slas"]:
+                    for project in sla["projects"]:
+                        _provider = project["provider"]
+                        for quota in filter(
+                            lambda x: not x["usage"], project["quotas"]
+                        ):
+                            service = quota["service"]
+                            region = service["region"]
+                            if (
+                                service["type"] == "object-store"
+                                and "s3" in service["name"]
+                                and service["endpoint"].startswith(s3_url)
+                            ):
+                                found = True
+                                break
+                        if found:
+                            break
+                    if found:
+                        break
+                if not found:
+                    raise Exception("Unable to get EC2 credentials")
+                
+                # Get target provider details
+                provider = fed_reg.get_provider(
+                    _provider["uid"],
+                    access_token=iam.token["access_token"],
+                    with_conn=True,
+                )
+                assert provider, f"Provider with uid '{provider['uid']}' not found"
+
+                # Retrieve the authentication details matching the current identity provider
+                identity_provider = next(
+                    filter(
+                        lambda x: x["endpoint"] == session["iss"],
+                        provider["identity_providers"],
+                    )
+                )
+                auth_method = identity_provider["relationship"]
+
+                # Retrieve the auth_url matching the target region. In older deployments,
+                # if not inferred from the provider name, the region is None.
+                region = provider["regions"][0]
+                identity_service = next(
+                    filter(lambda x: x["type"] == "identity", region["services"])
                 )
 
+                # Retrieve EC2 access and secret
+                access,secret = keystone.get_or_create_ec2_creds(
+                    access_token=iam.token["access_token"],
+                    project=project["name"],
+                    auth_url=identity_service["endpoint"].rstrip("/v3"),
+                    identity_provider=auth_method["idp_name"],
+                    protocol=auth_method["protocol"],
+                )
+            # SLAM
+            elif app.settings.orchestrator_conf.get("slam_url", None) is not None:
+                service = app.cmdb.get_service_by_endpoint(
+                    iam.token["access_token"], s3_url
+                )
+                prj, idp = app.cmdb.get_service_project(
+                    iam.token["access_token"],
+                    session["iss"],
+                    service,
+                    session["active_usergroup"],
+                )
+
+                if not prj or not idp:
+                    raise Exception("Unable to get EC2 credentials")
+
+                if prj and idp:
+                    access, secret = keystone.get_or_create_ec2_creds(
+                        iam.token["access_token"],
+                        prj.get("tenant_name"),
+                        service["auth_url"].rstrip("/v3"),
+                        idp["name"],
+                        idp["protocol"],
+                    )
+
+            if access is not None and secret is not None:
                 iam_base_url = app.settings.iam_url
                 iam_client_id = app.settings.iam_client_id
                 iam_client_secret = app.settings.iam_client_secret
@@ -1419,6 +1629,7 @@ def createdep():
         template = add_sla_to_template(template, form_data["extra_opts.selectedSLA"])
     else:
         remove_sla_from_template(template)
+    app.logger.debug(yaml.dump(template, default_flow_style=False))
 
     uuidgen_deployment = str(uuid_generator.uuid1())
 

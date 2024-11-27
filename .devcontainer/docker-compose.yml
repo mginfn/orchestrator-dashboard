@@ -3,33 +3,21 @@ version: '3.4'
 services:
   orchestratordashboard:
     image: giosava94/orchestrator-dashboard
-    ports:
-      - 5000:5001
-    volumes:
-      - "../certs:/certs"
-      - "../trusted_certs:/trusted_certs"
-      - "../instance/:/app/instance/"
-    networks:
-      - dev-network
+    container_name: orchestratordashboard
+    command: sleep infinity
     environment:
-      ENABLE_HTTPS: True
-      FLASK_TOSCA_TEMPLATES_DIR: /app/instance/tosca-templates
-      FLASK_SETTINGS_DIR: /app/instance/dashboard-configuration
-      FLASK_UPLOAD_FOLDER: /app/instance/uploads
+      FLASK_DEBUG: 1
       FLASK_SQLALCHEMY_DATABASE_URI: mysql+pymysql://dashboard:${MYSQL_PASSWORD:-changeit}@db:3306/orchestrator_dashboard
       FLASK_REDIS_URL: redis://:${REDIS_PASSWORD:-changeit}@redis:6379
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started    
+    volumes:
+      - ..:/workspace:cached
+    networks:
+      - dev-network
 
   db:
     image: mysql:5.7
     container_name: db
     restart: always
-    ports:
-      - 3306:3306
     volumes:
       - db-data:/var/lib/mysql
     environment:
@@ -39,18 +27,11 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-changeit}
     networks:
       - dev-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-changeit}", "--silent"]
-      interval: 5s
-      timeout: 5s
-      retries: 50        
 
   redis:
     image: redis:latest
     restart: always
     container_name: redis
-    ports:
-      - "6379:6379"
     volumes:
       - redis-data:/data
     command: redis-server --requirepass ${REDIS_PASSWORD:-changeit}
@@ -70,6 +51,7 @@ services:
 
 networks:
   dev-network:
+
 
 volumes:
   db-data:

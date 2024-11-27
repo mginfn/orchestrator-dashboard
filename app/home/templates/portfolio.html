@@ -10,30 +10,30 @@
     </div>
 
     <div class="dashboard-report-container">
-        <div class="dashboard-report" title="Creation completed: {{ s_values[0] if s_values[0] != undefined else 0 }}" style="color: #43A047;">
+        <div class="dashboard-report" title="Creation completed: {{ s_values['CREATE_COMPLETE'] if s_values['CREATE_COMPLETE'] != undefined else 0 }}" style="color: #43A047;">
             <div class="dashboard-report-text">
                 <i class="fas fa-check-circle"></i>&nbsp;&nbsp; Creation completed
             </div>
             <div class="dashboard-report-count">
-                {{ s_values[1] if s_values[1] != undefined else 0 }}
+                {{ s_values['CREATE_COMPLETE'] if s_values['CREATE_COMPLETE'] != undefined else 0 }}
             </div>
         </div>
 
-        <div class="dashboard-report" title="Creation in progress: {{ s_values[2] if s_values[2] != undefined else 0 }}" style="color: #FF9800;">
+        <div class="dashboard-report" title="Creation in progress: {{ s_values['CREATE_IN_PROGESS'] if s_values['CREATE_IN_PROGESS'] != undefined else 0 }}" style="color: #FF9800;">
             <div class="dashboard-report-text">
                 <i class="fas fa-clock"></i>&nbsp;&nbsp;    Creation in progress
             </div>
             <div class="dashboard-report-count">
-                {{ s_values[2] if s_values[2] != undefined else 0 }}
+                {{ s_values['CREATE_IN_PROGESS'] if s_values['CREATE_IN_PROGESS'] != undefined else 0 }}
             </div>
         </div>
 
-        <div class="dashboard-report" title="Creation failed: {{ s_values[1] if s_values[1] != undefined else 0 }}" style="color: #DD2C00;">
+        <div class="dashboard-report" title="Creation failed: {{ s_values['CREATE_FAILED'] if s_values['CREATE_FAILED'] != undefined else 0 }}" style="color: #DD2C00;">
             <div class="dashboard-report-text">
                 <i class="fas fa-times-circle"></i>&nbsp;&nbsp; Creation failed
             </div>
             <div class="dashboard-report-count">
-                {{ s_values[0] if s_values[0] != undefined else 0 }}
+                {{ s_values['CREATE_FAILED'] if s_values['CREATE_FAILED'] != undefined else 0 }}
             </div>
         </div>
     </div>

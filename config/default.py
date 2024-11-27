@@ -12,7 +12,7 @@ TOSCA_TEMPLATES_DIR = "/opt/tosca-templates"
 SETTINGS_DIR = "/opt/dashboard-configuration"
 
 ### DB SETTINGS
-SQLALCHEMY_DATABASE_URI = "mysql+pymysql://dashboard:dashboard@localhost/orchestrator_dashboard",
+SQLALCHEMY_DATABASE_URI = "mysql+pymysql://dashboard:dashboard@localhost/orchestrator_dashboard"
 SQLALCHEMY_TRACK_MODIFICATIONS = "False"
 SQLALCHEMY_VERSION_HEAD = "88bc3c2c02a6"
 

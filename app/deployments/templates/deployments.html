@@ -11,6 +11,7 @@
     5 = endpoint
     6 = provider name
     7 = physical id (infrastructure id)
+	8 = region_name
 
     value must be comma separated (i.e.  "4, 6, 7")
 
@@ -54,6 +55,7 @@
 							<th>Endpoint</th>
 							<th>Deployed at</th>
 							<th>Physical Id</th>
+							<th>Region</th>
 							<th style="width: 1%; white-space: nowrap;">Actions</th>
 						</tr>
 					</thead>
@@ -84,6 +86,7 @@
 								<td>{{deployment.endpoint}}</td>
 								<td>{{deployment.provider_name}}</td>
 								<td>{{deployment.physicalId}}</td>
+								<td>{{deployment.region_name if deployment.region_name != None else ''}}</td>
 								<td>
 									<div class="btn-group">
 										<!-- DETAILS -->

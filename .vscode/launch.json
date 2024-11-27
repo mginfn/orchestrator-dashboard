@@ -1,0 +1,50 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Gunicorn",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "gunicorn",
+            "args": [
+                "--bind",
+                "0.0.0.0:5000",
+                "-w",
+                "1",
+                "--timeout",
+                "60",
+                "--certfile",
+                "${workspaceFolder}/certs/cert.pem",
+                "--keyfile",
+                "${workspaceFolder}/certs/key.pem",
+                "orchdashboard:app",
+            ],
+            "jinja": true,
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Flask",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "flask",
+            "env": {
+                "FLASK_APP": "orchdashboard",
+            },
+            "args": [
+                "run",
+                "--cert",
+                "${workspaceFolder}/certs/cert.pem",
+                "--key",
+                "${workspaceFolder}/certs/key.pem",
+                "--debug",
+                "--reload",
+                "--host=0.0.0.0",
+            ],
+            "jinja": true,
+            "justMyCode": true
+        }
+    ]
+}
