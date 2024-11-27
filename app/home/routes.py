@@ -367,18 +367,7 @@ def portfolio():
     and renders the portfolio template with the retrieved data.
     If the user is not logged in, it redirects to the login page.
     """
-    try:
-        dbhelpers.update_deployments(session["userid"])
-    except Exception as e:
-        flash("Error retrieving deployment list: \n" + str(e), "warning")
-
-    deps = dbhelpers.get_user_deployments(session["userid"], session["active_usergroup"])
-    statuses = {}
-    for dep in deps:
-        status = dep.status if dep.status else "UNKNOWN"
-        if status != "DELETE_COMPLETE" and dep.remote == 1:
-            statuses[status] = 1 if status not in statuses else statuses[status] + 1
-
+    
     if session.get("userid"):
         # check database
         # if user not found, insert
@@ -411,6 +400,18 @@ def portfolio():
         templates_info, enable_template_groups = check_template_access(
             session["usergroups"], session["active_usergroup"]
         )
+        
+        try:
+            dbhelpers.update_deployments(session["userid"])
+        except Exception as e:
+            flash("Error retrieving deployment list: \n" + str(e), "warning")
+
+        deps = dbhelpers.get_user_deployments(session["userid"])
+        statuses = {}
+        for dep in deps:
+            status = dep.status if dep.status else "UNKNOWN"
+            if status != "DELETE_COMPLETE" and dep.remote == 1:
+                statuses[status] = 1 if status not in statuses else statuses[status] + 1
 
         return render_template(
             app.config.get("PORTFOLIO_TEMPLATE"),
@@ -419,7 +420,7 @@ def portfolio():
             enable_template_groups=enable_template_groups,
             s_values=statuses,
         )
-
+        
     return redirect(url_for("home_bp.login"))
 
 
