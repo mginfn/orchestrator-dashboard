@@ -203,11 +203,12 @@ class ToscaInfo:
                                     pars_data = yaml.full_load(
                                         io.StringIO(tosca_info["parameters_file"])
                                     )
-                                    pars_inputs = pars_data["inputs"]
-                                    tosca_info["inputs"] = {
-                                        **tosca_inputs,
-                                        **pars_inputs,
-                                    }
+                                    if "inputs" in pars_data:
+                                        pars_inputs = pars_data["inputs"]
+                                        tosca_info["inputs"] = {
+                                            **tosca_inputs,
+                                            **pars_inputs,
+                                        }
                                     if "outputs" in pars_data:
                                         pars_outputs = pars_data["outputs"]
                                         tosca_info["outputs"] = {

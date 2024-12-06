@@ -764,6 +764,20 @@ def depdel(depid=None):
 
     return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
+@deployments_bp.route("/<depid>/reset")
+@auth.authorized_with_valid_token
+def depreset(depid=None):
+    access_token = iam.token["access_token"]
+
+    dep = dbhelpers.get_deployment(depid)
+    if dep is not None and dep.status == "DELETE_IN_PROGRESS":
+        try:
+            app.orchestrator.patch(access_token, depid, "DELETE_FAILED")
+        except Exception as e:
+            flash(str(e), "danger")
+
+    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+
 
 @deployments_bp.route("/depupdate/<depid>")
 @auth.authorized_with_valid_token
@@ -1009,7 +1023,7 @@ def configure_post():
 def prepare_configure_form(selected_tosca, tosca_info, steps):
     access_token = iam.token["access_token"]
     if selected_tosca:
-        template = copy.deepcopy(tosca_info[selected_tosca])
+        template = copy.deepcopy(tosca_info[os.path.normpath(selected_tosca)])
         # Manage eventual overrides
         for k, v in list(template["inputs"].items()):
             if "group_overrides" in v and session["active_usergroup"] in v["group_overrides"]:
@@ -1612,7 +1626,7 @@ def createdep():
     tosca_info, _, _ = tosca.get()
     access_token = iam.token["access_token"]
     # validate input
-    request_template = request.args.get("template")
+    request_template = os.path.normpath(request.args.get("template"))
     if request_template not in tosca_info.keys():
         raise ValueError("Template path invalid (not found in current configuration")
 

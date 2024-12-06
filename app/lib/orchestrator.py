@@ -226,3 +226,16 @@ class Orchestrator:
             raise Exception(
                 "Error deleting deployment {}: {}".format(deployment_uuid, response.text)
             )
+
+    def patch(self, access_token, deployment_uuid, status):
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "bearer %s" % access_token,
+        }
+        url = self.orchestrator_url + "/deployments/" + deployment_uuid
+        payload = {"status": status}
+        response = requests.patch(url, timeout=self.timeout, json=payload, headers=headers)
+        if not response.status_code == 204:
+            raise Exception(
+                "Error patching deployment {}: {}".format(deployment_uuid, response.text)
+            )
