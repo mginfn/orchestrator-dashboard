@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="jumbotron jumbotron-fluid">
+    <img class="img-fluid mx-auto d-block" src="/static/home/images/ai4eosc/ai4eosc_dashboard.png" style="max-width: 80%; height: auto;margin-top: 80px;">
+    <p align="center">
+        <a class="btn btn-primary btn-lg" role="button" href="{{ url_for('iam.login') }}" style="margin-top: 80px;">Login with IAM &raquo;</a>
+    </p>
+
+  <br>
+  <p style="padding: 0 20px; text-align: center;">AI4EOSC will deliver an enhanced set of services for the development of Artificial Intelligence (AI), Machine Learning (ML) and Deep Learning (DL) models and applications for the European Open Science Cloud (EOSC). AI4EOSC bases its activities on the technological framework delivered by the DEEP-Hybrid-DataCloud H2020 project, which delivered the DEEP platform to exploit computing resources from pan-European e-Infrastructures.</p>
+  </div>
+
+{% endblock %}
