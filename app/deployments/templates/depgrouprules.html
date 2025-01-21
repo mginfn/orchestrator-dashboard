@@ -51,7 +51,7 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <div class="form-group" id="elem_rule">
                                         <label>Rule*</label>
-                                        <select class="form-control" id="input_rule" required>
+                                        <select class="form-control" id="input_rule" name="input_rule" required>
                                             <option value="tcp">Custom TCP Rule</opti1on>
                                             <option value="udp">Custom UDP Rule</option>
                                             <option value="icmp">Custom ICMP Rule</option>
