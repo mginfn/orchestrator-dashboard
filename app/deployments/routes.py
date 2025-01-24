@@ -16,10 +16,10 @@ import copy
 import io
 import os
 import random
+import re
 import string
 from typing import Optional
 import uuid as uuid_generator
-from re import search
 from urllib.parse import urlparse
 
 import openstack
@@ -206,7 +206,7 @@ def preprocess_outputs(outputs, stoutputs, inputs):
                 if not eval(value.get("condition")) and key in outputs:
                     del outputs[key]
             except InputValidationError as ex:
-                app.logger.warning("Error evaluating condition for output {}: {}".format(key, ex))
+                app.logger.warning(f"Error evaluating condition for output {key}: {ex}")
 
 
 @deployments_bp.route("/<depid>/details")
@@ -220,7 +220,10 @@ def depoutput(depid=None):
     Returns:
     - rendered template with deployment details, inputs, outputs, and structured outputs
     """
-    if session["userrole"].lower() != "admin" and depid not in session["deployments_uuid_array"]:
+    if (
+        session["userrole"].lower() != "admin"
+        and depid not in session["deployments_uuid_array"]
+    ):
         flash("You are not allowed to browse this page!", "danger")
         return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
 
@@ -487,13 +490,16 @@ def get_vm_info(depid):
     def find_node_with_pubip(resources):
         for resource in resources:
             if "VirtualMachineInfo" in resource["metadata"]:
-                vm_info = json.loads(resource["metadata"]["VirtualMachineInfo"])["vmProperties"]
-                networks = [i for i in vm_info if i.get("class") == "network"]
-                vmi = next(i for i in vm_info if i.get("class") == "system")
+                if "vmProperties" in resource["metadata"]["VirtualMachineInfo"]:
+                    vm_info = json.loads(resource["metadata"]["VirtualMachineInfo"])[
+                        "vmProperties"
+                    ]
+                    networks = [i for i in vm_info if i.get("class") == "network"]
+                    vmi = next(i for i in vm_info if i.get("class") == "system")
 
-                for network in networks:
-                    if network.get("id") == "pub_network":
-                        return vmi.get("instance_id"), vmi.get("provider.host")
+                    for network in networks:
+                        if network.get("id") == "pub_network":
+                            return vmi.get("instance_id"), vmi.get("provider.host")
         return "", ""
 
     vm_id, vm_endpoint = find_node_with_pubip(resources)
@@ -506,27 +512,22 @@ def get_vm_info(depid):
 
 
 def get_sec_groups(conn, server_id, public=True):
-    substring = "pub_network"
-    sec_group_list = conn.list_server_security_groups(server_id)
-    return_sec_group_list = []
+    # Fetch the security groups associated with the server
+    all_security_groups = conn.list_server_security_groups(server_id)
 
-    # remove duplicates
-    for sec_group in sec_group_list:
-        flag = True
+    # Remove duplicates using a dictionary
+    unique_security_groups = {
+        group["id"]: group for group in all_security_groups
+    }.values()
 
-        for return_sec_group in return_sec_group_list:
-            if return_sec_group["id"] == sec_group["id"]:
-                flag = False
-
-        if flag:
-            return_sec_group_list.append(sec_group)
-
+    # Filter for public groups if required
     if public:
-        return_sec_group_list = [
-            sec_group for sec_group in return_sec_group_list if search(substring, sec_group["name"])
-        ]
+        public_network_key = "pub_network"
+        unique_security_groups = filter(
+            lambda group: public_network_key in group["name"], unique_security_groups
+        )
 
-    return return_sec_group_list
+    return list(unique_security_groups)
 
 
 @deployments_bp.route("/<depid>/security_groups")
@@ -585,7 +586,11 @@ def manage_rules(depid=None, sec_group_id=None):
         rules = []
 
     return render_template(
-        "depgrouprules.html", depid=depid, provider=provider, sec_group_id=sec_group_id, rules=rules
+        "depgrouprules.html",
+        depid=depid,
+        provider=provider,
+        sec_group_id=sec_group_id,
+        rules=rules,
     )
 
 
@@ -785,7 +790,12 @@ def delete_rule(depid=None, sec_group_id=None, rule_id=None):
         flash("Error: \n" + str(e), "danger")
 
     return redirect(
-        url_for(MANAGE_RULES_ROUTE, depid=depid, provider=provider, sec_group_id=sec_group_id)
+        url_for(
+            MANAGE_RULES_ROUTE,
+            depid=depid,
+            provider=provider,
+            sec_group_id=sec_group_id,
+        )
     )
 
 
@@ -805,7 +815,7 @@ def depaction(depid):
             )
             flash("Action successfully triggered.", "success")
         except Exception as e:
-            app.logger.error("Action on deployment {} failed: {}".format(dep.uuid, str(e)))
+            app.logger.error(f"Action on deployment {dep.uuid} failed: {str(e)}")
             flash(str(e), "warning")
 
     return redirect(url_for("deployments_bp.depinfradetails", depid=depid))
@@ -819,14 +829,17 @@ def delnode(depid):
     if dep is not None and dep.physicalId is not None:
         try:
             vm_id = request.args["vmid"]
-            app.logger.debug(f"Requested deletion of node {vm_id} on deployment {dep.uuid}")
+            app.logger.debug(
+                f"Requested deletion of node {vm_id} on deployment {dep.uuid}"
+            )
             resource = app.orchestrator.get_resource(access_token, depid, vm_id)
             resources = app.orchestrator.get_resources(access_token, depid)
 
             node = next((res for res in resources if res.get("uuid") == vm_id), None)
             node_name = node.get("toscaNodeName")
             # current count -1 --> remove one node
-            count = sum(1 for res in resources if res.get("toscaNodeName") == node_name) - 1
+            filtered = list(filter(lambda res: res.get("toscaNodeName") == node_name))
+            count = len(filtered) - 1
 
             app.logger.debug(f"Resource details: {resource}")
             app.logger.debug(f"Count = {count}")
@@ -839,7 +852,9 @@ def delnode(depid):
                 template_dict, node_name, [vm_id], count
             )
 
-            template_text = yaml.dump(new_template, default_flow_style=False, sort_keys=False)
+            template_text = yaml.dump(
+                new_template, default_flow_style=False, sort_keys=False
+            )
             app.logger.debug(f"{template_text}")
 
             app.orchestrator.update(
@@ -1001,7 +1016,9 @@ def addnodes(depid):
 
         template_dict = yaml.full_load(io.StringIO(template))
 
-        template_text = yaml.dump(template_dict, default_flow_style=False, sort_keys=False)
+        template_text = yaml.dump(
+            template_dict, default_flow_style=False, sort_keys=False
+        )
 
         new_inputs = extract_inputs(form_data)
 
@@ -1011,7 +1028,9 @@ def addnodes(depid):
         if not form_data.get("extra_opts.force_update") and all(
             old_inputs.get(k) == v for k, v in new_inputs.items()
         ):
-            message = f"Node addition Aborted for Deployment {dep.uuid}: No changes detected"
+            message = (
+                f"Node addition Aborted for Deployment {dep.uuid}: No changes detected"
+            )
             app.logger.error(message)
             flash(message, "warning")
             return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
@@ -1064,23 +1083,30 @@ def updatedep():
     app.logger.debug(yaml.dump(template, default_flow_style=False))
 
     stinputs = json.loads(dep.stinputs.strip('"')) if dep.stinputs else {}
-    inputs = {
-        k: v
-        for (k, v) in form_data.items()
-        if not k.startswith("extra_opts.")
-        and k != "_depid"
-        and (k in stinputs and "updatable" in stinputs[k] and stinputs[k]["updatable"] is True)
-    }
+    
+    inputs = {}
+    for k, v in form_data.items():
+        # Skip keys starting with "extra_opts." or equal to "_depid"
+        if k.startswith("extra_opts.") or k == "_depid":
+            continue
+
+        # Ensure the key exists in `stinputs` and is updatable
+        if k not in stinputs or not stinputs[k].get("updatable"):
+            continue
+
+        # Add to the result if all conditions are met
+        inputs[k] = v
 
     app.logger.debug("Parameters: " + json.dumps(inputs))
 
     template_text = yaml.dump(template, default_flow_style=False, sort_keys=False)
 
-    app.logger.debug("[Deployment Update] inputs: {}".format(json.dumps(inputs)))
-    app.logger.debug("[Deployment Update] Template: {}".format(template_text))
+    app.logger.debug(f"[Deployment Update] inputs: {json.dumps(inputs)}")
+    app.logger.debug(f"[Deployment Update] Template: {template_text}")
 
     keep_last_attempt = 1 if "extra_opts.keepLastAttempt" in form_data else dep.keep_last_attempt
     feedback_required = 1 if "extra_opts.sendEmailFeedback" in form_data else dep.feedback_required
+    
     provider_timeout_mins = (
         form_data["extra_opts.providerTimeout"]
         if "extra_opts.providerTimeoutSet" in form_data
@@ -1163,7 +1189,10 @@ def prepare_configure_form(selected_tosca, tosca_info, steps):
         template = copy.deepcopy(tosca_info[os.path.normpath(selected_tosca)])
         # Manage eventual overrides
         for k, v in list(template["inputs"].items()):
-            if "group_overrides" in v and session["active_usergroup"] in v["group_overrides"]:
+            if (
+                "group_overrides" in v
+                and session["active_usergroup"] in v["group_overrides"]
+            ):
                 overrides = v["group_overrides"][session["active_usergroup"]]
                 template["inputs"][k] = {**v, **overrides}
                 del template["inputs"][k]["group_overrides"]
@@ -1191,7 +1220,10 @@ def prepare_configure_form(selected_tosca, tosca_info, steps):
 
         ssh_pub_key = dbhelpers.get_ssh_pub_key(session["userid"])
 
-        if not ssh_pub_key and app.config.get("FEATURE_REQUIRE_USER_SSH_PUBKEY") == "yes":
+        if (
+            not ssh_pub_key
+            and app.config.get("FEATURE_REQUIRE_USER_SSH_PUBKEY") == "yes"
+        ):
             flash(
                 "Warning! You will not be able to deploy your service \
                     as no Public SSH key has been uploaded.",
@@ -1286,7 +1318,10 @@ def process_security_groups(key: str, inputs: dict, stinputs: dict, form_data: d
     if not value or value["type"] != "map":
         return
 
-    port_types = ["tosca.datatypes.network.PortSpec", "tosca.datatypes.indigo.network.PortSpec"]
+    port_types = [
+        "tosca.datatypes.network.PortSpec",
+        "tosca.datatypes.indigo.network.PortSpec",
+    ]
     if not any(value["entry_schema"]["type"] == t for t in port_types):
         return
 
@@ -1351,7 +1386,9 @@ def process_ssh_user(key: str, inputs: dict, stinputs: dict):
                     {
                         "os_user_name": session["preferred_username"],
                         "os_user_add_to_sudoers": True,
-                        "os_user_ssh_public_key": dbhelpers.get_ssh_pub_key(session["userid"]),
+                        "os_user_ssh_public_key": dbhelpers.get_ssh_pub_key(
+                            session["userid"]
+                        ),
                     }
                 ]
             else:
@@ -1376,8 +1413,16 @@ def process_uuidgen(key: str, inputs: dict, stinputs: dict, uuidgen_deployment: 
         prefix = ""
         suffix = ""
         if "extra_specs" in value:
-            prefix = value["extra_specs"]["prefix"] if "prefix" in value["extra_specs"] else ""
-            suffix = value["extra_specs"]["suffix"] if "suffix" in value["extra_specs"] else ""
+            prefix = (
+                value["extra_specs"]["prefix"]
+                if "prefix" in value["extra_specs"]
+                else ""
+            )
+            suffix = (
+                value["extra_specs"]["suffix"]
+                if "suffix" in value["extra_specs"]
+                else ""
+            )
         inputs[key] = prefix + uuidgen_deployment + suffix
 
 
@@ -1499,7 +1544,9 @@ def process_openstack_ec2credentials(key: str, inputs: dict, stinputs: dict):
                     app.config.get("VAULT_BOUND_AUDIENCE"),
                 )
 
-                vaultclient = vaultservice.connect(jwt_token, app.config.get("VAULT_ROLE"))
+                vaultclient = vaultservice.connect(
+                    jwt_token, app.config.get("VAULT_ROLE")
+                )
 
                 secret_path = (
                     session["userid"]
@@ -1510,17 +1557,25 @@ def process_openstack_ec2credentials(key: str, inputs: dict, stinputs: dict):
                 )
 
                 vaultclient.write_secret_dict(
-                    None, secret_path, {"aws_access_key": access, "aws_secret_key": secret}
+                    None,
+                    secret_path,
+                    {"aws_access_key": access, "aws_secret_key": secret},
                 )
 
                 app.logger.debug(f"EC2 Credentials saved to Vault path {secret_path}")
 
                 test_backet_name = "".join(random.choices(string.ascii_lowercase, k=8))
                 s3.create_bucket(
-                    s3_url=s3_url, access_key=access, secret_key=secret, bucket=test_backet_name
+                    s3_url=s3_url,
+                    access_key=access,
+                    secret_key=secret,
+                    bucket=test_backet_name,
                 )
                 s3.delete_bucket(
-                    s3_url=s3_url, access_key=access, secret_key=secret, bucket=test_backet_name
+                    s3_url=s3_url,
+                    access_key=access,
+                    secret_key=secret,
+                    bucket=test_backet_name,
                 )
 
                 app.logger.debug(
@@ -1626,7 +1681,10 @@ def process_inputs(source_template, inputs, form_data, uuidgen_deployment):
     stinputs = copy.deepcopy(source_template["inputs"])
 
     for k, v in list(stinputs.items()):
-        if "group_overrides" in v and session["active_usergroup"] in v["group_overrides"]:
+        if (
+            "group_overrides" in v
+            and session["active_usergroup"] in v["group_overrides"]
+        ):
             overrides = v["group_overrides"][session["active_usergroup"]]
             stinputs[k] = {**v, **overrides}
             del stinputs[k]["group_overrides"]
@@ -1721,7 +1779,9 @@ def create_deployment(
     deployment = dbhelpers.get_deployment(uuid)
     if deployment is None:
         vphid = rs_json["physicalId"] if "physicalId" in rs_json else ""
-        providername = rs_json["cloudProviderName"] if "cloudProviderName" in rs_json else ""
+        providername = (
+            rs_json["cloudProviderName"] if "cloudProviderName" in rs_json else ""
+        )
 
         deployment = Deployment(
             uuid=uuid,
@@ -1770,7 +1830,6 @@ def create_deployment(
 @auth.authorized_with_valid_token
 def createdep():
     tosca_info, _, _ = tosca.get()
-    access_token = iam.token["access_token"]
     # validate input
     request_template = os.path.normpath(request.args.get("template"))
     if request_template not in tosca_info.keys():
@@ -1791,17 +1850,155 @@ def createdep():
         remove_sla_from_template(template)
     app.logger.debug(yaml.dump(template, default_flow_style=False))
 
+    create_dep_method(
+        source_template,
+        selected_template,
+        additionaldescription,
+        inputs,
+        form_data,
+        template,
+        template_text,
+    )
+
+    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+
+
+@deployments_bp.route("/<depid>/retry")
+@auth.authorized_with_valid_token
+def retrydep(depid=None):
+    """
+    A function to retry a failed deployment.
+    Parameters:
+    - depid: str, the ID of the deployment
+    """
+    tosca_info, _, _ = tosca.get()
+    
+    try:
+        access_token = iam.token["access_token"]
+    except Exception as e:
+        flash("Access token not provided: \n" + str(e), "danger")
+
+    # retrieve deployment from DB
+    dep = dbhelpers.get_deployment(depid)
+
+    if dep is None or dep.selected_template == "":
+        flash(
+            "The selected deployment is invalid. Try creating it from scratch.",
+            "danger",
+        )
+        return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+
+    inputs = process_deployment_data(dep)
+    
+    if len(inputs) > 0:
+        inputs = inputs[0]
+
+    # Get the max num retry for the new name
+    max_num_retry = 0
+    str_retry = " retry_"
+    tmp_name = ""
+    
+    if len(dep.description.split(str_retry)) > 0:
+        tmp_name = dep.description.split(str_retry)[0]
+
+    group = None
+    if "active_usergroup" in session and session["active_usergroup"] is not None:
+        group = session["active_usergroup"]
+
+    deployments = []
+    try:
+        deployments = app.orchestrator.get_deployments(
+            access_token, created_by="me", user_group=group
+        )
+    except Exception as e:
+        flash("Error retrieving deployment list: \n" + str(e), "danger")
+
+    if deployments:
+        result = dbhelpers.updatedeploymentsstatus(deployments, session["userid"])
+        deployments = result["deployments"]
+        app.logger.debug("Deployments: " + str(deployments))
+
+        deployments_uuid_array = result["iids"]
+        session["deployments_uuid_array"] = deployments_uuid_array
+
+        for tmp_dep in deployments:
+            if (
+                tmp_name + str_retry in tmp_dep.description
+                and "DELETE_COMPLETE" not in tmp_dep.status
+            ):
+                num_retry = 0
+                split_desc = tmp_dep.description.split(str_retry)
+                
+                if len(split_desc) > 1:
+                    num_retry = int(split_desc[1])
+
+                if num_retry > max_num_retry:
+                    max_num_retry = num_retry
+
+    additionaldescription = f"{tmp_name}{str_retry}{max_num_retry + 1}"
+
+    source_template = tosca_info.get(dep.selected_template, None)
+    if source_template is None:
+        flash(
+            "The selected deployment is invalid. Try creating it from scratch.",
+            "danger",
+        )
+        return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+
+    form_data = inputs
+
+    template, template_text = load_template(dep.selected_template)
+
+    create_dep_method(
+        source_template,
+        dep.selected_template,
+        additionaldescription,
+        inputs,
+        form_data,
+        template,
+        template_text,
+    )
+
+    flash(
+        f"Retry action for deployment {dep.description} <{depid}> successfully triggered!",
+        "success",
+    )
+
+    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+
+
+def create_dep_method(
+    source_template,
+    selected_template,
+    additionaldescription,
+    inputs,
+    form_data,
+    template,
+    template_text,
+):
+    access_token = iam.token["access_token"]
+
     uuidgen_deployment = str(uuid_generator.uuid1())
 
     doprocess, inputs, stinputs = process_inputs(
         source_template, inputs, form_data, uuidgen_deployment
     )
 
+    # If input is a bucket_name check for validity
+    for name in inputs:
+        if "bucket_name" in name:
+            errors = check_s3_bucket_name(uuidgen_deployment + "-" + inputs[name])
+
+            if len(errors) > 0:
+                for error in errors:
+                    flash(error, "danger")
+                return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+
     app.logger.debug(f"Calling orchestrator with inputs: {inputs}")
 
     if doprocess:
-        storage_encryption, vault_secret_uuid, vault_secret_key = add_storage_encryption(
-            access_token, inputs
+        storage_encryption, vault_secret_uuid, vault_secret_key = (
+            add_storage_encryption(access_token, inputs)
         )
         params = {}  # is it needed??
         create_deployment(
@@ -1819,14 +2016,68 @@ def createdep():
             vault_secret_key,
         )
 
-    return redirect(url_for(SHOW_DEPLOYMENTS_ROUTE))
+
+def check_s3_bucket_name(name):
+    """
+    Validates an S3 bucket name based on the given rules.
+
+    :param name: The bucket name to validate.
+    :return: A tuple (bool, list) where the bool indicates if the name is valid,
+             and the list contains validation error messages (if any).
+    """
+    errors = []
+
+    # Rule 1: Length between 3 and 63 characters
+    if not (3 <= len(name) <= 63):
+        errors.append("Bucket names must be between 3 and 63 characters long.")
+
+    # Rule 2: Allowed characters
+    if not re.match(r"^[a-z0-9.-]+$", name):
+        errors.append(
+            "Bucket names can only contain lowercase letters, numbers, dots (.), and hyphens (-)."
+        )
+
+    # Rule 3: Begin and end with a letter or number
+    if not re.match(r"^[a-z0-9].*[a-z0-9]$", name):
+        errors.append("Bucket names must begin and end with a letter or number.")
+
+    # Rule 4: Must not contain two adjacent periods
+    if ".." in name:
+        errors.append("Bucket names must not contain two adjacent periods.")
+
+    # Rule 5: Must not be formatted as an IP address
+    if re.match(r"^\d+\.\d+\.\d+\.\d+$", name):
+        errors.append(
+            "Bucket names must not be formatted as an IP address (e.g., 192.168.5.4)."
+        )
+
+    # Rule 6: Must not start with prohibited prefixes
+    prohibited_prefixes = ["xn--", "sthree-", "sthree-configurator", "amzn-s3-demo-"]
+    if any(name.startswith(prefix) for prefix in prohibited_prefixes):
+        errors.append(
+            f"Bucket names must not start with the prefixes: {', '.join(prohibited_prefixes)}."
+        )
+
+    # Rule 7: Must not end with prohibited suffixes
+    prohibited_suffixes = ["-s3alias", "--ol-s3", ".mrap", "--x-s3"]
+    if any(name.endswith(suffix) for suffix in prohibited_suffixes):
+        errors.append(
+            f"Bucket names must not end with the suffixes: {', '.join(prohibited_suffixes)}."
+        )
+
+    # Rule 8: Bucket names must be unique across AWS accounts
+    # This rule cannot be validated here; it's enforced by AWS.
+
+    return errors
 
 
 def delete_secret_from_vault(access_token, secret_path):
     vault_bound_audience = app.config.get("VAULT_BOUND_AUDIENCE")
     vault_delete_policy = app.config.get("DELETE_POLICY")
     vault_delete_token_time_duration = app.config.get("DELETE_TOKEN_TIME_DURATION")
-    vault_delete_token_renewal_time_duration = app.config.get("DELETE_TOKEN_RENEWAL_TIME_DURATION")
+    vault_delete_token_renewal_time_duration = app.config.get(
+        "DELETE_TOKEN_RENEWAL_TIME_DURATION"
+    )
     vault_role = app.config.get("VAULT_ROLE")
 
     jwt_token = auth.exchange_token_with_audience(
@@ -1855,12 +2106,17 @@ def add_storage_encryption(access_token, inputs):
     vault_wrapping_token_time_duration = app.config.get("WRAPPING_TOKEN_TIME_DURATION")
     vault_write_policy = app.config.get("WRITE_POLICY")
     vault_write_token_time_duration = app.config.get("WRITE_TOKEN_TIME_DURATION")
-    vault_write_token_renewal_time_duration = app.config.get("WRITE_TOKEN_RENEWAL_TIME_DURATION")
+    vault_write_token_renewal_time_duration = app.config.get(
+        "WRITE_TOKEN_RENEWAL_TIME_DURATION"
+    )
 
     storage_encryption = 0
     vault_secret_uuid = ""
     vault_secret_key = ""
-    if "storage_encryption" in inputs and inputs["storage_encryption"].lower() == "true":
+    if (
+        "storage_encryption" in inputs
+        and inputs["storage_encryption"].lower() == "true"
+    ):
         storage_encryption = 1
         vault_secret_key = "secret"
 

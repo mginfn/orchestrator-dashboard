@@ -183,7 +183,10 @@ $(document).ready(function() {
     });
 
     $('#continue_btn').on('click', () => {
-		if($('#depSubmit')[0].checkValidity()) {
+		const formValid = $('#depSubmit')[0].checkValidity();
+		const formChecked = checkForm();
+
+		if(formValid && formChecked) {
 			$('#depSubmit').hide();
 			$('#checkSubmit').show();
 	
@@ -382,9 +385,6 @@ $(document).ready(function () {
 			$(select).parent().children('span.select2').children().children().css('cssText', 'border-color: #80808056!important'); 
 		}
 	});
-	$('#continue_btn').on("click", () => {
-		checkForm()
-	});
 });
 
 function checkForm() {
@@ -393,16 +393,27 @@ function checkForm() {
       	$('#depSubmit')[0].reportValidity();
     }
 
-    $('input').each(function(){
-		if ( (this.disabled == false) && this.required && (this.value == '')){
+	$('input').each(function() {
+		if (this.disabled) return; // Skip disabled inputs
+
+		// Handle 'incorrect' attribute if it exists
+		const incorrectAttr = this.attributes.incorrect;
+		if (incorrectAttr) {
+			const isIncorrect = incorrectAttr.value.toString() === 'true';
+			this.style.borderColor = isIncorrect ? 'red' : '#ccc';
+			if (isIncorrect) valid = false;
+			return; // No need to check further if 'incorrect' is defined
+		}
+
+		// Check required inputs
+		if (this.required && this.value === '') {
 			this.style.borderColor = 'red';
 			valid = false;
-		}
-		else {
+		} else {
 			this.style.borderColor = '#ccc';
 		}
-    });
-  
+	});
+
     $('select').each(function(){
 		if ( (this.disabled == false) && this.required && (this.value == '')){
 			$(this).parent().children('span.select2').children().children().css('cssText', 'border-color: red!important');

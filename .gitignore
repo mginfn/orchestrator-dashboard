@@ -70,5 +70,6 @@ instance/
 .AppleDouble
 .LSOverride
 
+# certificates
 certs/**
 trusted_certs/**
