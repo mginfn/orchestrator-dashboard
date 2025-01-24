@@ -37,6 +37,11 @@
 			<input type="text" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}data-required=true required{%endif%} {{mode}} />
 		<!-- end text type -->
 
+		<!-- textarea type -->
+		{% elif value.type == "textarea" %}
+			<textarea class="form-control" {% if value.rows %}rows="{{value.rows}}"{%endif%} data-type="text" id="{{key}}" name="{{key}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}data-required=true required{%endif%} {{mode}}>{{value.default}}</textarea>
+		<!-- end textarea type -->
+
 		<!-- number types -->
 		{% elif value.type == "integer" %}
 			<input type="number" min="0" class="form-control" data-type="{{value.type}}" id="{{key}}" name="{{key}}" value="{{value.default}}" {{ value.function }} {{ value.function_params }} aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}data-required=true required{%endif%} {{mode}} />
