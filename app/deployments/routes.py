@@ -1228,15 +1228,24 @@ def remove_sla_from_template(template):
             del template["topology_template"]["policies"]
 
 
-def add_sla_to_template(template, sla_id):
+def add_sla_to_template(template, sla):
     # Add or replace the placement policy
+    sla_id = ""
+    sla_region = ""
+    sla_split = sla.split("_")
+    
+    if sla_split[0]:
+        sla_id = sla_split[0]
+    
+    if sla_split[1]:
+        sla_region = sla_split[1]
 
     tosca_sla_placement_type = "tosca.policies.indigo.SlaPlacement"
     template["topology_template"]["policies"] = [
         {
             "deploy_on_specific_site": {
                 "type": tosca_sla_placement_type,
-                "properties": {"sla_id": sla_id},
+                "properties": {"sla_id": sla_id, "region": sla_region},
             }
         }
     ]
